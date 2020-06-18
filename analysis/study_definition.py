@@ -120,25 +120,20 @@ study = StudyDefinition(
             "category": {"ratios": {"PC": 0.05, "PN": 0.05, "PS": 0.05, "U": 0.85,},},
         },
     ),
-
-    ### DUMMY HOUSEHOLD mirrors https://github.com/opensafely/cohort-extractor/issues/170
-    # #TODO: replace with real code when available
-    household_id=patients.with_these_clinical_events(
-        creatinine_codes, #### THIS IS A PLACEHOLDER
-        returning="number_of_matches_in_period",
+    household_id=patients.household_as_of(
+        "2020-02-01",
+        returning="pseudo_id",
         return_expectations={
             "int": {"distribution": "normal", "mean": 1000, "stddev": 200},
-            "incidence": 0.95,
-        }
+            "incidence": 1,
+        },
     ),
-
-    # #TODO: replace with real code when available
-    household_size=patients.with_these_clinical_events(
-        creatinine_codes, #### THIS IS A PLACEHOLDER
-        returning="number_of_matches_in_period",
+    household_size=patients.household_as_of(
+        "2020-02-01",
+        returning="household_size",
         return_expectations={
             "int": {"distribution": "normal", "mean": 3, "stddev": 1},
-            "incidence": 0.95,
-        }
+            "incidence": 1,
+        },
     ),
 )

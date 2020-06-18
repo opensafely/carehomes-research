@@ -1,31 +1,72 @@
-from datalab_cohorts import StudyDefinition, patients, codelist, codelist_from_csv
+from datalab_cohorts import (
+    StudyDefinition,
+    patients,
+    codelist_from_csv,
+    codelist,
+    filter_codes_by_category,
+)
 
-chronic_cardiac_disease_codes = codelist_from_csv(
-    "codelists/opensafely-chronic-cardiac-disease.csv", system="ctv3", column="CTV3ID"
-)
-chronic_liver_disease_codes = codelist_from_csv(
-    "codelists/opensafely-chronic-liver-disease.csv", system="ctv3", column="CTV3ID"
-)
-salbutamol_codes = codelist_from_csv(
-    "codelists/opensafely-asthma-inhaler-salbutamol-medication.csv",
-    system="snomed",
-    column="id",
-)
-systolic_blood_pressure_codes = codelist(["2469."], system="ctv3")
-diastolic_blood_pressure_codes = codelist(["246A."], system="ctv3")
+
+## CODE LISTS
+# All codelist are held within the codelist/ folder.
+from codelists import *
+
+## STUDY POPULATION
+# Defines both the study population and points to the important covariates
 
 study = StudyDefinition(
     # Configure the expectations framework
     default_expectations={
         "date": {"earliest": "1900-01-01", "latest": "today"},
-        "rate": "exponential_increase",
+        "rate": "uniform",
+        "incidence": 0.5,
     },
     # This line defines the study population
     population=patients.registered_with_one_practice_between(
         "2019-02-01", "2020-02-01"
     ),
-    # The rest of the lines define the covariates with associated GitHub issues
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/33
+    # Outcomes
+    icu_date_admitted=patients.admitted_to_icu(
+        on_or_after="2020-02-01",
+        include_day=True,
+        returning="date_admitted",
+        find_first_match_in_period=True,
+    ),
+    died_date_cpns=patients.with_death_recorded_in_cpns(
+        on_or_before="2020-06-01",
+        returning="date_of_death",
+        include_month=True,
+        include_day=True,
+    ),
+    died_ons_covid_flag_any=patients.with_these_codes_on_death_certificate(
+        covid_codelist,
+        on_or_before="2020-06-01",
+        match_only_underlying_cause=False,
+        return_expectations={"date": {"earliest": "2020-03-01"}},
+    ),
+    died_date_ons=patients.died_from_any_cause(
+        on_or_before="2020-06-01",
+        returning="date_of_death",
+        include_month=True,
+        include_day=True,
+    ),
+    first_tested_for_covid=patients.with_test_result_in_sgss(
+        pathogen="SARS-CoV-2",
+        test_result="any",
+        find_first_match_in_period=True,
+        returning="date",
+        date_format="YYYY-MM-DD",
+        return_expectations={"date": {"earliest": "2020-03-01"}},
+    ),
+    first_positive_test_date=patients.with_test_result_in_sgss(
+        pathogen="SARS-CoV-2",
+        test_result="positive",
+        find_first_match_in_period=True,
+        returning="date",
+        date_format="YYYY-MM-DD",
+        return_expectations={"date": {"earliest": "2020-03-01"}},
+    ),
+    # Patient characteristics
     age=patients.age_as_of(
         "2020-02-01",
         return_expectations={
@@ -33,108 +74,71 @@ study = StudyDefinition(
             "int": {"distribution": "population_ages"},
         },
     ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/46
     sex=patients.sex(
         return_expectations={
             "rate": "universal",
             "category": {"ratios": {"M": 0.49, "F": 0.51}},
         }
     ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/7
-    chronic_cardiac_disease=patients.with_these_clinical_events(
-        chronic_cardiac_disease_codes,
-        returning="date",
-        find_first_match_in_period=True,
-        include_month=True,
-        return_expectations={"incidence": 0.2},
-    ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/12
-    chronic_liver_disease=patients.with_these_clinical_events(
-        chronic_liver_disease_codes,
-        returning="date",
-        find_first_match_in_period=True,
-        include_month=True,
-        return_expectations={
-            "incidence": 0.2,
-            "date": {"earliest": "1950-01-01", "latest": "today"},
-        },
-    ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/10
-    bmi=patients.most_recent_bmi(
-        on_or_after="2010-02-01",
-        minimum_age_at_measurement=16,
-        include_measurement_date=True,
-        include_month=True,
-        return_expectations={
-            "incidence": 0.6,
-            "float": {"distribution": "normal", "mean": 35, "stddev": 10},
-        },
-    ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/35
-    bp_sys=patients.mean_recorded_value(
-        systolic_blood_pressure_codes,
-        on_most_recent_day_of_measurement=True,
-        on_or_before="2020-02-01",
-        include_measurement_date=True,
-        include_month=True,
-        return_expectations={
-            "incidence": 0.6,
-            "float": {"distribution": "normal", "mean": 80, "stddev": 10},
-        },
-    ),
-    bp_dias=patients.mean_recorded_value(
-        diastolic_blood_pressure_codes,
-        on_most_recent_day_of_measurement=True,
-        on_or_before="2020-02-01",
-        include_measurement_date=True,
-        include_month=True,
-        return_expectations={
-            "incidence": 0.6,
-            "float": {"distribution": "normal", "mean": 120, "stddev": 10},
-        },
-    ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/54
-    stp=patients.registered_practice_as_of(
+    region=patients.registered_practice_as_of(
         "2020-02-01",
-        returning="stp_code",
+        returning="nuts1_region_name",
         return_expectations={
             "rate": "universal",
-            "category": {"ratios": {"STP1": 0.5, "STP2": 0.5}},
+            "category": {
+                "ratios": {
+                    "North East": 0.1,
+                    "North West": 0.1,
+                    "Yorkshire and the Humber": 0.1,
+                    "East Midlands": 0.1,
+                    "West Midlands": 0.1,
+                    "East of England": 0.1,
+                    "London": 0.2,
+                    "South East": 0.2,
+                },
+            },
         },
     ),
-    msoa=patients.registered_practice_as_of(
+    care_home_type=patients.care_home_status_as_of(
         "2020-02-01",
-        returning="msoa_code",
+        categorised_as={
+            "PC": """
+              IsPotentialCareHome
+              AND LocationDoesNotRequireNursing='Y'
+              AND LocationRequiresNursing='N'
+            """,
+            "PN": """
+              IsPotentialCareHome
+              AND LocationDoesNotRequireNursing='N'
+              AND LocationRequiresNursing='Y'
+            """,
+            "PS": "IsPotentialCareHome",
+            "U": "DEFAULT",
+        },
         return_expectations={
             "rate": "universal",
-            "category": {"ratios": {"MSOA1": 0.5, "MSOA2": 0.5}},
+            "category": {"ratios": {"PC": 0.05, "PN": 0.05, "PS": 0.05, "U": 0.85,},},
         },
     ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/52
-    imd=patients.address_as_of(
-        "2020-02-01",
-        returning="index_of_multiple_deprivation",
-        round_to_nearest=100,
-        return_expectations={
-            "rate": "universal",
-            "category": {"ratios": {"100": 0.1, "200": 0.2, "300": 0.7}},
-        },
-    ),
-    rural_urban=patients.address_as_of(
-        "2020-02-01",
-        returning="rural_urban_classification",
-        return_expectations={
-            "rate": "universal",
-            "category": {"ratios": {"rural": 0.1, "urban": 0.9}},
-        },
-    ),
-    recent_salbutamol_count=patients.with_these_medications(
-        salbutamol_codes,
-        between=["2018-02-01", "2020-02-01"],
+
+    ### DUMMY HOUSEHOLD mirrors https://github.com/opensafely/cohort-extractor/issues/170
+    # #TODO: replace with real code when available
+    household_id=patients.with_these_clinical_events(
+        creatinine_codes, #### THIS IS A PLACEHOLDER
         returning="number_of_matches_in_period",
         return_expectations={
-            "incidence": 0.6,
-            "int": {"distribution": "normal", "mean": 8, "stddev": 2},
-        },
+            "int": {"distribution": "normal", "mean": 1000, "stddev": 200},
+            "incidence": 0.95,
+        }
+    ),
+
+    # #TODO: replace with real code when available
+    household_size=patients.with_these_clinical_events(
+        creatinine_codes, #### THIS IS A PLACEHOLDER
+        returning="number_of_matches_in_period",
+        return_expectations={
+            "int": {"distribution": "normal", "mean": 3, "stddev": 1},
+            "incidence": 0.95,
+        }
     ),
 )

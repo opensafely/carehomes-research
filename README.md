@@ -1,8 +1,6 @@
-# OpenSAFELY Research Template
+# Spatiotemporal risk of infection of care homes during the first wave of the COVID-19 pandemic in the UK
 
-This is a template repository for making new OpenSAFELY resarch projects.  Eventually it'll become a framework. To get started, create a new repo using this repo as a template, delete this front matter, and edit the text that follows.
-
-# _title goes here_
+Can risk of introduction of covid-19 infection to care homes be predicted by estimates of community prevalence in the immediately surrounding area?
 
 This is the code and configuration for our paper, _name goes here_
 

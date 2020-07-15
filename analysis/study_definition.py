@@ -46,16 +46,6 @@ study = StudyDefinition(
         },
     ),
 
-    # suspected_covid_primarycare=patients.with_these_clinical_events(
-    #     covid_primary_care_suspect_case,
-    #     on_or_after="2020-02-01",
-    #     find_first_match_in_period=True,
-    #     returning="date",
-    #     date_format="YYYY-MM-DD",
-    #     #include_month=True,
-    #     return_expectations={"date": {"earliest": "2020-03-01"}},
-    # ),
-
     ### testing positive (SGSS or primary care)
     #first_pos_test_sgss=patients.with_test_result_in_sgss(
     #    pathogen="SARS-CoV-2",
@@ -76,6 +66,7 @@ study = StudyDefinition(
     #        "date": {"earliest": "2020-03-01", "latest": "today"}
     #    },
     #),
+
     ### A&E attendence
     a_e_consult_date=patients.attended_emergency_care(
        between=["2020-02-01", "2020-06-30"],
@@ -98,16 +89,6 @@ study = StudyDefinition(
                             "rate" : "exponential_increase"
                             }, 
     ),   
-    
-    # Registered death, any COVID as underlying cause
-    #ons_underlyingcovid_death_date=patients.with_these_codes_on_death_certificate(
-    #    covid_death_codelist,
-    #    on_or_before="2020-06-01",
-    #    match_only_underlying_cause=True,
-    #    returning="date_of_death",
-    #    date_format="YYYY-MM-DD",
-    #    return_expectations={"date": {"earliest": "2020-03-01"}},
-    #),
 
     ## HOUSEHOLD INFORMATION
     # CAREHOME STATUS

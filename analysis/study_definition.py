@@ -47,25 +47,16 @@ study = StudyDefinition(
     ),
 
     ### testing positive (SGSS or primary care)
-    #first_pos_test_sgss=patients.with_test_result_in_sgss(
-    #    pathogen="SARS-CoV-2",
-    #    test_result="positive",
-    #    find_first_match_in_period=True,
-    #    returning="date",
-    #    date_format="YYYY-MM-DD",
-    #    return_expectations={"date": {"earliest": "2020-03-01"}},
-    #),
-
-    #first_pos_test_primcare=patients.with_these_clinical_events(
-    #    covid_pos_primary_care,
-    #    on_or_before="today",
-    #    return_first_date_in_period=True,
-    #    returning="date",
-    #    date_format="YYYY-MM-DD",
-    #    return_expectations={
-    #        "date": {"earliest": "2020-03-01", "latest": "today"}
-    #    },
-    #),
+    first_pos_test_sgss=patients.with_test_result_in_sgss(
+       pathogen="SARS-CoV-2",
+       test_result="positive",
+       find_first_match_in_period=True,
+       returning="date",
+       date_format="YYYY-MM-DD",
+       return_expectations={"date": {"earliest": "2020-03-01"},
+                            "rate": "exponential_increase"
+       },
+    ),
 
     ### A&E attendence
     a_e_consult_date=patients.attended_emergency_care(

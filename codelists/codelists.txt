@@ -1,3 +1,5 @@
 opensafely/dementia/2020-04-22
 opensafely/ethnicity/2020-04-27
 opensafely/covid-identification/2020-06-03
+opensafely/covid-identification-in-primary-care-case/2020-06-23
+opensafely/covid-identification-in-primary-care-suspect-case/2020-06-23

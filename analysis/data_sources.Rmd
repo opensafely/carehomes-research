@@ -1,0 +1,599 @@
+---
+title: "COVID risk data source comparison"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 8 
+    fig_height: 6 
+---
+
+```{r setup, include = F}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE) #, fig.width=12, fig.height=8
+
+library(readxl)
+library(tidyverse)
+library(lubridate)
+library(reportfactory)
+library(data.table)
+library(zoo)
+library(dtplyr)
+
+# MSOA lookups:
+setwd("C:/Users/phpuenig/Dropbox/Carehomes/")
+msoa_pc <- fread("admin_geography/pc_to_msoa.csv") 
+msoa_pc[, postcode := tolower(gsub(" ","",pcds))]
+msoa_pop <- fread("admin_geography/msoa_pop.csv")
+msoa_ltla <- fread("admin_geography/msoa_to_ltla.csv")
+msoa_nb <- fread("admin_geography/msoa_neighbours_full.csv")
+
+
+# STP lookup
+stp_lookup <- read.csv("C:/Users/phpuenig/Documents/COVID-19/Data/ccg_stp_region_lookup.csv") %>%
+  dplyr::select(-1:-4) %>%
+  unique()
+# stp_lookup <- read.csv("C:/Users/phpuenig/Documents/COVID-19/Data/STPs.csv") 
+
+# Fix LTLA matching
+msoa_ltla[,ltla_code := LTLA17CD]
+msoa_ltla[LTLA17CD %in% c("E06000028","E07000048","E06000029"), ltla_code := "E06000058"] # Bournemouth, Christchurch and Poole
+msoa_ltla[grepl("Dorset", LTLA17NM)| LTLA17NM %in% c("Purbeck","Weymouth and Portland"), ltla_code := "E06000059"] # East/West/North Dorset
+msoa_ltla[LTLA17NM %in% c("St Edmundsbury","Forest Heath"), ltla_code := "E07000245"] # West suffolk
+msoa_ltla[LTLA17NM %in% c("Suffolk Coastal","Waveney"), ltla_code := "E07000244"] # East suffolk
+msoa_ltla[LTLA17NM %in% c("Taunton Deane","West Somerset"), ltla_code := "E07000246"] # East suffolk
+# Isles of Scilly excluded - no cases/calls
+
+
+# Access data pipeline
+path_to_factory <- "C:/Users/phpuenig/Documents/COVID-19/covid19_automation"
+setwd(path_to_factory)
+rfh_load_scripts()
+
+## --- NHS pathways data --- ##
+calls_raw <- import_clear_pathways() %>%
+  data.table() %>%
+  lazy_dt() 
+
+calls_raw %>%
+  filter(!is.na(postcode) & grepl("111", site_type)) %>%
+  group_by(date, ccg_code, ccg_name, nhs_region, postcode) %>%
+  summarise(count = sum(count)) %>%
+  mutate(pc_area = case_when(str_length(postcode) == 5 ~ toupper(substr(postcode,1,2)),
+                             str_length(postcode) == 6 ~ toupper(substr(postcode,1,3)),
+                             str_length(postcode) == 7 ~ toupper(substr(postcode,1,4))),
+         pc_region = gsub("[0-9]+", "", pc_area)) %>%
+  left_join(msoa_pc) %>%
+  mutate(count = replace_na(count, 0)) %>%
+  group_by(msoa11cd) %>%
+  mutate(peak = date[which.max(count)]) %>% 
+  ungroup() -> calls_pc
+
+# calculate totals and rolling average by MSOA
+calls <- calls_pc %>%
+  group_by(date, msoa11cd, msoa11nm, nhs_region) %>% 
+  summarise(count = base::sum(count, na.rm = T),
+            peak = unique(peak)) %>%
+  as.data.table()
+setkey(calls, "msoa11cd", "date")
+calls[, rollavg7 := rollmean(count, 7, fill = NA, align = "right"), by = msoa11cd]
+summary(calls$rollavg7)
+
+calls <- lazy_dt(calls)
+
+## --- Linelist of confirmed cases (P1&2) --- ##
+# Only available to LTLA level
+ll_raw <- import_linelist() %>%
+  data.table() %>%
+  lazy_dt() 
+
+ll_raw %>%
+  filter(ltla_code != "missing") %>%
+  mutate(ltla_code = toupper(ltla_code)) %>%
+  filter(date_lab_report > "2020-01-01") %>%
+  group_by(nhser_name, ltla_code, date_lab_report) %>%
+  count() %>% #as.data.frame() %>% View()
+  as.data.table() -> cases
+
+# calculate rolling average by LTLA
+setkey(cases, "ltla_code", "date_lab_report")
+cases[, rollavg7 := rollmean(n, 7, fill = NA, align = "right"), by = ltla_code]
+
+cases <- lazy_dt(cases)
+
+## --- ONS deaths --- ##
+deaths_raw <- readRDS("C:/Users/phpuenig/Documents/COVID-19/Data/Deaths/alldata.rds") %>%
+  data.table() %>%
+  lazy_dt() 
+
+deaths_raw %>%
+  group_by(lad19cd) %>%
+  mutate(first = (dod == min(dod)), date_first = min(dod)) %>%
+  group_by(lad19cd, pod2) %>%
+  mutate(first_pod = (dod == min(dod)), 
+         date_first_pod = min(dod),
+         population := trimws(sub("NHS England ","",sub("\\(.*","",nhsrlo19nm)))) %>%
+  ungroup() -> deaths_all
+
+deaths_all %>% 
+  group_by(dod, lad19cd, lad19nm, population, first) %>%
+  summarise(deaths = sum(deaths)) %>%
+  as.data.table() -> deaths
+
+setkey(deaths, "lad19cd", "dod")
+deaths[, rollavg7 := rollmean(deaths, 7, fill = NA, align = "right"), by = lad19cd]
+deaths <- lazy_dt(deaths)
+
+## --- model predictions --- ##
+
+model_preds <- readRDS("C:/Users/phpuenig/Dropbox/COVID-19/care homes/roz_foi-2020-07-10.rds") %>%
+  lazy_dt() %>%
+  filter(!population %in% c("Scotland","Wales","Northern Ireland")) %>%
+  mutate(age_group = case_when(group %in% 1:2 ~ "[0,10)",
+                               group %in% 3:4 ~ "[10,20)",
+                               group %in% 5:6 ~ "[20,30)",
+                               group %in% 7:8 ~ "[30,40)",
+                               group %in% 9:10 ~ "[40,50)",
+                               group %in% 11:12 ~ "[50,60)",
+                               group %in% 13:14 ~ "[60,70)",
+                               group %in% 15:16 ~ "[70,80)"))
+
+## --- opensafely --- ##
+
+os_tot <- read.csv("C:/Users/phpuenig/Documents/COVID-19/carehomes-research/data/total_patient_counts_by_stp.csv") %>%
+  rename(stp = X, total_patients = stp) %>%
+  filter(stp != "") %>% 
+  left_join(stp_lookup,  by = c("stp" = "STP20CD"))
+os <- read.csv("C:/Users/phpuenig/Documents/COVID-19/carehomes-research/data/event_counts_by_stp.csv") %>%
+  full_join(os_tot) %>% 
+  filter(stp != "") %>% 
+  mutate(date = lubridate::ymd(X)) %>% #View()
+  # left_join(stp_lookup, by = c("stp" = "STP20CD")) %>% View()
+  group_by(NHSER20CD, date) %>%
+  mutate(total_patients_region = sum(total_patients)) %>%
+  ungroup()
+
+
+```
+
+### Data sources:
+* NHS 111 queries with suspect covid disposition
+  Resolution: Postcode
+* Primary care - confirmed and suspect cases
+  STP
+* UK linelist - confirmed cases
+  LTLA
+* A&E attendances (total only, not covid specific)
+  STP
+* ONS covid-related deaths (mentioned or underlying)
+  LTLA
+* Model-predicted cases
+  NHS region
+  
+## 111 calls/online reports
+
+Subset of MSOAs which all peak on 06/04 for rolling mean? Maybe some data missing for first few weeks?
+
+```{r calls}
+
+calls_avg <- calls %>%
+  group_by(date) %>% 
+  summarise(count = mean(count)) %>%
+  as.data.frame()
+
+calls %>%
+  group_by(date) %>%
+  summarise(n = sum(count)) %>%
+  mutate(metric = "111") %>%
+  as.data.frame() -> calls_bytime
+  
+msoa_samp <- sample(calls$parent$msoa11cd,10)
+
+## Plot 111 calls by MSOA ##
+calls %>% 
+  as.data.frame() %>%
+  # filter(msoa11cd %in% msoa_samp) %>%
+ggplot(aes(date, count)) +
+  geom_line(aes(col = msoa11nm)) +
+  guides(col = F) +
+  geom_line(data = calls_avg, col = "white",lwd = 1.2) +
+  labs(x = "Date",y = "N", title = "111 calls/online with covid disposition, by MSOA", subtitle = "Daily mean in white") +
+  theme_minimal()
+
+## Rolling average 
+calls %>% 
+  as.data.frame() %>%
+ggplot(aes(date, rollavg7)) +
+  geom_line(aes(col = msoa11nm)) +
+  guides(col = F) +
+  # geom_line(data = calls_avg, col = "white",lwd = 1.2) +
+  labs(x = "Date",y = "N", title = "111 calls/online with covid disposition, by MSOA", subtitle = "7 day rolling mean") +
+  theme_minimal()
+
+## Weird second group? 
+calls %>%
+  group_by(msoa11cd) %>%
+  mutate(peak_avg = date[which.max(rollavg7)]) %>% #View()
+  filter(peak_avg > "2020-04-01") %>%
+  pull(msoa11nm) %>%
+  unique() -> peak2
+
+calls %>% 
+  as.data.frame() %>%
+  filter(msoa11nm %in% peak2) %>% #c("E02000809","E02005160")
+ggplot(aes(date, rollavg7)) +
+  geom_line(aes(col = msoa11nm)) +
+  # guides(col = F) +
+  # geom_line(data = calls_avg, col = "white",lwd = 1.2) +
+  labs(x = "Date",y = "N", title = "111 calls/online with covid disposition, by MSOA", subtitle = "7 day rolling mean") +
+  theme_minimal()
+
+## Date of peak calls by MSOA ##
+# calls %>% 
+#   group_by(msoa11cd) %>% 
+#   summarise(peak = unique(peak)) %>%
+#   as.data.frame() %>%
+# ggplot(aes(x = peak)) +
+#   geom_bar() + 
+#   theme_minimal() +
+#   labs(x = "Date of peak calls", y = "Freq", title = "Peak 111 calls/online by MSOA")
+
+```
+
+## UK Linelist (confirmed cases, pillar 1+2)
+
+Two outlying series (increasing since June) are Leicester and Sheffield.
+
+```{r ll}
+
+ll_ts_ltla <- cases %>% 
+  group_by(date_lab_report, ltla_code) %>% 
+  summarise(n = base::sum(n, na.rm = T)) %>% 
+  as.data.frame()
+
+ll_ts <- cases %>% 
+  group_by(date_lab_report) %>% 
+  summarise(n = base::sum(n, na.rm = T)) %>%  
+  mutate(date = date_lab_report, metric = "Confirmed cases") %>%
+  as.data.frame()
+
+
+ll_avg <- ll_ts_ltla %>% 
+  group_by(date_lab_report) %>% 
+  summarise(n = base::mean(n, na.rm = T)) 
+
+## Plot confirmed cases by LTLA ##
+ll_ts_ltla %>% 
+  ggplot(aes(date_lab_report, n)) +
+  geom_line(aes(col = ltla_code), alpha = 0.3) +
+  guides(col = F) +
+  geom_line(data = ll_avg, col = "white",lwd = 1.2) +
+  labs(x = "Date",y = "N", title = "Daily confirmed cases by LTLA (P1&2)") +
+  theme_minimal()
+
+cases %>% 
+  as.data.frame() %>%
+  ggplot(aes(date_lab_report, rollavg7)) +
+  geom_line(aes(col = ltla_code), alpha = 0.3) +
+  guides(col = F) +
+  labs(x = "Date",y = "N", title = "Confirmed cases by LTLA (P1&2) - 7-day rolling average") +
+  theme_minimal()
+
+
+```
+
+## ONS Covid-related deaths
+
+Including cases with covid recorded as an underlying cause of death or just mentioned on death certificate.
+
+```{r deaths}
+
+deaths_all %>%
+  lazy_dt() %>%
+  filter(pod2 == "Care home") %>%
+  group_by(dod) %>%
+  summarise(deaths = sum(deaths)) %>%
+  as.data.frame() -> deaths_ch
+
+deaths %>%
+  group_by(dod) %>%
+  summarise(deaths = sum(deaths)) %>%
+  as.data.frame() -> deaths_bytime
+
+deaths_avg <- deaths %>% 
+  group_by(dod) %>%
+  summarise(deaths = base::mean(deaths, na.rm = T)) %>%
+  as.data.frame()
+
+deaths %>% 
+  as.data.frame() %>%
+  ggplot(aes(dod, deaths)) +
+  geom_line(aes(col = lad19cd), alpha = 0.3) +
+  geom_line(data = deaths_avg, col = "white",lwd = 1.2) +
+  guides(col = F) +
+  labs(x = "Date",y = "N", title = "Covid-related deaths by LTLA") +
+  theme_minimal()
+
+
+deaths %>% 
+  as.data.frame() %>%
+  ggplot(aes(dod, rollavg7)) +
+  geom_line(aes(col = lad19cd), alpha = 0.3) +
+  guides(col = F) +
+  labs(x = "Date",y = "N", title = "Covid-related deaths by LTLA - 7-day rolling average") +
+  theme_minimal()
+
+```
+
+## Compare 111/linelist/deaths
+
+In total over England.
+
+```{r calls_cases_deaths}
+
+## Compare calls/cases/deaths time series ##
+ggplot() +
+  geom_line(data = calls_bytime, aes(date, n, col = "111 calls")) +
+  geom_line(data = ll_ts, aes(date, n*30, col = "Cases")) + # 6 week lag between calls and confirmed cases (45 days)
+  geom_line(data = deaths_bytime, aes(dod, deaths*30, col = "Deaths")) + # 6 week lag between calls and confirmed cases (45 days)
+  scale_y_continuous(sec.axis = sec_axis(~./30, name = "Confirmed cases / deaths")) +
+  # geom_line(data = deaths_bytime, aes(dod, deaths, col = "Deaths")) +
+  labs(x = "Date", y = "111 calls", col = "") +
+  theme_minimal() +
+  theme(legend.position = c(0.9,0.8)) 
+
+
+## Calls vs cases by MSOA ##
+# calls %>% 
+#   group_by(date, msoa11cd) %>%
+#   summarise(count = sum(count),
+#             rollavg7 = mean(rollavg7)) %>%
+#   group_by(msoa11cd) %>%
+#   mutate(count_lag10 = lag(count,n = 10L, order_by = date)) %>%
+#   as.data.frame() %>% #View()
+#   full_join(ll_ts_ltla, by = c("msoa11cd" = "MSOA11CD")) %>%
+#   ggplot(aes(rollavg7, n)) +
+#   geom_point(alpha = 0.1) +
+#   labs(x = "111 calls/online", y = "Confirmed cases", title = "Daily 111 calls versus confirmed cases by MSOA") +
+#   theme_minimal()
+
+```
+
+## Model-predicted cases
+
+From big transmission model - available by NHS region and 5-year age bands. Originally fitted to death data.
+
+```{r model_preds}
+
+model_preds %>%
+  as.data.frame() %>%
+  group_by(date, population) %>%
+  summarise(pred_cases = sum(cases)) -> pred_agg
+
+pred_agg %>%
+  ggplot(aes(date, pred_cases, col = population)) + 
+  geom_line() + 
+  theme_minimal()
+
+```
+
+### Compare to ONS deaths by NHS region:
+
+```{r model_deaths}
+
+deaths %>%
+  group_by(dod, population) %>%
+  summarise(n = sum(deaths)) %>%
+  rename(date = dod) %>%
+  as.data.frame() -> deaths_agg #%>% View()
+
+deaths_merge <- merge(deaths_agg,pred_agg) %>%
+  group_by(date, population) %>%
+  summarise(pred_cases = sum(pred_cases),
+            deaths = sum(n)) %>%
+  pivot_longer(cols = c("pred_cases","deaths")) 
+
+
+ggplot() +
+  geom_line(data = filter(deaths_merge, name == "pred_cases"), aes(x = date,y = value, lty = "Model-predicted cases")) +
+  geom_line(data = filter(deaths_merge, name == "deaths"), aes(x = date, y = value*40, lty = "Observed deaths")) + 
+  scale_y_continuous(sec.axis = sec_axis(~./40, name = "Deaths")) +
+  # geom_line(data = deaths_bytime, aes(dod, deaths, col = "Deaths")) +
+  labs(x = "Date", y = "Predicted cases", col = "") +
+  facet_wrap(~population, scales = "free_y") +
+  theme_minimal() +
+  theme(legend.position = c(0.9,0.1)) 
+
+```
+
+Approx 3 week lag between predicted case peak and death peak.
+
+### Compare to 111 calls by NHS region:
+
+```{r model_calls}
+
+calls %>%
+  group_by(date, nhs_region) %>%
+  summarise(calls = sum(count)) %>%
+  as.data.frame() -> calls_agg
+
+pred_agg %>%
+  mutate(nhs_region = tolower(gsub(" ","_",population))) %>%
+  full_join(calls_agg) %>%
+  pivot_longer(cols = c("pred_cases","calls")) -> calls_merge
+
+
+ggplot() +
+  geom_line(data = filter(calls_merge, name == "pred_cases"), aes(x = date,y = value, lty = "Model-predicted cases")) +
+  geom_line(data = filter(calls_merge, name == "calls"), aes(x = date, y = value/3, lty = "Observed 111 calls")) + 
+  scale_y_continuous(sec.axis = sec_axis(~.*3, name = "Calls")) +
+  labs(x = "Date", y = "Predicted cases", col = "") +
+  facet_wrap(~nhs_region, scales = "free_y") +
+  theme_minimal() +
+  theme(legend.position = c(0.9,0.1)) 
+
+```
+
+Peak in calls appears to occur just slightly before predicted peak in cases (1-2 weeks?), but 111 data starts late and doesn't capture much of the peak.
+
+### Compare to confirmed cases from UK LL:
+
+```{r model_cases}
+
+cases %>%
+  group_by(date_lab_report, nhser_name) %>%
+  summarise(cases = sum(n)) %>%
+  as.data.frame() -> cases_agg
+
+pred_agg %>%
+  mutate(nhs_region = tolower(gsub(" ","_",population))) %>%
+  full_join(cases_agg, by = c("nhs_region" = "nhser_name", "date" = "date_lab_report")) %>%
+  pivot_longer(cols = c("pred_cases","cases")) -> cases_merge
+
+ggplot() +
+  geom_line(data = filter(cases_merge, name == "pred_cases"), aes(x = date,y = value, lty = "Model-predicted cases")) +
+  geom_line(data = filter(cases_merge, name == "cases"), aes(x = date, y = value*5, lty = "Confirmed cases (test positives)")) + 
+  scale_y_continuous(sec.axis = sec_axis(~./5, name = "Test positives")) +
+  labs(x = "Date", y = "Predicted cases", col = "") +
+  facet_wrap(~nhs_region, scales = "free_y") +
+  theme_minimal() +
+  theme(legend.position = c(0.9,0.1)) 
+
+
+```
+
+Approx 4 week lag. Does model predict cases at point of infection/symptom onset? UKLL recorded by date of lab report, so this lag related to testing delay?
+
+## Opensafely EHR data 
+
+* A&E data reflect total attendances and only available up to 17/04.
+* Death data reflect covid-underlying deaths only (?)
+
+```{r os_data, fig.width=10}
+
+os %>%
+  pivot_longer(cols = 2:6) %>% #stp
+  group_by(date,NHSER20NM,name) %>%
+  summarise(value = sum(value, na.rm = T),
+            total_patients = sum(total_patients)) %>%
+  group_by(NHSER20NM,name) %>%
+  mutate(rate1e5 = value*1e5/total_patients,
+         value_roll = rollmean(value,7,align='right',fill=NA),
+         rate_Roll = rollmean(rate1e5,7,align='right',fill=NA)) %>%  #View()
+  filter(!is.na(NHSER20NM)) %>%
+  ggplot(aes(date, value_roll)) +
+  geom_line(aes(group = NHSER20NM, col = NHSER20NM)) + 
+  facet_wrap(~name, scales = "free") +
+  theme_minimal() +
+  theme(legend.position = c(0.9,0.1)) 
+
+
+```
+
+### Compare with model predictions: 
+
+```{r model_os, fig.width = 10}
+
+model_preds %>%
+  ungroup() %>%
+  mutate(nhs_region = tolower(gsub(" ","_",population))) %>%
+  group_by(date, nhs_region, population) %>%
+  summarise(cases = sum(cases)) %>%
+  as.data.frame() -> model_preds_region
+
+os %>%
+  pivot_longer(cols = 2:6) %>% #stp
+  group_by(date,NHSER20NM,name) %>%
+  summarise(value = sum(value, na.rm = T),
+            total_patients = sum(total_patients)) %>%
+  group_by(NHSER20NM,name) %>%
+  mutate(rate1e5 = value*1e5/total_patients,
+         value_roll = rollmean(value,7,align='right',fill=NA),
+         rate_Roll = rollmean(rate1e5,7,align='right',fill=NA)) %>%  #View()
+  filter(!is.na(NHSER20NM)) %>%
+  ggplot(aes(date, value_roll)) +
+  geom_line(aes(group = NHSER20NM, col = NHSER20NM,lty = "Indicator\n(7-day rolling mean)")) +
+  geom_line(data = model_preds_region, aes(date, cases, colour = population, lty = "Model predicted cases")) +  
+  labs(title = "All EHR indicators") +
+  facet_wrap(~name, scales = "free") +
+  theme_minimal() 
+
+os %>%
+  pivot_longer(cols = 2:6) %>% #stp
+  group_by(date,NHSER20NM,name) %>%
+  summarise(value = sum(value, na.rm = T),
+            total_patients = sum(total_patients)) %>%
+  group_by(NHSER20NM,name) %>%
+  mutate(rate1e5 = value*1e5/total_patients,
+         value_roll = rollmean(value,7,align='right',fill=NA),
+         rate_Roll = rollmean(rate1e5,7,align='right',fill=NA)) %>%  #View()
+  full_join(model_preds_region, by = c("NHSER20NM" = "population", "date" = "date")) %>%
+  filter(!is.na(NHSER20NM) &  name == "primary_care_suspect_case") %>% 
+  as.data.frame() %>%
+  ggplot(aes(date, cases), lwd = 1.1) +
+  geom_line(aes(lty = "Model predicted cases")) +
+  geom_line(aes(date, value_roll,lty = "Suspect cases\n(7-day rolling mean)"),lwd = 1) +
+  # scale_y_continuous(sec.axis = sec_axis(~.*4, name = "Model preds")) +
+  labs(y = "Predicted cases", title = "Primary care suspect cases") +
+  # guides(col = F) +
+  facet_wrap(~NHSER20NM, scales = "free") +
+  theme_minimal() 
+
+
+```
+
+### Compare with calls:
+
+```{r calls_os, fig.width=10}
+
+calls_agg <- as.data.table(calls_agg)
+setkey(calls_agg, "nhs_region", "date")
+calls_agg[, rollavg7 := rollmean(calls, 7, fill = NA, align = "right"), by = nhs_region]
+
+os %>%
+  mutate(nhs_region = tolower(gsub(" ","_", NHSER20NM))) %>%
+  pivot_longer(cols = 2:6) %>% #stp
+  group_by(date,nhs_region,name) %>%
+  summarise(value = sum(value, na.rm = T),
+            total_patients = sum(total_patients)) %>%
+  group_by(nhs_region,name) %>%
+  mutate(rate1e5 = value*1e5/total_patients,
+         value_roll = rollmean(value,7,align='right',fill=NA),
+         rate_Roll = rollmean(rate1e5,7,align='right',fill=NA)) %>%  
+  filter(!is.na(nhs_region) &  name == "primary_care_suspect_case") %>%
+  as.data.frame() %>% # View()
+  ggplot(aes(date, value_roll)) +
+  geom_line(aes(lty = "Suspect cases\n(rolling 7-day mean)")) +
+  geom_line(data = calls_agg, aes(date, rollavg7/3,lty = "111 calls")) +
+  scale_y_continuous(sec.axis = sec_axis(~.*3, name = "111 calls")) +
+  labs(y = "Suspect cases") +
+  # guides(col = F) +
+  facet_wrap(~nhs_region, scales = "free") +
+  theme_minimal() 
+
+```
+
+### Compare two death sources
+
+Covid death indicator in OS includes only cases with covid as cause of death so lower.
+
+```{r os_deaths, fig.width=10}
+os %>%
+  pivot_longer(cols = 2:6) %>% #stp
+  group_by(date,NHSER20NM,name) %>%
+  summarise(value = sum(value, na.rm = T),
+            total_patients = sum(total_patients)) %>%
+  group_by(NHSER20NM,name) %>%
+  mutate(rate1e5 = value*1e5/total_patients,
+         value_roll = rollmean(value,7,align='right',fill=NA),
+         rate_Roll = rollmean(rate1e5,7,align='right',fill=NA)) %>%  #View()
+  full_join(deaths_agg, by = c("NHSER20NM" = "population", "date" = "date")) %>%
+  filter(!is.na(NHSER20NM) &  name == "ons_covid_death_date") %>%
+  as.data.frame() %>%
+  ggplot(aes(date, value, lty = "Opensafely")) +
+  geom_line() +
+  geom_line(aes(date, n, lty = "ONS covid-related")) +
+  # guides(col = F) +
+  facet_wrap(~NHSER20NM, scales = "free") +
+  theme_minimal()
+
+```

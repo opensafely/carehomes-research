@@ -25,8 +25,8 @@ study = StudyDefinition(
     ),
 
     # OUTCOMES,
-    primary_care_case=patients.with_these_clinical_events(
-       covid_primary_care_case,
+    primary_care_case_clinical=patients.with_these_clinical_events(
+       covid_primary_care_probable_case_clinical,
        returning="date",
        find_first_match_in_period=True,
        date_format="YYYY-MM-DD",
@@ -35,8 +35,19 @@ study = StudyDefinition(
                              "rate" : "exponential_increase"
         },
     ),
-    primary_care_suspect_case=patients.with_these_clinical_events(
-       covid_primary_care_suspect_case,
+    primary_care_case_test=patients.with_these_clinical_events(
+       covid_primary_care_probable_case_test,
+       returning="date",
+       find_first_match_in_period=True,
+       date_format="YYYY-MM-DD",
+       return_expectations={"date": {"earliest" : "2020-02-01",
+                                     "latest": "2020-06-30"},
+                            "rate" : "exponential_increase"
+        },
+    ),
+
+    primary_care_case_seq=patients.with_these_clinical_events(
+       covid_primary_care_probable_case_seq,
        returning="date",
        find_first_match_in_period=True,
        date_format="YYYY-MM-DD",
@@ -56,16 +67,6 @@ study = StudyDefinition(
        return_expectations={"date": {"earliest": "2020-03-01"},
                             "rate": "exponential_increase"
        },
-    ),
-
-    ### A&E attendence
-    a_e_consult_date=patients.attended_emergency_care(
-       between=["2020-02-01", "2020-06-30"],
-       returning="date_arrived",
-       date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest": "2020-02-01",
-                                     "latest": "2020-06-30"},
-                            "rate": "exponential_increase"},
     ),
     
     ### Covid-related death

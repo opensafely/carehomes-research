@@ -15,7 +15,7 @@ from codelists import *
 study = StudyDefinition(
     # Configure the expectations framework
     default_expectations={
-        "date": {"earliest": "1900-01-01", "latest": "today"},
+        "date": {"earliest": "2020-01-01", "latest": "today"},
         "rate": "exponential_increase",
         "incidence" : 0.2
     },

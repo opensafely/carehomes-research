@@ -8,6 +8,7 @@
 #
 ################################################################################
 
+# setwd("~/COVID-19/carehomes-research")
 source("./analysis/data_setup.R")
 
 # Split data into training and test, and drop any rows with missing predictor values
@@ -21,20 +22,26 @@ f2 <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + comm_probab
 f3 <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + comm_probable_roll7
 #+ comm_probable_lag1 + comm_probable_lag2 + comm_probable_lag3 + comm_probable_lag4 + comm_probable_lag5 + comm_probable_lag6 + comm_probable_lag7 
 
-### Basic model
-# Need robust SEs since each care home appears multiple times in the data
 
-f <- f1
+## --------------------------------- Fitting --------------------------------- #
+
+# - Need robust SEs to interpret coeffs since each care home appears multiple 
+# times in the data
+
+f <- f3
 fit <- glm(f, family = "binomial", data = train)
 summary(fit)
 
-# Robust SEs
+# Robust SEs for coefficient significance
 serr <- vcovCL(fit, cluster = train$household_id)
-lmtest::coeftest(fit, vcov. = serr)
+coeffs <- coeftest(fit, vcov. = serr)
+write.csv(coeffs,"./output/coeffs.csv")
 
-### Predictions
+## ------------------------------- Prediction -------------------------------- #
+
 test$pred <- predict(fit, newdata = test, type = "response")
 
+# Plot histograms of predicted risk for event/no event
 png(filename = "./output/figures/risk_histogram.png", height = 700, width = 1000)
 ggplot(test, aes(x = pred, fill = as.factor(event_ahead))) +
   geom_histogram() +
@@ -42,4 +49,29 @@ ggplot(test, aes(x = pred, fill = as.factor(event_ahead))) +
   theme_minimal()
 dev.off()
 
-verification::rps(test$event_ahead, cbind(test$pred,1-test$pred))
+# Plot ROC and calculate AUC as simple accuracy measure (no additional packages)
+simple_roc <- function(labels, scores){
+  labels <- labels[order(scores, decreasing=TRUE)]
+  data.frame(TPR=cumsum(labels)/sum(labels), FPR=cumsum(!labels)/sum(!labels), labels)
+}
+
+computeAUC <- function(pos.scores, neg.scores, n_sample=100000) {
+  pos.sample <- sample(pos.scores, n_sample, replace=T)
+  neg.sample <- sample(neg.scores, n_sample, replace=T)
+  mean(1.0*(pos.sample > neg.sample) + 0.5*(pos.sample==neg.sample))
+}
+
+pos.scores <- test$pred[test$event_ahead == 1]
+neg.scores <- test$pred[test$event_ahead == 0]
+auc <- computeAUC(pos.scores, neg.scores)
+
+roc <- simple_roc(test$event_ahead,test$pred)
+png(filename = "./output/figures/roc.png", height = 700, width = 700)
+ggplot(roc, aes(FPR, TPR)) +
+  geom_line(lty = "dashed", col = "blue") + 
+  geom_abline() +
+  labs(title = paste0("AUC = ",auc)) +
+  theme_classic()
+dev.off()
+
+# plot(pROC::roc(test$event_ahead, test$pred), print.auc=TRUE)

@@ -17,7 +17,7 @@
 #  SETUP  #
 #---------#
 
-pacman::p_load("tidyverse","lubridate","data.table","zoo","dtplyr")
+pacman::p_load("tidyverse","lubridate","data.table","zoo","dtplyr", "sandwich", "lm_test")
 
 # Function to calculate mode value
 getmode <- function(v) {

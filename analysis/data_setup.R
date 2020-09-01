@@ -17,7 +17,7 @@
 #  SETUP  #
 #---------#
 
-pacman::p_load("tidyverse","lubridate","data.table","zoo","dtplyr", "sandwich", "lm_test")
+pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo", "sandwich", "boot", "lmtest")
 
 # Function to calculate mode value
 getmode <- function(v) {
@@ -32,9 +32,6 @@ input <- fread("./output/input.csv", data.table = FALSE) %>%
 # Split carehome and community residents
 ch <- filter(input, care_home_type != "U")
 comm <- filter(input, care_home_type == "U")
-
-# random split of care homes into training and test data 80:20
-samp <- sample(unique(ch$household_id),0.8*n_distinct(ch$household_id))
 
 # Set study period (excluding last month for testing - too few new CH introductions at this point of epidmeic?)
 study_per <- seq(as.Date("2020-04-15"),as.Date("2020-06-30"), by = "days")

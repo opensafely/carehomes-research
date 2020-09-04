@@ -185,4 +185,4 @@ lmk_data <- bind_rows(lapply(1:length(study_per), make_data_t))
 # ---------------------------------------------------------------------------- #
 # Save analysis data
 
-save(lmk_data, file = "./output/analysisdata.rds")
+save(lmk_data, file = "./analysisdata.rds")

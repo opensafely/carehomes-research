@@ -1,0 +1,16 @@
+version: '1.0'
+actions:
+  generate_cohort:
+    run: cohortextractor:latest generate_cohort --output-dir=/workspace
+    outputs:
+      highly_sensitive:
+        cohort: input.csv
+  analysis:
+    needs: [generate_cohort]
+    run: r:latest analysis/analysis.R ${{ needs.generate_cohort.outputs.highly_sensitive.cohort }}
+    outputs:
+      moderately_sensitive:
+        figures: roc.png
+        risk: risk_histogram.png
+        coeffs: coeffs.csv
+        log: log.txt

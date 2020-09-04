@@ -45,7 +45,10 @@ fits <- lapply(formulae, function(f) glm(f, family = "binomial", data = train))
 lapply(fits, summary)
 
 # 10-fold cross-validation
-cv_err <- lapply(fits, function(fit) boot::cv.glm(train, fit, K = 10))
+cv_err <- lapply(formulae, 
+                 function(f) boot::cv.glm(data = train, 
+                                            glmfit = glm(f, family = "binomial", data = train), 
+                                            K = 10))
 
 # Cross-validated estimate of prediction error [raw / adj for k-fold rather than LOO]:
 err <- lapply(cv_err, function(cv) cv$delta[2])

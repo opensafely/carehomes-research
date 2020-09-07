@@ -1,0 +1,144 @@
+$base
+
+Call:
+glm(formula = f, family = "binomial", data = train)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-1.0455  -0.1903  -0.1629  -0.1596   3.1774  
+
+Coefficients:
+              Estimate Std. Error z value Pr(>|z|)    
+(Intercept) -4.1958239  0.0422436 -99.324  < 2e-16 ***
+ch_size      0.0400581  0.0007673  52.208  < 2e-16 ***
+hh_p_female -0.0170964  0.0307914  -0.555    0.579    
+hh_maj_ethn -0.1834537  0.0309405  -5.929 3.04e-09 ***
+hh_p_dem     0.3818841  0.0389015   9.817  < 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 74699  on 430067  degrees of freedom
+Residual deviance: 72549  on 430063  degrees of freedom
+AIC: 72559
+
+Number of Fisher Scoring iterations: 7
+
+
+$fixed
+
+Call:
+glm(formula = f, family = "binomial", data = train)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-1.2112  -0.1903  -0.1632  -0.1588   3.1938  
+
+Coefficients:
+                 Estimate Std. Error z value Pr(>|z|)    
+(Intercept)    -4.3106261  0.0436900 -98.664  < 2e-16 ***
+ch_size         0.0401105  0.0007669  52.301  < 2e-16 ***
+hh_p_female    -0.0176902  0.0307951  -0.574    0.566    
+hh_maj_ethn    -0.1939127  0.0311546  -6.224 4.84e-10 ***
+hh_p_dem        0.3757351  0.0389412   9.649  < 2e-16 ***
+probable_cases  0.0382381  0.0035928  10.643  < 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 74699  on 430067  degrees of freedom
+Residual deviance: 72476  on 430062  degrees of freedom
+AIC: 72488
+
+Number of Fisher Scoring iterations: 7
+
+
+$week_change
+
+Call:
+glm(formula = f, family = "binomial", data = train)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-1.0566  -0.1895  -0.1635  -0.1596   3.2269  
+
+Coefficients:
+                     Estimate Std. Error z value Pr(>|z|)    
+(Intercept)        -4.1942449  0.0422695 -99.226  < 2e-16 ***
+ch_size             0.0400674  0.0007673  52.220  < 2e-16 ***
+hh_p_female        -0.0175447  0.0307927  -0.570    0.569    
+hh_maj_ethn        -0.1851987  0.0309768  -5.979 2.25e-09 ***
+hh_p_dem            0.3801667  0.0389122   9.770  < 2e-16 ***
+comm_probable_chg7  0.0270274  0.0052034   5.194 2.06e-07 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 74699  on 430067  degrees of freedom
+Residual deviance: 72529  on 430062  degrees of freedom
+AIC: 72541
+
+Number of Fisher Scoring iterations: 7
+
+
+$roll_avg
+
+Call:
+glm(formula = f, family = "binomial", data = train)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-1.2339  -0.1892  -0.1638  -0.1587   3.2266  
+
+Coefficients:
+                      Estimate Std. Error z value Pr(>|z|)    
+(Intercept)         -4.4541376  0.0453669 -98.180  < 2e-16 ***
+ch_size              0.0401589  0.0007664  52.402  < 2e-16 ***
+hh_p_female         -0.0182634  0.0307965  -0.593    0.553    
+hh_maj_ethn         -0.2169264  0.0317127  -6.840  7.9e-12 ***
+hh_p_dem             0.3680451  0.0389842   9.441  < 2e-16 ***
+comm_probable_roll7  0.0891699  0.0057946  15.388  < 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 74699  on 430067  degrees of freedom
+Residual deviance: 72393  on 430062  degrees of freedom
+AIC: 72405
+
+Number of Fisher Scoring iterations: 7
+
+
+$base
+[1] 0.01681099
+
+$fixed
+[1] 0.01681313
+
+$week_change
+[1] 0.01680996
+
+$roll_avg
+[1] 0.01681485
+
+
+z test of coefficients:
+
+                     Estimate Std. Error  z value  Pr(>|z|)    
+(Intercept)        -4.1942449  0.1496014 -28.0361 < 2.2e-16 ***
+ch_size             0.0400674  0.0032880  12.1859 < 2.2e-16 ***
+hh_p_female        -0.0175447  0.1011380  -0.1735  0.862280    
+hh_maj_ethn        -0.1851987  0.1147338  -1.6142  0.106493    
+hh_p_dem            0.3801667  0.1263168   3.0096  0.002616 ** 
+comm_probable_chg7  0.0270274  0.0052409   5.1570 2.509e-07 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+null device 
+          1 
+null device 
+          1 

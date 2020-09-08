@@ -3,8 +3,6 @@ from cohortextractor import (
     codelist_from_csv,
 )
 
-covid_codelist = codelist(["U071", "U072"], system="icd10")
-
 covid_primary_care_probable_case_clinical = codelist_from_csv(
     "codelists/opensafely-covid-identification-in-primary-care-probable-covid-clinical-code.csv", 
     system="ctv3", 
@@ -23,7 +21,7 @@ covid_primary_care_probable_case_seq = codelist_from_csv(
     column="CTV3ID",
 )
 
-covid_death_codelist = codelist_from_csv(
+covid_codelist = codelist_from_csv(
     "codelists/opensafely-covid-identification.csv", system="icd10", column="icd10_code"
 )
 

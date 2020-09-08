@@ -68,6 +68,16 @@ study = StudyDefinition(
                             "rate": "exponential_increase"
        },
     ),
+
+    ### Admission to hospital for covid
+    covid_admission_date=patients.admitted_to_hospital(
+        returning= "date_admitted" ,  # defaults to "binary_flag"
+        with_these_diagnoses=covid_codelist,  # optional
+        on_or_after="2020-02-01",
+        find_first_match_in_period=True,  
+        date_format="YYYY-MM-DD",  
+        return_expectations={"date": {"earliest": "2020-03-01"}},
+   ),
     
     ### Covid-related death
     # Registered death, any COVID
@@ -81,6 +91,17 @@ study = StudyDefinition(
                             "rate" : "exponential_increase"
                             }, 
     ),   
+
+    ## PREDICTORS
+    
+    ### Any hospital discharge
+    discharge_date=patients.admitted_to_hospital(
+        returning= "date_discharged" ,  # defaults to "binary_flag"
+        on_or_after="2020-02-01",
+        find_first_match_in_period=True,  
+        date_format="YYYY-MM-DD",  
+        return_expectations={"date": {"earliest": "2020-03-01"}},
+   ),
 
     ## HOUSEHOLD INFORMATION
     # CAREHOME STATUS
@@ -105,7 +126,7 @@ study = StudyDefinition(
             "category": {"ratios": {"PC": 0.05, "PN": 0.05, "PS": 0.05, "U": 0.85,},},
         },
     ),
-
+    
     household_id=patients.household_as_of(
         "2020-02-01",
         returning="pseudo_id",
@@ -124,22 +145,19 @@ study = StudyDefinition(
         },
     ),
 
-    # The rest of the lines define the covariates with associated GitHub issues
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/33
-    age=patients.age_as_of(
-        "2020-02-01",
+    # GP practice ID 
+    practice_id=patients.registered_practice_as_of(
+        "2020-02-01", 
+        returning="pseudo_id", 
         return_expectations={
-            "rate": "universal",
-            "int": {"distribution": "population_ages"},
+            "int": {"distribution": "normal", "mean": 1000, "stddev": 200},
+            "incidence": 1,
         },
     ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/46
-    sex=patients.sex(
-        return_expectations={
-            "rate": "universal",
-            "category": {"ratios": {"M": 0.49, "F": 0.51}},
-        }
-    ),
+    
+    # The rest of the lines define the covariates with associated GitHub issues
+    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/33
+
     # region - one of NHS England 9 regions
     region=patients.registered_practice_as_of(
         "2020-02-01",
@@ -160,6 +178,7 @@ study = StudyDefinition(
             },
         },
     ),
+
     # # https://github.com/ebmdatalab/tpp-sql-notebook/issues/54
     stp=patients.registered_practice_as_of(
         "2020-02-01",
@@ -182,6 +201,7 @@ study = StudyDefinition(
             },
         },
     ),
+
     msoa=patients.registered_practice_as_of(
         "2020-02-01",
         returning="msoa_code",
@@ -190,6 +210,7 @@ study = StudyDefinition(
             "category": {"ratios": {"MSOA1": 0.5, "MSOA2": 0.5}},
         },
     ),    
+
     rural_urban=patients.address_as_of(
         "2020-03-01",
         returning="rural_urban_classification",
@@ -198,6 +219,7 @@ study = StudyDefinition(
             "category": {"ratios": {"rural": 0.1, "urban": 0.9}},
         },
     ),
+
     # # https://github.com/ebmdatalab/tpp-sql-notebook/issues/52
     imd=patients.address_as_of(
         "2020-02-01",
@@ -208,6 +230,23 @@ study = StudyDefinition(
             "category": {"ratios": {"100": 0.1, "200": 0.2, "300": 0.7}},
         },
     ),    
+
+    # PATIENT COVARIATES
+    age=patients.age_as_of(
+        "2020-02-01",
+        return_expectations={
+            "rate": "universal",
+            "int": {"distribution": "population_ages"},
+        },
+    ),
+    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/46
+    sex=patients.sex(
+        return_expectations={
+            "rate": "universal",
+            "category": {"ratios": {"M": 0.49, "F": 0.51}},
+        }
+    ),
+   
     ethnicity=patients.with_these_clinical_events(
         ethnicity_codes,
         returning="category",
@@ -226,6 +265,8 @@ study = StudyDefinition(
         "incidence" : 0.1,
             "date": {"latest": "2020-02-01"}},
     ),
+
+
 
     ### GP CONSULTATION RATE
     #gp_consult_count=patients.with_gp_consultations(

@@ -46,6 +46,12 @@ paste0("Patients with missing HH MSOA/type: n = ", n_distinct(input_raw$househol
 
 summary(input)
 
+# Derive MSOA populations
+input %>%
+  group_by(msoa) %>%
+  summarise(msoa_pop_total = n(),
+         msoa_pop_ch = sum(care_home_type != "U"),
+         msoa_pop_comm = sum(care_home_type == "U")) -> msoa_pop
 
 #----------------------------#
 #  Create community dataset  #
@@ -53,19 +59,14 @@ summary(input)
 
 # Want a dataset of daily incidence of probable cases in the community, with
 # estimates of CH/non-CH population per MSOA
-
+  
 input %>%
-  # Derive MSOA populations
-  group_by(msoa) %>%
-  mutate(msoa_pop_total = n(),
-         msoa_pop_ch = sum(care_home_type != "U"),
-         msoa_pop_comm = sum(care_home_type == "U")) %>%
   # split out non-carehome residents who had probable diagnosis 
   filter(care_home_type == "U" & !is.na(primary_care_case_probable)) %>%
   # count probable diagnoses per day and per msoa
   rename(date = primary_care_case_probable) %>%
   group_by(msoa, date) %>%
-  summarise(probable_cases_comm = n()) %>%
+  summarise(probable_cases = n()) %>%
   ungroup() -> comm_probable
 
 # define total period of observed events
@@ -74,18 +75,20 @@ obs_per <- seq(min(comm_probable$date, na.rm = T),
                max(comm_probable$date, na.rm = T),
                by = "days")
 
-# expand rows for each MSOA between earliest and latest observed event
+# expand rows for each MSOA between earliest and latest observed event and define rate per 100,000 community population
 comm_probable %>%
   complete(date = obs_per,
            nesting(msoa), 
-           fill = list(probable_cases = 0)) -> comm_probable_expand
+           fill = list(probable_cases_comm = 0)) %>% 
+  full_join(msoa_pop) %>%
+  mutate(probable_cases_rate = probable_cases*1e6/msoa_pop_comm) -> comm_probable_expand
 
 
 #----------------------------#
 #        Save output         #
 #----------------------------#
 
-write.csv(comm_probable_expand, "./community_prevalence.csv", row.names = FALSE)
+write.csv(comm_probable_expand, "./data/community_prevalence.csv", row.names = FALSE)
 
 
 ################################################################################

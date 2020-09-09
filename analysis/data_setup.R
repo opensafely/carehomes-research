@@ -10,12 +10,18 @@
 #
 # Author: Emily S Nightingale
 # Date: 06/08/2020
+# 
+# NOTES: 
+# * Community risk so far only calculated from TPP so will be underestimated in 
+#   low-TPP coverage MSOAs. 
+# * 
 #
 ################################################################################
 
-#---------#
-#  SETUP  #
-#---------#
+sink("./log_data_setup.txt")
+
+################################################################################
+
 
 pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo", "sandwich", "boot", "lmtest")
 
@@ -25,92 +31,97 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-# Read data
-args = commandArgs(trailingOnly=TRUE)
-input <- fread(args[1], data.table = FALSE) %>%
-  mutate_if(is.character, as.factor)
-
-# Split carehome and community residents
-ch <- filter(input, care_home_type != "U")
-comm <- filter(input, care_home_type == "U")
-
 # Set study period (excluding last month for testing - too few new CH introductions at this point of epidmeic?)
 study_per <- seq(as.Date("2020-04-15"),as.Date("2020-06-30"), by = "days")
 
-# Identify vars containing event dates (1-3 combined describe "probable" cases)
-event_dates <- c("primary_care_case_clinical","primary_care_case_test", "primary_care_case_seq","first_pos_test_sgss","ons_covid_death_date")
+# Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
+event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date","ons_covid_death_date")
 
 # Time horizon for prediction
 ahead <- 14
 
 # ---------------------------------------------------------------------------- #
 
-#------------------------#
-#  Community prevalence  #
-#------------------------#
+#----------------------#
+#  LOAD AND TIDY DATA  #
+#----------------------#
 
-# Aggregate probable case records from non-carehome population, per MSOA.
-#  - Need to scale up for % TPP coverage in MSOA?
-#  - Double counting if include primary_care_case_test + first_pos_test_sgss?
+# * input.csv 
+#   - individual health records for identification of covid events
+# * community_prevalence.csv 
+#   - derived dataset of daily probable case counts per MSOA plus population estimates
+#   - *NOT YET* pooled between TPP/EMIS
 
-comm_events <- comm %>%
-  pivot_longer(all_of(event_dates[1:3]),
-               values_to = "date",
-               names_to = "event_type") %>%
-  mutate(date = ymd(date)) %>%
-  filter(!is.na(date))
+args <- c("./output/input.csv")
+# args = commandArgs(trailingOnly=TRUE)
 
-# define total period of observed events
-# (i.e. period for which community prevalence available)
-obs_per <- seq(min(comm_events$date, na.rm = T),
-               max(comm_events$date, na.rm = T),
-               by = "days")
+input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
 
-# expand rows for each MSOA between earliest and latest observed event
-comm_events %>%
-  complete(date = obs_per,
-           nesting(msoa, event_type),
-           fill = list(event = 0)) %>%
-  group_by(msoa,date,event_type) %>%
-  summarise(n = n()) %>%
-  ungroup() %>%
-  pivot_wider(names_from = "event_type",values_from = "n") %>%
-  mutate(probable_cases =
-           primary_care_case_clinical +
-           primary_care_case_test +
-           primary_care_case_seq) -> comm_events_agg
+input <- input_raw %>%
+  # drop missing household ID, practice ID, care home type
+  filter(!is.na(household_id) & !is.na(practice_id) & !is.na(care_home_type)) %>%
+  # set up var formats
+  mutate_if(is.character, as.factor) %>%
+  mutate(dementia = replace_na(dementia,0),
+         ethnicity = as.factor(ethnicity)) %>%
+  mutate_at(all_of(event_dates), ymd)
+
+paste0("HHs with missing ID/GP/type: n = ", n_distinct(input_raw$household_id) - n_distinct(input$household_id))
+paste0("Patients with missing HH ID/GP/type: n = ", n_distinct(input_raw$household_id) - n_distinct(input$household_id))
+
+summary(input)
+
+# Split out carehome residents
+ch <- filter(input, care_home_type != "U")
+
+# Load community prevalence data 
+comm_prev <- fread("./data/community_prevalence.csv", data.table = FALSE) 
+
+# ---------------------------------------------------------------------------- #
+
+# Remove care homes registered with more than one GP
+ch %>%
+  group_by(household_id) %>%
+  filter(n_distinct(practice_id) == 1) %>%
+  ungroup() -> ch_1gp
+
+paste0("Care homes registered with > 1 GP: n = ", n_distinct(ch$household_id) - n_distinct(ch_1gp$household_id))
+paste0("Residents of care homes registered with > 1 GP: n = ", nrow(setdiff(ch, ch_1gp)))
+
+ch <- ch_1gp
 
 
-#------------------#
-#  Care home data  #
-#------------------#
+#-----------------------------#
+#  Care home characteristics  #
+#-----------------------------#
 
-# Descriptive
 # Summarise care home resident characteristics
 # **will be replaced with CQC vars when codelists available**
-# NOTE: multiple events in same HH have different sizes in dummy data
+# NOTE: multiple events in same HH may have different sizes in dummy data
+
+summary(ch)
 
 ch_chars <- ch %>%
-  filter(care_home_type != "U") %>%
-  mutate(dementia = replace_na(dementia,0),
-         msoa = as.factor(msoa)) %>%
   group_by(household_id, msoa) %>%
-  summarise(n_patients = n(),
-            ch_size = median(household_size),
-            hh_avg_age = mean(age, na.rm = T),
-            hh_p_female = mean(sex == "F"),
-            hh_maj_ethn = getmode(ethnicity),
-            hh_p_dem = mean(dementia)) %>%
+  summarise(n_resid = n(),                      # number of individuals registered under CHID
+            ch_size = median(household_size),   # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            hh_avg_age = mean(age, na.rm = T),  # average age of registered residents
+            hh_p_female = mean(sex == "F"),     # % registered residents female
+            hh_maj_ethn = getmode(ethnicity),   # majority ethnicity of registered residents (5 categories)
+            hh_p_dem = mean(dementia)) %>%      # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup()
 
 summary(ch_chars)
 
-# First event
+
+#-----------------------------#
+#    Care home first event    #
+#-----------------------------#
+
 # Identify first covid event in care home, out of all possible events of interest.
 # Care homes which don't have an event in period are assigned the date "3000-01-01"
 
 ch_first_event <- ch %>%
-  filter(care_home_type != "U") %>%
   mutate_at(vars(all_of(event_dates)), function(x) replace_na(ymd(x),ymd("3000-01-01"))) %>%
   group_by(household_id, msoa) %>%
   summarise_at(vars(all_of(event_dates)),min) %>%
@@ -122,9 +133,9 @@ ch_first_event <- ch %>%
 
 summary(ch_first_event)
 
-#Expand rows for whole time period then join with community data:
-# Join with care home characteristics and define earliest event across all
-# probable case definitions (clinical/test/sequelae/death)
+
+# Join with care home characteristics and define earliest across all
+# covid events (clinical/test/sequelae/death)
 
 ch_wevent <- ch_chars %>%
   full_join(ch_first_event) %>%
@@ -136,28 +147,29 @@ ch_wevent <- ch_chars %>%
   ungroup() %>%
   dplyr::select(household_id:hh_p_dem, date, first_event)
 
-# Join with community prevalence variables, sum all probable cases and define
-# 7-day rolling mean/difference.
+
+#-----------------------------#
+#       Analysis dataset      #
+#-----------------------------#
+
+# Join with community prevalence data and define
+# 7-day rolling mean/difference + lags.
 # For each date, define event_ahead = 1 if that care home's first event occurs
 # in next <ahead> days
 
-ch_long <- comm_events_agg %>%
+ch_long <- comm_prev %>%
   right_join(ch_wevent) %>% #View()
   group_by(household_id) %>%
   mutate(day = 1:n(),
-         comm_probable_roll7 = rollmean(probable_cases, 7, fill = NA),
-         comm_probable_chg7 = probable_cases - lag(probable_cases, 7),
-         comm_probable_lag7 = lag(probable_cases, 7),
-         comm_probable_lag6 = lag(probable_cases, 6),
-         comm_probable_lag5 = lag(probable_cases, 5),
-         comm_probable_lag4 = lag(probable_cases, 4),
-         comm_probable_lag3 = lag(probable_cases, 3),
-         comm_probable_lag2 = lag(probable_cases, 2),
-         comm_probable_lag1 = lag(probable_cases, 1),
+         probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA),
+         probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
+         probable_roll7_lag1wk = lag(probable_roll7, 7),
+         probable_roll7_lag2wk = lag(probable_roll7, 14),
          event_ahead = replace_na(as.numeric(
            first_event %within% interval(date,date+ahead)
            ),0)) %>%
   ungroup()
+
 
 # ---------------------------------------------------------------------------- #
 
@@ -174,15 +186,30 @@ make_data_t <- function(t, ahead = 14){
 # apply function for each date in range and bind
 lmk_data <- bind_rows(lapply(1:length(study_per), make_data_t))
 
-# View(lmk_data)
-# str(lmk_data)
-# summary(lmk_data)
-# lazy_dt(lmk_data) %>%
-#   group_by(day, event_ahead) %>%
-#   count() %>%
-#   as.data.frame()
+summary(lmk_data)
+
+lmk_data %>%
+  group_by(day, event_ahead) %>%
+  count() 
+
 
 # ---------------------------------------------------------------------------- #
-# Save analysis data
 
-save(lmk_data, file = "./analysisdata.rds")
+# Split data into training and test, and drop any rows with missing predictor values
+samp <- sample(unique(ch$household_id),0.8*n_distinct(ch$household_id))
+train <- filter(lmk_data, household_id %in% samp) %>% drop_na()
+test <- filter(lmk_data, !household_id %in% samp) %>% drop_na()
+
+
+# ---------------------------------------------------------------------------- #
+# Save analysis data (?)
+
+write.csv(lmk_data, file = "./output/analysisdata.csv")
+
+
+################################################################################
+
+sink()
+
+################################################################################
+

@@ -25,37 +25,15 @@ study = StudyDefinition(
     ),
 
     # OUTCOMES,
-    primary_care_case_clinical=patients.with_these_clinical_events(
-       covid_primary_care_probable_case_clinical,
-       returning="date",
-       find_first_match_in_period=True,
-       date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest" : "2020-02-01",
-                                     "latest": "2020-06-30"},
-                             "rate" : "exponential_increase"
-        },
-    ),
-    primary_care_case_test=patients.with_these_clinical_events(
-       covid_primary_care_probable_case_test,
-       returning="date",
-       find_first_match_in_period=True,
-       date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest" : "2020-02-01",
-                                     "latest": "2020-06-30"},
-                            "rate" : "exponential_increase"
-        },
-    ),
-
-    primary_care_case_seq=patients.with_these_clinical_events(
-       covid_primary_care_probable_case_seq,
-       returning="date",
-       find_first_match_in_period=True,
-       date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest" : "2020-02-01",
-                                     "latest": "2020-06-30"},
-                            "rate" : "exponential_increase"
-        },
-    ),
+    primary_care_case_probable=patients.with_these_clinical_events(
+        combine_codelists(covid_primary_care_probable_case_clinical,
+                          covid_primary_care_probable_case_test,
+                          covid_primary_care_probable_case_seq),
+        return_first_date_in_period=True,
+        include_month=True,
+        include_day=True,
+        return_expectations={"date": {"earliest": "2020-02-01"}},
+    ), 
 
     ### testing positive (SGSS or primary care)
     first_pos_test_sgss=patients.with_test_result_in_sgss(
@@ -82,7 +60,7 @@ study = StudyDefinition(
     ### Covid-related death
     # Registered death, any COVID
     ons_covid_death_date=patients.with_these_codes_on_death_certificate(
-       covid_death_codelist,
+       covid_codelist,
        on_or_before="2020-06-01",
        match_only_underlying_cause=False,
        returning="date_of_death",
@@ -150,7 +128,7 @@ study = StudyDefinition(
         "2020-02-01", 
         returning="pseudo_id", 
         return_expectations={
-            "int": {"distribution": "normal", "mean": 1000, "stddev": 200},
+            "int": {"distribution": "normal", "mean": 1000, "stddev": 100},
             "incidence": 1,
         },
     ),
@@ -280,6 +258,39 @@ study = StudyDefinition(
     #),
     #has_consultation_history=patients.with_complete_gp_consultation_history_between(
     #    "2020-03-01", "2020-06-30", return_expectations={"incidence": 0.9},
+    #),
+
+    #primary_care_case_clinical=patients.with_these_clinical_events(
+    #   covid_primary_care_probable_case_clinical,
+    #   returning="date",
+    #   find_first_match_in_period=True,
+    #   date_format="YYYY-MM-DD",
+    #   return_expectations={"date": {"earliest" : "2020-02-01",
+    #                                 "latest": "2020-06-30"},
+    #                         "rate" : "exponential_increase"
+    #    },
+    #),
+
+    #primary_care_case_test=patients.with_these_clinical_events(
+    #   covid_primary_care_probable_case_test,
+    #   returning="date",
+    #   find_first_match_in_period=True,
+    #   date_format="YYYY-MM-DD",
+    #   return_expectations={"date": {"earliest" : "2020-02-01",
+    #                                 "latest": "2020-06-30"},
+    #                        "rate" : "exponential_increase"
+    #    },
+    #),
+
+    #primary_care_case_seq=patients.with_these_clinical_events(
+    #   covid_primary_care_probable_case_seq,
+    #   returning="date",
+    #   find_first_match_in_period=True,
+    #   date_format="YYYY-MM-DD",
+    #   return_expectations={"date": {"earliest" : "2020-02-01",
+    #                                 "latest": "2020-06-30"},
+    #                        "rate" : "exponential_increase"
+    #    },
     #),
 
 )

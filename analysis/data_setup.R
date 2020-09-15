@@ -18,7 +18,7 @@
 #
 ################################################################################
 
-sink("./log_data_setup.txt")
+sink("./output/log_data_setup.txt")
 
 ################################################################################
 
@@ -31,11 +31,11 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-# Set study period (excluding last month for testing - too few new CH introductions at this point of epidmeic?)
-study_per <- seq(as.Date("2020-04-15"),as.Date("2020-06-30"), by = "days")
+# Set study period (excluding last month for testing - too few new CH introductions at this point of epidemic?)
+study_per <- seq(as.Date("2020-04-15"),as.Date("2020-08-31"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
-event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date","ons_covid_death_date")
+event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
 # Time horizon for prediction
 ahead <- 14
@@ -50,7 +50,7 @@ ahead <- 14
 #   - individual health records for identification of covid events
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
-#   - *NOT YET* pooled between TPP/EMIS
+#   - Not yet pooled between TPP/EMIS
 
 args <- c("./output/input.csv")
 # args = commandArgs(trailingOnly=TRUE)
@@ -64,7 +64,7 @@ input <- input_raw %>%
   mutate_if(is.character, as.factor) %>%
   mutate(dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity)) %>%
-  mutate_at(all_of(event_dates), ymd)
+  mutate_at(all_of(c(event_dates,"discharge_date")), ymd)
 
 paste0("HHs with missing ID/GP/type: n = ", n_distinct(input_raw$household_id) - n_distinct(input$household_id))
 paste0("Patients with missing HH ID/GP/type: n = ", n_distinct(input_raw$household_id) - n_distinct(input$household_id))
@@ -75,20 +75,20 @@ summary(input)
 ch <- filter(input, care_home_type != "U")
 
 # Load community prevalence data 
-comm_prev <- fread("./data/community_prevalence.csv", data.table = FALSE) 
+comm_prev <- fread("./data/community_prevalence.csv", data.table = FALSE) %>%
+  mutate(date = ymd(date))
 
 # ---------------------------------------------------------------------------- #
 
-# Remove care homes registered with more than one GP
-ch %>%
-  group_by(household_id) %>%
-  filter(n_distinct(practice_id) == 1) %>%
-  ungroup() -> ch_1gp
-
-paste0("Care homes registered with > 1 GP: n = ", n_distinct(ch$household_id) - n_distinct(ch_1gp$household_id))
-paste0("Residents of care homes registered with > 1 GP: n = ", nrow(setdiff(ch, ch_1gp)))
-
-ch <- ch_1gp
+# Remove care homes registered with more than one system
+# -> MIXEDSOFTWARE VARIABLE?
+# ch %>%
+#   filter(mixedsoftware != 1) -> ch_1sys
+# 
+# paste0("Care homes registered under > 1 system: n = ", n_distinct(ch$household_id) - n_distinct(ch_1sys$household_id))
+# paste0("Residents of care homes registered under > 1 system: n = ", nrow(setdiff(ch, ch_1sys)))
+# 
+# ch <- ch_1sys
 
 
 #-----------------------------#
@@ -98,17 +98,18 @@ ch <- ch_1gp
 # Summarise care home resident characteristics
 # **will be replaced with CQC vars when codelists available**
 # NOTE: multiple events in same HH may have different sizes in dummy data
-
-summary(ch)
+#       same HH mas have both rural/urban and multiple IMD values in dummy data
 
 ch_chars <- ch %>%
   group_by(household_id, msoa) %>%
-  summarise(n_resid = n(),                      # number of individuals registered under CHID
-            ch_size = median(household_size),   # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
-            hh_avg_age = mean(age, na.rm = T),  # average age of registered residents
-            hh_p_female = mean(sex == "F"),     # % registered residents female
-            hh_maj_ethn = getmode(ethnicity),   # majority ethnicity of registered residents (5 categories)
-            hh_p_dem = mean(dementia)) %>%      # % registered residents with dementia - implies whether care home is dementia-specific
+  summarise(n_resid = n(),                        # number of individuals registered under CHID
+            ch_size = median(household_size),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            rural_urban = unique(rural_urban)[1], # Rural/urban location classification 
+            imd = unique(imd)[1],                 # Average IMD of MSOA/specific CH location? 
+            hh_avg_age = mean(age, na.rm = T),    # average age of registered residents
+            hh_p_female = mean(sex == "F"),       # % registered residents female
+            hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
+            hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup()
 
 summary(ch_chars)
@@ -134,9 +135,18 @@ ch_first_event <- ch %>%
 summary(ch_first_event)
 
 
-# Join with care home characteristics and define earliest across all
-# covid events (clinical/test/sequelae/death)
+#-----------------------------#
+#   Discharges to care home   #
+#-----------------------------#
 
+# Number of hospital discharges back to care home per day
+ch %>%
+  filter(!is.na(discharge_date)) %>%
+  group_by(discharge_date, household_id, msoa) %>%
+  count(name = "n_disch") %>%
+  rename(date = discharge_date) -> disch
+
+# Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%
   full_join(ch_first_event) %>%
   mutate(date = first_event) %>%
@@ -147,6 +157,10 @@ ch_wevent <- ch_chars %>%
   ungroup() %>%
   dplyr::select(household_id:hh_p_dem, date, first_event)
 
+# Join with discharges: keep only those which occurred within study period
+ch_wdisch <- ch_wevent %>%
+  group_by_at(vars(household_id:hh_p_dem,first_event)) %>%
+  left_join(disch)
 
 #-----------------------------#
 #       Analysis dataset      #
@@ -158,9 +172,10 @@ ch_wevent <- ch_chars %>%
 # in next <ahead> days
 
 ch_long <- comm_prev %>%
-  right_join(ch_wevent) %>% #View()
+  right_join(ch_wdisch) %>% #View()
   group_by(household_id) %>%
   mutate(day = 1:n(),
+         disch_sum7 = rollsum(n_disch, 7, fill = NA),
          probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA),
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
          probable_roll7_lag1wk = lag(probable_roll7, 7),

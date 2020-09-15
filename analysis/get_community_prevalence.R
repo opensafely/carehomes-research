@@ -16,14 +16,17 @@
 #
 ################################################################################
 
-sink("./log_comm_prev.txt")
+sink("./output/log_comm_prev.txt")
 
 ################################################################################
+
+pacman::p_load("tidyverse", "lubridate", "data.table")
 
 #----------------------#
 #  LOAD AND TIDY DATA  #
 #----------------------#
 
+setwd("~/COVID-19/carehomes-research")
 args <- c("./output/input.csv")
 # args = commandArgs(trailingOnly=TRUE)
 
@@ -51,7 +54,9 @@ input %>%
   group_by(msoa) %>%
   summarise(msoa_pop_total = n(),
          msoa_pop_ch = sum(care_home_type != "U"),
-         msoa_pop_comm = sum(care_home_type == "U")) -> msoa_pop
+         msoa_pop_comm = sum(care_home_type == "U"),
+         n_practices = n_distinct(practice_id),
+         n_ch = n_distinct()) -> msoa_pop
 
 #----------------------------#
 #  Create community dataset  #

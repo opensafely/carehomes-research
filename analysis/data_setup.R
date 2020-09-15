@@ -18,10 +18,9 @@
 #
 ################################################################################
 
-sink("./output/log_data_setup.txt")
+sink("./log_data_setup.txt")
 
 ################################################################################
-
 
 pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo", "sandwich", "boot", "lmtest")
 
@@ -39,6 +38,9 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 
 # Time horizon for prediction
 ahead <- 14
+
+# Run script to aggregate cases and populations by MSOA
+source("./analysis/get_community_prevalence.R")
 
 # ---------------------------------------------------------------------------- #
 
@@ -104,9 +106,10 @@ ch_chars <- ch %>%
   group_by(household_id, msoa) %>%
   summarise(n_resid = n(),                        # number of individuals registered under CHID
             ch_size = median(household_size),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            ch_type = unique(care_home_type)[1],  # Care, nursing, other
             rural_urban = unique(rural_urban)[1], # Rural/urban location classification 
             imd = unique(imd)[1],                 # Average IMD of MSOA/specific CH location? 
-            hh_avg_age = mean(age, na.rm = T),    # average age of registered residents
+            hh_med_age = median(age, na.rm = T),  # average age of registered residents
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
@@ -129,7 +132,8 @@ ch_first_event <- ch %>%
   ungroup() %>%
   rename_at(-1:-2, function(x) paste0("first_",x)) %>%
   rowwise() %>%
-  mutate(first_event = ymd(min(c_across(starts_with("first_"))))) %>% #gsub("3000-01-01",NA,
+  mutate(first_event = ymd(min(c_across(starts_with("first_")))),
+         ever_affected = (first_event < ymd("3000-01-01"))) %>% #gsub("3000-01-01",NA,
   filter(!is.na(first_event))
 
 summary(ch_first_event)
@@ -155,6 +159,7 @@ ch_wevent <- ch_chars %>%
   # expand rows for each home for every date in defined study period:
   complete(date = study_per) %>%
   ungroup() %>%
+  mutate(date = ymd(date)) %>%
   dplyr::select(household_id:hh_p_dem, date, first_event)
 
 # Join with discharges: keep only those which occurred within study period
@@ -210,10 +215,10 @@ lmk_data %>%
 
 # ---------------------------------------------------------------------------- #
 
-# Split data into training and test, and drop any rows with missing predictor values
+# Split data into training and test
 samp <- sample(unique(ch$household_id),0.8*n_distinct(ch$household_id))
-train <- filter(lmk_data, household_id %in% samp) %>% drop_na()
-test <- filter(lmk_data, !household_id %in% samp) %>% drop_na()
+train <- filter(lmk_data, household_id %in% samp)
+test <- filter(lmk_data, !household_id %in% samp)
 
 
 # ---------------------------------------------------------------------------- #

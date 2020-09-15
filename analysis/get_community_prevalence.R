@@ -16,7 +16,7 @@
 #
 ################################################################################
 
-sink("./output/log_comm_prev.txt")
+sink("./log_comm_prev.txt")
 
 ################################################################################
 
@@ -55,7 +55,7 @@ input %>%
   summarise(msoa_pop_total = n(),
          msoa_pop_ch = sum(care_home_type != "U"),
          msoa_pop_comm = sum(care_home_type == "U"),
-         n_practices = n_distinct(practice_id),
+         msoa_n_practices = n_distinct(practice_id),
          n_ch = n_distinct()) -> msoa_pop
 
 #----------------------------#

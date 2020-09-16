@@ -1,25 +1,27 @@
----
-title: "Care homes - descriptive summaries"
-output:
-  html_document:
-    df_print: paged
----
+################################################################################
+# Description: Preliminary data summaries
+# 
+# Depends on data_setup.R and get_community_prevalence.R
+#
+# Author: Emily S Nightingale
+# Date: 06/08/2020
+#
+################################################################################
 
-```{r setup, include=FALSE}
+sink("./log_descriptive.txt")
 
-knitr::opts_chunk$set(echo = F, message = F, warning = F)
+################################################################################
 
 library(tidyverse)
 library(lubridate)
 theme_set(theme_bw())
 
+# setwd("~/COVID-19/carehomes-research")
 source("./analysis/data_setup.R")
 
-```
+################################################################################
 
 ## Care home characteristics: summary tables
-
-```{r tables}
 
 # Total care homes in analysis dataset
 N_ch_tot <- n_distinct(dplyr::select(ch_chars, household_id, msoa))
@@ -33,21 +35,16 @@ ch %>%
     n_gp = n_distinct(practice_id)) %>%
   ungroup() -> per_msoa
 
-knitr::kable(per_msoa) %>%
-  kableExtra::kable_styling() %>%
-  kableExtra::scroll_box(width = "100%", height = "200px")
+write.csv(per_msoa, file = "./ch_gp_permsoa.csv", row.names = FALSE)
 
 # Average number of carehomes per msoa
 per_msoa %>%
   pull(n_ch) %>%
   summary()
-```
 
+#------------------------------------------------------------------------------#
 
-Summarise characteristics overall, and by whether or not care home had any covid-event during period (ever-affected). Size of each home estimated as number of patients registered under that household ID, but actual capacity may be larger. 
-
-```{r tab1}
-
+# Summarise characteristics overall, and by whether or not care home had any covid-event during period (ever-affected). Size of each home estimated as number of patients registered under that household ID, but actual capacity may be larger. 
 ch_overall <- ch_chars %>%
   mutate(ever_affected = "Overall")
 
@@ -92,14 +89,11 @@ chars_waffect %>%
   dplyr::select(N, `% rural`, `IMD mean(sd)`, `size mean(sd)`, `No. residents`) %>%
   cbind(tab_type) -> tab1
 
-knitr::kable(tab1)
+tab1
 
-```
+#------------------------------------------------------------------------------#
 
-
-Age, dementia status and ethnicity of care home residents, stratified by whether or not their home was affected (percentages out of total residents in that stratum):
-
-```{r tab2}
+# Age, dementia status and ethnicity of care home residents, stratified by whether or not their home was affected (percentages out of total residents in that stratum):
 
 ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
@@ -110,7 +104,7 @@ ch %>%
   bind_rows(ch_resid_all) %>% 
   mutate(ever_affected = factor(ever_affected, 
                                 levels = c("Overall","Affected","Unaffected"))) -> ch_resid_all
-  
+
 ch_resid_all %>%
   group_by(ever_affected) %>%
   summarise(`No. residents` = n(),
@@ -119,7 +113,7 @@ ch_resid_all %>%
                                          probs = c(0.25, 0.75), 
                                          na.rm = T)), collapse = ", "),
             n_dem = sum(dementia, na.rm = T)
-            ) %>% 
+  ) %>% 
   mutate(`age med[IQR]` = paste0(med_age, " [",q_age,"]"),
          `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. residents`,1),")")) %>%
   ungroup() %>%
@@ -141,17 +135,16 @@ ch_resid_all %>%
   dplyr::select(-n_resid) -> tab_ethn
 
 tab2 <- cbind(tab_age, tab_ethn)
+tab2
 
-knitr::kable(tab2)
-
-```
-
+################################################################################
+## FIGURES 
+################################################################################
+pdf(file = "./descriptive.pdf", height = 7, width = 9)
 
 ## Care home survival
-
-```{r ch_surv}
-
 # Cumulative care home survival
+
 ch_long %>%
   group_by(date) %>%
   filter(first_event > date) %>%
@@ -161,12 +154,9 @@ ch_long %>%
   labs(title = "Survival of care homes from COVID-19 introduction",
        x = "", y = "No. without event")
 
-```
+#------------------------------------------------------------------------------#
 
 ## Community burden
-
-```{r community_inc}
-
 # Average daily incidence
 comm_prev %>%
   group_by(date) %>%
@@ -180,13 +170,9 @@ comm_prev %>%
   labs(title = "Probable cases per 100,000, by MSOA",
        x = "", y = "Rate")
 
-```
-
+#------------------------------------------------------------------------------#
 
 ## Community incidence versus care home introduction
-
-```{r ch_vs_comm}
-
 lmk_data %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
   pivot_longer(c("probable_cases_rate","probable_chg7","probable_roll7")) %>%
@@ -198,14 +184,10 @@ lmk_data %>%
        y = "Daily probable cases in community, per 100,000",
        x = "Introduction in next 14 days")
 
-```
-
+#------------------------------------------------------------------------------#
 
 ## Hospital discharges of care home residents
-
-```{r disch}
-
-lmk_date %>%
+lmk_data %>%
   group_by(date) %>%
   summarise(n_disch = sum(n_disch, na.rm = T)) %>%
   ggplot(aes(date, n_disch)) +
@@ -213,13 +195,9 @@ lmk_date %>%
   labs(title = "Hospital discharges of care home residents",
        x = "", y = "Count")
 
-```
-
+#------------------------------------------------------------------------------#
 
 ## Community, care home and older population epidemics
-
-```{r comp_epidemics}
-
 input %>%
   filter(!is.na(primary_care_case_probable)) %>%
   mutate(group = case_when(care_home_type == "U" & age < 70 ~ "Community",
@@ -232,6 +210,14 @@ input %>%
   labs(title = "Daily probable cases identified through primary care",
        col = "Population",
        x = "Date",
-       y = "Count")
+       y = "Count") + 
+  theme(legend.position = c(0.2,0.8))
 
-```
+dev.off()
+
+
+################################################################################
+
+sink() 
+
+################################################################################

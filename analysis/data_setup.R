@@ -54,11 +54,6 @@ source("./analysis/get_community_prevalence.R")
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 #   - Not yet pooled between TPP/EMIS
 
-# args <- c("./output/input.csv")
-args = commandArgs(trailingOnly=TRUE)
-
-input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
-
 input <- input_raw %>%
   # drop missing household ID, practice ID, care home type
   filter(!is.na(household_id) & !is.na(practice_id) & !is.na(care_home_type)) %>%
@@ -224,7 +219,7 @@ test <- filter(lmk_data, !household_id %in% samp)
 # ---------------------------------------------------------------------------- #
 # Save analysis data (?)
 
-write.csv(lmk_data, file = "./output/analysisdata.csv")
+# write.csv(lmk_data, file = "./analysisdata.csv")
 
 
 ################################################################################

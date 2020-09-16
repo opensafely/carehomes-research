@@ -26,7 +26,6 @@ pacman::p_load("tidyverse", "lubridate", "data.table")
 #  LOAD AND TIDY DATA  #
 #----------------------#
 
-# setwd("~/COVID-19/carehomes-research")
 # args <- c("./output/input.csv")
 args = commandArgs(trailingOnly=TRUE)
 

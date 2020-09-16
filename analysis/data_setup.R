@@ -54,8 +54,8 @@ source("./analysis/get_community_prevalence.R")
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 #   - Not yet pooled between TPP/EMIS
 
-args <- c("./output/input.csv")
-# args = commandArgs(trailingOnly=TRUE)
+# args <- c("./output/input.csv")
+args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
 

@@ -31,11 +31,11 @@ write("Running get_community_prevalence...",file="data_setup_log.txt", append = 
 
 input %>%
   group_by(msoa) %>%
-  summarise(msoa_pop_total = n(),
-         msoa_pop_ch = sum(care_home_type != "U"),
-         msoa_pop_comm = sum(care_home_type == "U"),
-         msoa_n_practices = n_distinct(practice_id),
-         n_ch = n_distinct(household_id)) -> msoa_pop
+  summarise(msoa_pop_total = sum(household_size, na.rm = T),
+            msoa_n_practices = n_distinct(practice_id, na.rm = T),
+            msoa_pop_ch = sum(household_size[care_home_type != "U"], na.rm = T),
+            msoa_pop_comm = sum(household_size[care_home_type == "U"], na.rm = T),
+            n_ch = n_distinct(household_id[care_home_type != "U"]), na.rm = T) -> msoa_pop
 
 #----------------------------#
 #  Create community dataset  #
@@ -47,9 +47,10 @@ input %>%
 input %>%
   # split out non-carehome residents who had probable diagnosis 
   filter(care_home_type == "U" & !is.na(primary_care_case_probable)) %>%
-  # count probable diagnoses per day and per msoa
   rename(date = primary_care_case_probable) %>%
+  # exclude any cases pre-2020 
   filter(date > ymd("2020-01-01")) %>%
+  # count probable diagnoses per day and per msoa
   group_by(msoa, date) %>%
   summarise(probable_cases = n()) %>%
   ungroup() -> comm_probable

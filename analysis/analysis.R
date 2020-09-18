@@ -18,7 +18,7 @@ source("./analysis/data_setup.R")
 
 # Run analysis on several subsets of the data, excluding MSOAs with total rate 
 # of < X probable cases per 100,000 as an indicator of low TPP coverage
-for (x in c(10, 50, 100)){
+for (x in c(0, 10, 50, 100)){
 source("./analysis/run_models.R")
 source("./analysis/validate_models.R")
 }

@@ -7,10 +7,18 @@ actions:
         cohort: input.csv
   analysis:
     needs: [generate_cohort]
-    run: r:latest analysis/analysis.R ${{ needs.generate_cohort.outputs.highly_sensitive.cohort }}
+    run: r:latest analysis/analysis.R input.csv
     outputs:
       moderately_sensitive:
         figures: roc.png
         risk: risk_histogram.png
         coeffs: coeffs.csv
         log: log.txt
+  descriptive:
+    needs: [generate_cohort]
+    run: r:latest descriptive.R input.csv
+    outputs:
+      moderately_sensitive:
+        report: descriptive.pdf
+        logs: log_*.txt
+

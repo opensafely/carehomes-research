@@ -1,0 +1,20 @@
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1.00    5.00   10.00   14.54   19.00  138.00 
+               N % rural   IMD mean(sd) size mean(sd) No. residents     Type:PC
+Overall    23154       0 15049 (9169.8)   8.6 (14.46)        105794 13252 (0.6)
+Affected    4929       0 14762 (9344.9)  15.4 (17.79)         50137  2249 (0.5)
+Unaffected 18225       0 15126 (9120.6)   6.7 (12.82)         55657 11003 (0.6)
+              Type:PN Type:PS
+Overall    9474 (0.4) 428 (0)
+Affected   2564 (0.5) 116 (0)
+Unaffected 6910 (0.4) 312 (0)
+           No. residents age med[IQR] dementia n(%)      Ethn:1  Ethn:2  Ethn:3
+Overall           105794  86 [78, 91]   14756 (0.1) 76733 (0.7) 352 (0) 917 (0)
+Affected           50137  86 [79, 91]    7378 (0.1) 36483 (0.7) 137 (0) 422 (0)
+Unaffected         55657  86 [78, 91]    7378 (0.1) 40250 (0.7) 215 (0) 495 (0)
+            Ethn:4  Ethn:5 Ethn:missing
+Overall    830 (0) 533 (0)  26429 (0.2)
+Affected   454 (0) 242 (0)  12399 (0.2)
+Unaffected 376 (0) 291 (0)  14030 (0.3)
+null device 
+          1 

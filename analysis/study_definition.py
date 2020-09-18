@@ -128,7 +128,7 @@ study = StudyDefinition(
         returning="has_members_in_other_ehr_systems",
         return_expectations={
             "rate": "universal",
-            "category": {"ratios": {0: 0.0.75, 1: 0.25}},
+            "category": {"ratios": {0: 0.75, 1: 0.25}},
         },
     ),
 

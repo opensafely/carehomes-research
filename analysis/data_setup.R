@@ -18,7 +18,7 @@
 #
 ################################################################################
 
-sink("./log_data_setup.txt")
+time_total <- Sys.time()
 
 ################################################################################
 
@@ -39,8 +39,8 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 # Time horizon for prediction
 ahead <- 14
 
-# Run script to aggregate cases and populations by MSOA
-source("./analysis/get_community_prevalence.R")
+line="Data setup log"
+write(line,file="data_setup_log.txt")
 
 # ---------------------------------------------------------------------------- #
 
@@ -54,26 +54,35 @@ source("./analysis/get_community_prevalence.R")
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 #   - Not yet pooled between TPP/EMIS
 
+args <- c("./output/input.csv")
+# args = commandArgs(trailingOnly=TRUE)
+
+input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
+
+# ---------------------------------------------------------------------------- #
+
 input <- input_raw %>%
-  # drop missing household ID, practice ID, care home type
-  filter(!is.na(household_id) & !is.na(practice_id) & !is.na(care_home_type)) %>%
+  # drop missing MSOA and care home type
+  filter(!is.na(msoa) & !is.na(care_home_type)) %>%
   # set up var formats
-  mutate_if(is.character, as.factor) %>%
   mutate(dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity)) %>%
-  mutate_at(all_of(c(event_dates,"discharge_date")), ymd)
+  mutate_at(c(event_dates,"discharge_date"), ymd) %>%
+  mutate(across(where(is.character), as.factor))
 
-paste0("HHs with missing ID/GP/type: n = ", n_distinct(input_raw$household_id) - n_distinct(input$household_id))
-paste0("Patients with missing HH ID/GP/type: n = ", n_distinct(input_raw$household_id) - n_distinct(input$household_id))
+n_hh_raw <- n_distinct(input_raw$household_id)
+n_hh_nonmiss <- n_distinct(input$household_id)
+
+write(paste0("HHs with missing MSOA/type: n = ", n_hh_raw - n_hh_nonmiss), file="data_setup_log.txt", append = TRUE)
+write(paste0("Patients with missing HH MSOA/type: n = ", nrow(input_raw) - nrow(input)), file="data_setup_log.txt", append = TRUE)
 
 summary(input)
 
 # Split out carehome residents
-ch <- filter(input, care_home_type != "U")
+ch <- filter(input, care_home_type != "U") 
 
-# Load community prevalence data 
-comm_prev <- fread("./data/community_prevalence.csv", data.table = FALSE) %>%
-  mutate(date = ymd(date))
+# Run script to aggregate cases and populations by MSOA
+source("./analysis/get_community_prevalence.R")
 
 # ---------------------------------------------------------------------------- #
 
@@ -86,7 +95,6 @@ comm_prev <- fread("./data/community_prevalence.csv", data.table = FALSE) %>%
 # paste0("Residents of care homes registered under > 1 system: n = ", nrow(setdiff(ch, ch_1sys)))
 # 
 # ch <- ch_1sys
-
 
 #-----------------------------#
 #  Care home characteristics  #
@@ -127,40 +135,58 @@ ch_first_event <- ch %>%
   ungroup() %>%
   rename_at(-1:-2, function(x) paste0("first_",x)) %>%
   rowwise() %>%
-  mutate(first_event = ymd(min(c_across(starts_with("first_")))),
-         ever_affected = (first_event < ymd("3000-01-01"))) %>% #gsub("3000-01-01",NA,
-  filter(!is.na(first_event))
+  mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
+         ever_affected = (first_event < ymd("3000-01-01"))) 
 
 summary(ch_first_event)
+summary(ch_chars)
 
-
-#-----------------------------#
-#   Discharges to care home   #
-#-----------------------------#
-
-# Number of hospital discharges back to care home per day
-ch %>%
-  filter(!is.na(discharge_date)) %>%
-  group_by(discharge_date, household_id, msoa) %>%
-  count(name = "n_disch") %>%
-  rename(date = discharge_date) -> disch
 
 # Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%
   full_join(ch_first_event) %>%
   mutate(date = first_event) %>%
-  # home characteristics to copy down:
-  group_by_at(vars(household_id:hh_p_dem,first_event)) %>%
-  # expand rows for each home for every date in defined study period:
-  complete(date = study_per) %>%
+  select(-first_primary_care_case_probable:-first_ons_covid_death_date) %>%
+  filter(first_event %within% interval(min(study_per), max(study_per)))
+
+
+# Expand rows in data.table for speed:
+start <- Sys.time()
+vars <- names(select(ch_wevent, household_id:hh_p_dem,first_event, ever_affected))
+ch_wevent <- as.data.table(ch_wevent)
+
+# Replicate per region (by vars are all values I want to copy down per date):
+all_dates <- ch_wevent[,.(date=study_per),by = vars]
+
+# Merge and fill count with 0:
+setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, date)
+setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, date)
+ch_wevent <- ch_wevent[all_dates,roll=TRUE]
+# ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
+
+time <- Sys.time() - start
+write(paste0("Finished expanding carehome dates (time = ",round(time,2),")"), file="data_setup_log.txt", append = TRUE)
+
+#-----------------------------#
+#   Discharges to care home   #
+#-----------------------------#
+
+# Number of hospital discharges back to care home per day (assuming resident is
+# discharged back to home)
+ch %>%
+  filter(!is.na(discharge_date)) %>%
+  group_by(discharge_date, household_id, msoa) %>%
+  count(name = "n_disch") %>%
   ungroup() %>%
-  mutate(date = ymd(date)) %>%
-  dplyr::select(household_id:hh_p_dem, date, first_event)
+  rename(date = discharge_date) -> disch
 
 # Join with discharges: keep only those which occurred within study period
 ch_wdisch <- ch_wevent %>%
-  group_by_at(vars(household_id:hh_p_dem,first_event)) %>%
-  left_join(disch)
+  lazy_dt() %>%
+  group_by_at(vars(household_id:hh_p_dem,first_event, ever_affected)) %>%
+  left_join(disch) %>%
+  mutate(n_disch = replace_na(n_disch, 0)) %>%
+  as.data.frame()
 
 #-----------------------------#
 #       Analysis dataset      #
@@ -175,8 +201,8 @@ ch_long <- comm_prev %>%
   right_join(ch_wdisch) %>% #View()
   group_by(household_id) %>%
   mutate(day = 1:n(),
-         disch_sum7 = rollsum(n_disch, 7, fill = NA),
-         probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA),
+         disch_sum7 = rollsum(n_disch, 7, fill = NA, align = "right"),
+         probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
          probable_roll7_lag1wk = lag(probable_roll7, 7),
          probable_roll7_lag2wk = lag(probable_roll7, 14),
@@ -207,24 +233,15 @@ lmk_data %>%
   group_by(day, event_ahead) %>%
   count() 
 
-
-# ---------------------------------------------------------------------------- #
-
-# Split data into training and test
-samp <- sample(unique(ch$household_id),0.8*n_distinct(ch$household_id))
-train <- filter(lmk_data, household_id %in% samp)
-test <- filter(lmk_data, !household_id %in% samp)
-
-
 # ---------------------------------------------------------------------------- #
 # Save analysis data (?)
 
-# write.csv(lmk_data, file = "./analysisdata.csv")
-
+saveRDS(lmk_data, file = "./analysisdata.rds")
 
 ################################################################################
 
-sink() 
+time_total <- Sys.time() - time_total
+write(paste0("Total time running data_setup: ",round(time_total,2)), file="data_setup_log.txt", append = TRUE)
 
 ################################################################################
 

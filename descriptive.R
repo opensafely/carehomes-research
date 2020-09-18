@@ -10,6 +10,8 @@
 
 sink("./log_descriptive.txt")
 
+time_desc <- Sys.time()
+
 ################################################################################
 
 library(tidyverse)
@@ -40,7 +42,7 @@ write.csv(per_msoa, file = "./ch_gp_permsoa.csv", row.names = FALSE)
 # Average number of carehomes per msoa
 per_msoa %>%
   pull(n_ch) %>%
-  summary()
+  summary() 
 
 #------------------------------------------------------------------------------#
 
@@ -95,7 +97,7 @@ tab1
 
 # Age, dementia status and ethnicity of care home residents, stratified by whether or not their home was affected (percentages out of total residents in that stratum):
 
-ch_resid_all <- ch %>%
+  ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
 ch %>%
@@ -217,6 +219,9 @@ dev.off()
 
 
 ################################################################################
+
+time_desc <- Sys.time() - time_desc
+write(paste0("Total time running descriptive: ",round(time_desc,2)), file="log_descriptive.txt", append = TRUE)
 
 sink() 
 

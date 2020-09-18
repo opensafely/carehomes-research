@@ -123,6 +123,15 @@ study = StudyDefinition(
         },
     ),
 
+    mixed_household=patients.household_as_of(
+        "2020-02-01",
+        returning="has_members_in_other_ehr_systems",
+        return_expectations={
+            "rate": "universal",
+            "category": {"ratios": {0: 0.0.75, 1: 0.25}},
+        },
+    ),
+
     # GP practice ID 
     practice_id=patients.registered_practice_as_of(
         "2020-02-01", 

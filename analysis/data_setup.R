@@ -78,8 +78,15 @@ write(paste0("Patients with missing HH MSOA/type: n = ", nrow(input_raw) - nrow(
 
 summary(input)
 
-# Split out carehome residents
-ch <- filter(input, care_home_type != "U") 
+# Check no. carehomes with any residents in other EHR systems
+input %>% filter(care_home_type != "U") %>%
+  group_by(mixed_household) %>%
+  summarise(n_ch = n_distinct(household_id)) -> mixed_ch
+
+write(paste0("Carehomes with mixed software 0/1:", mixed_ch), file="data_setup_log.txt", append = TRUE)
+
+# Split out carehome residents and exclude carehomes with any residents in other EHR systems
+ch <- filter(input, care_home_type != "U" & mixed_household == 0) 
 
 # Run script to aggregate cases and populations by MSOA
 source("./analysis/get_community_prevalence.R")

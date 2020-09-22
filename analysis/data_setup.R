@@ -39,8 +39,7 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 # Time horizon for prediction
 ahead <- 14
 
-line="Data setup log"
-write(line,file="data_setup_log.txt")
+write("Data setup log",file="data_setup_log.txt")
 
 # ---------------------------------------------------------------------------- #
 
@@ -76,32 +75,29 @@ n_hh_nonmiss <- n_distinct(input$household_id)
 write(paste0("HHs with missing MSOA/type: n = ", n_hh_raw - n_hh_nonmiss), file="data_setup_log.txt", append = TRUE)
 write(paste0("Patients with missing HH MSOA/type: n = ", nrow(input_raw) - nrow(input)), file="data_setup_log.txt", append = TRUE)
 
-summary(input)
-
-# Check no. carehomes with any residents in other EHR systems
-input %>% filter(care_home_type != "U") %>%
-  group_by(mixed_household) %>%
-  summarise(n_ch = n_distinct(household_id)) -> mixed_ch
-
-write(paste0("Carehomes with mixed software 0/1:", mixed_ch), file="data_setup_log.txt", append = TRUE)
-
-# Split out carehome residents and exclude carehomes with any residents in other EHR systems
-ch <- filter(input, care_home_type != "U" & mixed_household == 0) 
+# summary(input)
 
 # Run script to aggregate cases and populations by MSOA
 source("./analysis/get_community_prevalence.R")
+
+# Split out carehome residents
+input %>%
+  filter(care_home_type != "U") -> ch
 
 # ---------------------------------------------------------------------------- #
 
 # Remove care homes registered with more than one system
 # -> MIXEDSOFTWARE VARIABLE?
-# ch %>%
-#   filter(mixedsoftware != 1) -> ch_1sys
-# 
-# paste0("Care homes registered under > 1 system: n = ", n_distinct(ch$household_id) - n_distinct(ch_1sys$household_id))
-# paste0("Residents of care homes registered under > 1 system: n = ", nrow(setdiff(ch, ch_1sys)))
-# 
-# ch <- ch_1sys
+ch %>%
+  # mutate(mixed_household = replace_na(mixed_household, 0)) %>%
+  filter(mixed_household == 0 | mixed_household == FALSE) -> ch_1sys
+
+write(paste0("Care homes registered under > 1 system: n = ", n_distinct(ch$household_id) - n_distinct(ch_1sys$household_id)), file="data_setup_log.txt", append = TRUE)
+write(paste0("Residents of care homes registered under > 1 system: n = ", 
+             nrow(ch)- nrow(ch_1sys)), 
+      file="data_setup_log.txt", append = TRUE)
+
+ch <- ch_1sys
 
 #-----------------------------#
 #  Care home characteristics  #
@@ -123,7 +119,7 @@ ch_chars <- ch %>%
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
-  ungroup()
+  ungroup() 
 
 summary(ch_chars)
 

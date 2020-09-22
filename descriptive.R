@@ -18,9 +18,6 @@ library(tidyverse)
 library(lubridate)
 theme_set(theme_bw())
 
-# setwd("~/COVID-19/carehomes-research")
-source("./analysis/data_setup.R")
-
 ################################################################################
 
 ## Care home characteristics: summary tables
@@ -166,6 +163,7 @@ comm_prev %>%
 
 # Community incidence over time
 comm_prev %>%
+  filter(date > ymd("2020-01-01")) %>%
   ggplot(aes(date, probable_cases_rate)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
@@ -201,7 +199,7 @@ lmk_data %>%
 
 ## Community, care home and older population epidemics
 input %>%
-  filter(!is.na(primary_care_case_probable)) %>%
+  filter(!is.na(primary_care_case_probable) & primary_care_case_probable > ymd("2020-01-01")) %>%
   mutate(group = case_when(care_home_type == "U" & age < 70 ~ "Community",
                            care_home_type != "U" ~ "Care home",
                            care_home_type == "U" & age >= 70 ~ "Community, aged 70+")) %>%

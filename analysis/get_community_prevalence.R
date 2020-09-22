@@ -43,7 +43,11 @@ input %>%
 
 # Want a dataset of daily incidence of probable cases in the community, with
 # estimates of CH/non-CH population per MSOA
-  
+input %>%
+  filter(care_home_type == "U") %>%
+  summarise(n = n(), msoa = n_distinct(msoa)) -> comm_tally
+write(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"),file="data_setup_log.txt", append = TRUE)
+
 input %>%
   # split out non-carehome residents who had probable diagnosis 
   filter(care_home_type == "U" & !is.na(primary_care_case_probable)) %>%

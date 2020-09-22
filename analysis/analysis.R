@@ -12,7 +12,7 @@
 
 ################################################################################
 
-setwd("~/COVID-19/carehomes-research")
+# setwd("~/COVID-19/carehomes-research")
 
 source("./analysis/data_setup.R")
 

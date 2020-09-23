@@ -5,20 +5,53 @@ actions:
     outputs:
       highly_sensitive:
         cohort: input.csv
-  analysis:
+
+  data_setup:
+    run: r:latest analysis/data_setup.R input.csv
     needs: [generate_cohort]
-    run: r:latest analysis/analysis.R input.csv
+    outputs:
+      moderately_sensitive:
+        log: data_setup_log.txt
+      highly_sensitive:
+        data: analysisdata.rds
+
+  descriptive:
+    needs: [data_setup]
+    run: r:latest descriptive.R cleaned_input.csv CH(?)
+    outputs:
+      moderately_sensitive:
+        report: descriptive.pdf
+        log: log_descriptive.txt
+        data: ch_gp_permsoa.csv
+
+  run_models_0_prevalence:
+    needs: [data_setup]
+    run: r:latest analysis/run_models.R cleaned_input.csv 0
+    outputs:
+      moderately_sensitive:
+        risk: risk_histogram_0_prevalence.png
+        coeffs: coeffs.csv
+        log: *log*.txt
+
+  run_models_20_prevalence:
+    needs: [data_setup]
+    run: r:latest analysis/run_models.R cleaned_input.csv 20
+    outputs:
+      moderately_sensitive:
+        risk: risk_histogram_20_prevalence.png
+        coeffs: coeffs.csv
+        log: *log*.txt
+
+
+  validate_models:
+    needs: [run_models]
+    run: r:latest analysis/run_models.R
     outputs:
       moderately_sensitive:
         figures: roc.png
         risk: risk_histogram.png
         coeffs: coeffs.csv
-        log: log.txt
-  descriptive:
-    needs: [generate_cohort]
-    run: r:latest descriptive.R input.csv
-    outputs:
-      moderately_sensitive:
-        report: descriptive.pdf
-        logs: log_*.txt
+        log: *log*.txt
+
+
 

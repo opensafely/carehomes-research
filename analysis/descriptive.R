@@ -198,6 +198,7 @@ lmk_data %>%
 #------------------------------------------------------------------------------#
 
 ## Community, care home and older population epidemics
+## Currently just absolute numbers as unsure of denominator for 70+ in community...
 input %>%
   filter(!is.na(primary_care_case_probable) & primary_care_case_probable > ymd("2020-01-01")) %>%
   mutate(group = case_when(care_home_type == "U" & age < 70 ~ "Community",

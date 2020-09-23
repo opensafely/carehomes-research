@@ -16,7 +16,7 @@
 
 source("./analysis/data_setup.R")
 
-source("descriptive.R")
+source("./analysis/descriptive.R")
 
 # Run analysis on several subsets of the data, excluding MSOAs with total rate 
 # of < X probable cases per 100,000 as an indicator of low TPP coverage

@@ -13,7 +13,9 @@
 pacman::p_load("tidyverse", "lubridate")
 theme_set(theme_bw())
 args = commandArgs(trailingOnly=TRUE)
-cutoff <- args[2]
+cutoff <- args[3]
+
+fit_opt <- readRDS(paste0("./fit_opt_",cutoff,".rds"))
 
 ## ------------------------------- Prediction -------------------------------- ##
 

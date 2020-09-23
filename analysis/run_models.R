@@ -87,8 +87,11 @@ fit_opt <- fits[[which.min(err)]]
 serr <- sandwich::vcovCL(fit_opt, cluster = train$household_id)
 coeffs <- lmtest::coeftest(fit_opt, vcov. = serr)
 print(coeffs)
-write.csv(coeffs,paste0("./coeffs_bestmod_",cutoff,".csv"))
 
+################################################################################
+
+saveRDS(fit_opt, paste0("./fit_opt_",cutoff,".rds"))
+write.csv(coeffs,paste0("./coeffs_bestmod_",cutoff,".csv"))
 
 ################################################################################
 

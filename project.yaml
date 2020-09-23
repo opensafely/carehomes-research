@@ -11,13 +11,17 @@ actions:
     needs: [generate_cohort]
     outputs:
       moderately_sensitive:
-        log: data_setup_log.txt community_prevalence.rds
+        log: data_setup_log.txt
+        data: community_prevalence.rds
       highly_sensitive:
-        data: analysisdata.rds input_clean.rds ch_linelist.rds ch_agg_long.rds 
+        analysis_data: analysisdata.rds
+        input_data: input_clean.rds
+        ch_data: ch_linelist.rds
+        cg_agg_data: ch_agg_long.rds
 
   descriptive:
     needs: [data_setup]
-    run: r:latest descriptive.R input_clean.rds ch_linelist.rds ch_agg_long.rds community_prevalence.rds
+    run: r:latest analysis/descriptive.R input_clean.rds ch_linelist.rds ch_agg_long.rds community_prevalence.rds
     outputs:
       moderately_sensitive:
         report: descriptive.pdf
@@ -43,7 +47,7 @@ actions:
       moderately_sensitive:
         report: test_pred_figs_0.pdf
 
-        
+
   run_models_50_cutoff:
     needs: [data_setup]
     run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 50
@@ -61,8 +65,8 @@ actions:
     outputs:
       moderately_sensitive:
         report: test_pred_figs_50.pdf
-        
-        
+
+
   run_models_100_cutoff:
     needs: [data_setup]
     run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 100
@@ -81,7 +85,7 @@ actions:
       moderately_sensitive:
         report: test_pred_figs_100.pdf
         
-run_models_200_cutoff:
+  run_models_200_cutoff:
     needs: [data_setup]
     run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 200
     outputs:

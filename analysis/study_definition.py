@@ -15,7 +15,7 @@ from codelists import *
 study = StudyDefinition(
     # Configure the expectations framework
     default_expectations={
-        "date": {"earliest": "1900-01-01", "latest": "today"},
+        "date": {"earliest": "2020-01-01", "latest": "today"},
         "rate": "exponential_increase",
         "incidence" : 0.2
     },
@@ -25,26 +25,15 @@ study = StudyDefinition(
     ),
 
     # OUTCOMES,
-    primary_care_case=patients.with_these_clinical_events(
-       covid_primary_care_case,
-       returning="date",
-       find_first_match_in_period=True,
-       date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest" : "2020-02-01",
-                                     "latest": "2020-06-30"},
-                             "rate" : "exponential_increase"
-        },
-    ),
-    primary_care_suspect_case=patients.with_these_clinical_events(
-       covid_primary_care_suspect_case,
-       returning="date",
-       find_first_match_in_period=True,
-       date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest" : "2020-02-01",
-                                     "latest": "2020-06-30"},
-                            "rate" : "exponential_increase"
-        },
-    ),
+    primary_care_case_probable=patients.with_these_clinical_events(
+        combine_codelists(covid_primary_care_probable_case_clinical,
+                          covid_primary_care_probable_case_test,
+                          covid_primary_care_probable_case_seq),
+        return_first_date_in_period=True,
+        include_month=True,
+        include_day=True,
+        return_expectations={"date": {"earliest": "2020-02-01"}},
+    ), 
 
     ### testing positive (SGSS or primary care)
     first_pos_test_sgss=patients.with_test_result_in_sgss(
@@ -58,20 +47,20 @@ study = StudyDefinition(
        },
     ),
 
-    ### A&E attendence
-    a_e_consult_date=patients.attended_emergency_care(
-       between=["2020-02-01", "2020-06-30"],
-       returning="date_arrived",
-       date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest": "2020-02-01",
-                                     "latest": "2020-06-30"},
-                            "rate": "exponential_increase"},
-    ),
+    ### Admission to hospital for covid
+    covid_admission_date=patients.admitted_to_hospital(
+        returning= "date_admitted" ,  # defaults to "binary_flag"
+        with_these_diagnoses=covid_codelist,  # optional
+        on_or_after="2020-02-01",
+        find_first_match_in_period=True,  
+        date_format="YYYY-MM-DD",  
+        return_expectations={"date": {"earliest": "2020-03-01"}},
+   ),
     
     ### Covid-related death
     # Registered death, any COVID
     ons_covid_death_date=patients.with_these_codes_on_death_certificate(
-       covid_death_codelist,
+       covid_codelist,
        on_or_before="2020-06-01",
        match_only_underlying_cause=False,
        returning="date_of_death",
@@ -80,6 +69,17 @@ study = StudyDefinition(
                             "rate" : "exponential_increase"
                             }, 
     ),   
+
+    ## PREDICTORS
+    
+    ### Any hospital discharge
+    discharge_date=patients.admitted_to_hospital(
+        returning= "date_discharged" ,  # defaults to "binary_flag"
+        on_or_after="2020-02-01",
+        find_first_match_in_period=True,  
+        date_format="YYYY-MM-DD",  
+        return_expectations={"date": {"earliest": "2020-03-01"}},
+   ),
 
     ## HOUSEHOLD INFORMATION
     # CAREHOME STATUS
@@ -104,7 +104,7 @@ study = StudyDefinition(
             "category": {"ratios": {"PC": 0.05, "PN": 0.05, "PS": 0.05, "U": 0.85,},},
         },
     ),
-
+    
     household_id=patients.household_as_of(
         "2020-02-01",
         returning="pseudo_id",
@@ -123,22 +123,26 @@ study = StudyDefinition(
         },
     ),
 
-    # The rest of the lines define the covariates with associated GitHub issues
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/33
-    age=patients.age_as_of(
+    mixed_household=patients.household_as_of(
         "2020-02-01",
-        return_expectations={
-            "rate": "universal",
-            "int": {"distribution": "population_ages"},
+        returning="has_members_in_other_ehr_systems",
+        return_expectations={ "incidence": 0.75
         },
     ),
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/46
-    sex=patients.sex(
+
+    # GP practice ID 
+    practice_id=patients.registered_practice_as_of(
+        "2020-02-01", 
+        returning="pseudo_id", 
         return_expectations={
-            "rate": "universal",
-            "category": {"ratios": {"M": 0.49, "F": 0.51}},
-        }
+            "int": {"distribution": "normal", "mean": 1000, "stddev": 100},
+            "incidence": 1,
+        },
     ),
+    
+    # The rest of the lines define the covariates with associated GitHub issues
+    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/33
+
     # region - one of NHS England 9 regions
     region=patients.registered_practice_as_of(
         "2020-02-01",
@@ -159,6 +163,7 @@ study = StudyDefinition(
             },
         },
     ),
+
     # # https://github.com/ebmdatalab/tpp-sql-notebook/issues/54
     stp=patients.registered_practice_as_of(
         "2020-02-01",
@@ -181,6 +186,7 @@ study = StudyDefinition(
             },
         },
     ),
+
     msoa=patients.registered_practice_as_of(
         "2020-02-01",
         returning="msoa_code",
@@ -189,6 +195,7 @@ study = StudyDefinition(
             "category": {"ratios": {"MSOA1": 0.5, "MSOA2": 0.5}},
         },
     ),    
+
     rural_urban=patients.address_as_of(
         "2020-03-01",
         returning="rural_urban_classification",
@@ -197,6 +204,7 @@ study = StudyDefinition(
             "category": {"ratios": {"rural": 0.1, "urban": 0.9}},
         },
     ),
+
     # # https://github.com/ebmdatalab/tpp-sql-notebook/issues/52
     imd=patients.address_as_of(
         "2020-02-01",
@@ -207,6 +215,23 @@ study = StudyDefinition(
             "category": {"ratios": {"100": 0.1, "200": 0.2, "300": 0.7}},
         },
     ),    
+
+    # PATIENT COVARIATES
+    age=patients.age_as_of(
+        "2020-02-01",
+        return_expectations={
+            "rate": "universal",
+            "int": {"distribution": "population_ages"},
+        },
+    ),
+    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/46
+    sex=patients.sex(
+        return_expectations={
+            "rate": "universal",
+            "category": {"ratios": {"M": 0.49, "F": 0.51}},
+        }
+    ),
+   
     ethnicity=patients.with_these_clinical_events(
         ethnicity_codes,
         returning="category",
@@ -226,6 +251,8 @@ study = StudyDefinition(
             "date": {"latest": "2020-02-01"}},
     ),
 
+
+
     ### GP CONSULTATION RATE
     #gp_consult_count=patients.with_gp_consultations(
     #    between=["2020-03-01", "2020-06-30"],
@@ -238,6 +265,39 @@ study = StudyDefinition(
     #),
     #has_consultation_history=patients.with_complete_gp_consultation_history_between(
     #    "2020-03-01", "2020-06-30", return_expectations={"incidence": 0.9},
+    #),
+
+    #primary_care_case_clinical=patients.with_these_clinical_events(
+    #   covid_primary_care_probable_case_clinical,
+    #   returning="date",
+    #   find_first_match_in_period=True,
+    #   date_format="YYYY-MM-DD",
+    #   return_expectations={"date": {"earliest" : "2020-02-01",
+    #                                 "latest": "2020-06-30"},
+    #                         "rate" : "exponential_increase"
+    #    },
+    #),
+
+    #primary_care_case_test=patients.with_these_clinical_events(
+    #   covid_primary_care_probable_case_test,
+    #   returning="date",
+    #   find_first_match_in_period=True,
+    #   date_format="YYYY-MM-DD",
+    #   return_expectations={"date": {"earliest" : "2020-02-01",
+    #                                 "latest": "2020-06-30"},
+    #                        "rate" : "exponential_increase"
+    #    },
+    #),
+
+    #primary_care_case_seq=patients.with_these_clinical_events(
+    #   covid_primary_care_probable_case_seq,
+    #   returning="date",
+    #   find_first_match_in_period=True,
+    #   date_format="YYYY-MM-DD",
+    #   return_expectations={"date": {"earliest" : "2020-02-01",
+    #                                 "latest": "2020-06-30"},
+    #                        "rate" : "exponential_increase"
+    #    },
     #),
 
 )

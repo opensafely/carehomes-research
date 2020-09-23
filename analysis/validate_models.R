@@ -15,8 +15,8 @@ theme_set(theme_bw())
 args = commandArgs(trailingOnly=TRUE)
 cutoff <- args[3]
 
-fit_opt <- readRDS(paste0("./fit_opt_",cutoff,".rds"))
-test <- readRDS(paste0("./test",cutoff,".rds"))
+fit_opt <- readRDS(args[1])
+test <- readRDS(args[2])
 
 ## ------------------------------- Prediction -------------------------------- ##
 
@@ -28,7 +28,7 @@ pdf(file = paste0("./test_pred_figs_",cutoff,".pdf"), height = 7, width = 10)
 print(
   ggplot(test, aes(x = pred, fill = as.factor(event_ahead), after_stat(density))) +
   geom_histogram(binwidth = 0.01) +
-  labs(fill = "Event 14 days", x = "Predicted risk",y = "Density") 
+  labs(fill = "Event 14 days", x = "Predicted risk",y = "Density")
 )
 
 # Boxplot of predicted risk for event/no event

@@ -23,7 +23,7 @@ dat <- readRDS("./analysisdata.rds")
 # off of total probable cases per 100,000
 msoa_exclude <- comm_prev %>% 
   group_by(msoa) %>%
-  filter(unique(probable_cases_rate_total) < cutoff/1e5) %>%
+  filter(probable_cases_rate_total < cutoff/1e5) %>%
   pull(msoa) %>%
   unique()
 

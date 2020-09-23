@@ -22,7 +22,7 @@ time_total <- Sys.time()
 
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo", "sandwich", "boot", "lmtest")
+pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo")
 
 # Function to calculate mode value
 getmode <- function(v) {

@@ -6,9 +6,11 @@
 #
 ################################################################################
 
-# args = commandArgs(trailingOnly=TRUE)
-# cutoff <- args[2]
-cutoff<- 100
+pacman::p_load("tidyverse", "lubridate", "sandwich", "boot", "lmtest")
+
+args = commandArgs(trailingOnly=TRUE)
+cutoff <- args[3]
+# cutoff<- 100
 sink(paste0("./output_model_run_", cutoff, ".txt"))
 write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
 

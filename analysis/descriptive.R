@@ -14,8 +14,7 @@ time_desc <- Sys.time()
 
 ################################################################################
 
-library(tidyverse)
-library(lubridate)
+pacman::p_load("tidyverse", "lubridate")
 theme_set(theme_bw())
 
 input <- readRDS("./input_clean.rds")

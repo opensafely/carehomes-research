@@ -35,10 +35,11 @@ actions:
         log: log_model_run_0.txt
       highly_sensitive:
         fit: fit_opt_0.rds
+        data: testdata_0.rds
         
   validate_models_0_cutoff:
     needs: [run_models_0_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_0.rds 0
+    run: r:latest analysis/validate_models.R fit_opt_0.rds testdata_0.rds 0
     outputs:
       moderately_sensitive:
         report: test_pred_figs_0.pdf
@@ -54,10 +55,11 @@ actions:
         log: log_model_run_50.txt
       highly_sensitive:
         fit: fit_opt_50.rds
+        data: testdata_50.rds
         
   validate_models_50_cutoff:
     needs: [run_models_50_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_50.rds 50
+    run: r:latest analysis/validate_models.R fit_opt_50.rds testdata_50.rds 50
     outputs:
       moderately_sensitive:
         report: test_pred_figs_50.pdf
@@ -73,10 +75,11 @@ actions:
         log: log_model_run_100.txt
       highly_sensitive:
         fit: fit_opt_100.rds
+        data: testdata_100.rds
         
   validate_models_100_cutoff:
     needs: [run_models_100_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_100.rds 100
+    run: r:latest analysis/validate_models.R fit_opt_100.rds testdata_100.rds 100
     outputs:
       moderately_sensitive:
         report: test_pred_figs_100.pdf
@@ -91,10 +94,11 @@ run_models_200_cutoff:
         log: log_model_run_200.txt
       highly_sensitive:
         fit: fit_opt_200.rds
+        data: testdata_200.rds
         
   validate_models_200_cutoff:
     needs: [run_models_200_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_200.rds 200
+    run: r:latest analysis/validate_models.R fit_opt_200.rds testdata_200.rds 200
     outputs:
       moderately_sensitive:
         report: test_pred_figs_200.pdf

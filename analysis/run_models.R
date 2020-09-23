@@ -45,6 +45,9 @@ samp <- sample(unique(dat$household_id),0.8*n_distinct(dat$household_id))
 train <- filter(dat, household_id %in% samp)
 test <- filter(dat, !household_id %in% samp)
 
+# Save test data for use in model validation
+saveRDS(test, paste0("./testdata_",cutoff,".rds"))
+
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk

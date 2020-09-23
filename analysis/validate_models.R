@@ -16,6 +16,7 @@ args = commandArgs(trailingOnly=TRUE)
 cutoff <- args[3]
 
 fit_opt <- readRDS(paste0("./fit_opt_",cutoff,".rds"))
+test <- readRDS(paste0("./test",cutoff,".rds"))
 
 ## ------------------------------- Prediction -------------------------------- ##
 

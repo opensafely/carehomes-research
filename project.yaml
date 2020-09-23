@@ -11,47 +11,82 @@ actions:
     needs: [generate_cohort]
     outputs:
       moderately_sensitive:
-        log: data_setup_log.txt
+        log: data_setup_log.txt community_prevalence.rds
       highly_sensitive:
-        data: analysisdata.rds
+        data: analysisdata.rds input_clean.rds ch_linelist.rds ch_agg_long.rds 
 
   descriptive:
     needs: [data_setup]
-    run: r:latest descriptive.R cleaned_input.csv CH(?)
+    run: r:latest descriptive.R input_clean.rds ch_linelist.rds ch_agg_long.rds community_prevalence.rds
     outputs:
       moderately_sensitive:
         report: descriptive.pdf
         log: log_descriptive.txt
         data: ch_gp_permsoa.csv
 
-  run_models_0_prevalence:
+
+  run_models_0_cutoff:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R cleaned_input.csv 0
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 0
     outputs:
       moderately_sensitive:
-        risk: risk_histogram_0_prevalence.png
-        coeffs: coeffs.csv
-        log: *log*.txt
+        coeffs: coeffs_bestmod_0.csv
+        output: output_model_run_0.txt
+        log: log_model_run_0.txt
+        
+  validate_models_0_cutoff:
+    needs: [run_models_0_cutoff]
+    run: r:latest analysis/validate_models.R 0
+    outputs:
+      moderately_sensitive:
+        report: test_pred_figs_0.pdf
 
-  run_models_20_prevalence:
+        
+  run_models_50_cutoff:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R cleaned_input.csv 20
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 50
     outputs:
       moderately_sensitive:
-        risk: risk_histogram_20_prevalence.png
-        coeffs: coeffs.csv
-        log: *log*.txt
-
-
-  validate_models:
-    needs: [run_models]
-    run: r:latest analysis/run_models.R
+        coeffs: coeffs_bestmod_50.csv
+        output: output_model_run_50.txt
+        log: log_model_run_50.txt
+        
+  validate_models_50_cutoff:
+    needs: [run_models_50_cutoff]
+    run: r:latest analysis/validate_models.R 50
     outputs:
       moderately_sensitive:
-        figures: roc.png
-        risk: risk_histogram.png
-        coeffs: coeffs.csv
-        log: *log*.txt
-
-
-
+        report: test_pred_figs_50.pdf
+        
+        
+  run_models_100_cutoff:
+    needs: [data_setup]
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 100
+    outputs:
+      moderately_sensitive:
+        coeffs: coeffs_bestmod_100.csv
+        output: output_model_run_100.txt
+        log: log_model_run_100.txt
+        
+  validate_models_100_cutoff:
+    needs: [run_models_100_cutoff]
+    run: r:latest analysis/validate_models.R 100
+    outputs:
+      moderately_sensitive:
+        report: test_pred_figs_100.pdf
+        
+run_models_200_cutoff:
+    needs: [data_setup]
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 200
+    outputs:
+      moderately_sensitive:
+        coeffs: coeffs_bestmod_200.csv
+        output: output_model_run_200.txt
+        log: log_model_run_200.txt
+        
+  validate_models_200_cutoff:
+    needs: [run_models_200_cutoff]
+    run: r:latest analysis/validate_models.R 200
+    outputs:
+      moderately_sensitive:
+        report: test_pred_figs_200.pdf

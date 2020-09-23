@@ -18,12 +18,18 @@ library(tidyverse)
 library(lubridate)
 theme_set(theme_bw())
 
+input <- readRDS("./input_clean.rds")
+comm_prev <- readRDS("./community_prevalence.rds")
+ch <- readRDS("./ch_linelist.rds")
+ch_long <- readRDS("./ch_agg_long.rds")
+dat <- readRDS("./analysisdata.rds")
+
 ################################################################################
 
 ## Care home characteristics: summary tables
 
 # Total care homes in analysis dataset
-N_ch_tot <- n_distinct(dplyr::select(ch_chars, household_id, msoa))
+N_ch_tot <- n_distinct(dplyr::select(dat, household_id, msoa))
 
 # Number of carehomes per MSOA
 ch %>% 
@@ -37,18 +43,33 @@ ch %>%
 write.csv(per_msoa, file = "./ch_gp_permsoa.csv", row.names = FALSE)
 
 # Average number of carehomes per msoa
+print("Summary: number of carehomes per MSOA")
 per_msoa %>%
   pull(n_ch) %>%
   summary() 
 
 #------------------------------------------------------------------------------#
 
-# Summarise characteristics overall, and by whether or not care home had any covid-event during period (ever-affected). Size of each home estimated as number of patients registered under that household ID, but actual capacity may be larger. 
+# Summarise characteristics overall, and by whether or not care home had any 
+# covid-event recorded in data (ever-affected). Size of each home estimated as 
+# number of patients registered under that household ID, but actual capacity may 
+# be larger. 
+chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban",
+           "imd","hh_med_age","hh_p_female","hh_maj_ethn","hh_p_dem",
+           "first_event", "ever_affected")
+
+ch_chars <- ch_long %>%
+  dplyr::select(all_of(chars)) %>%
+  distinct()
+
+# Missingness in care home characteristics:
+ch_chars %>%
+  summarise_all(function(x) sum(is.na(x))) 
+
 ch_overall <- ch_chars %>%
   mutate(ever_affected = "Overall")
 
 chars_waffect <- ch_chars %>%
-  full_join(ch_first_event) %>%
   mutate(ever_affected = ifelse(ever_affected, "Affected","Unaffected")) %>%
   bind_rows(ch_overall) %>% 
   mutate(ever_affected = factor(ever_affected, 
@@ -65,7 +86,7 @@ chars_waffect %>%
   mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
   ungroup() %>%
   mutate_at(vars(-n_resid, -ever_affected), 
-            function(x) paste0(x, " (", round(x/.$n_resid,1), ")")) %>%
+            function(x) paste0(x, " (", round(x/.$n_resid,2), ")")) %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(-n_resid) -> tab_type
 
@@ -74,11 +95,11 @@ chars_waffect %>%
   group_by(ever_affected) %>%
   summarise(N = n(),
             `No. residents` = sum(n_resid, na.rm = T),
-            ch_size_mean = round(mean(ch_size, na.rm = T),1),
+            ch_size_mean = round(mean(ch_size, na.rm = T),2),
             ch_size_sd = round(sqrt(var(ch_size, na.rm = T)),2),
             `% rural` = round(sum(rural_urban == "rural")/N, 2),
             imd_mean = round(mean(imd, na.rm = T)),
-            imd_sd = round(sqrt(var(imd, na.rm = T)),1)) %>%
+            imd_sd = round(sqrt(var(imd, na.rm = T)),2)) %>%
   mutate(N_perc = round(N/N_ch_tot,2),
          # `N (%)` = paste0(N, " (",N_perc,")"),
          `size mean(sd)` = paste0(ch_size_mean, " (",ch_size_sd,")"),
@@ -92,13 +113,15 @@ tab1
 
 #------------------------------------------------------------------------------#
 
-# Age, dementia status and ethnicity of care home residents, stratified by whether or not their home was affected (percentages out of total residents in that stratum):
+# Age, dementia status and ethnicity of care home residents, stratified by 
+# whether or not their home was affected (percentages out of total residents in 
+# that stratum):
 
-  ch_resid_all <- ch %>%
+ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
 ch %>%
-  full_join(ch_first_event) %>%
+  full_join(dplyr::select(ch_chars, household_id, msoa, ever_affected)) %>%
   mutate(ever_affected = ifelse(ever_affected,"Affected","Unaffected")) %>%
   bind_rows(ch_resid_all) %>% 
   mutate(ever_affected = factor(ever_affected, 
@@ -114,7 +137,7 @@ ch_resid_all %>%
             n_dem = sum(dementia, na.rm = T)
   ) %>% 
   mutate(`age med[IQR]` = paste0(med_age, " [",q_age,"]"),
-         `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. residents`,1),")")) %>%
+         `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. residents`,2),")")) %>%
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(`No. residents`, `age med[IQR]`, `dementia n(%)` ) -> tab_age
@@ -129,7 +152,7 @@ ch_resid_all %>%
   mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
   ungroup() %>%
   mutate_at(vars(-n_resid, -ever_affected), 
-            function(x) paste0(x, " (", round(x/.$n_resid,1), ")")) %>%
+            function(x) paste0(x, " (", round(x/.$n_resid,2), ")")) %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(-n_resid) -> tab_ethn
 
@@ -173,7 +196,7 @@ comm_prev %>%
 #------------------------------------------------------------------------------#
 
 ## Community incidence versus care home introduction
-lmk_data %>%
+dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
   pivot_longer(c("probable_cases_rate","probable_chg7","probable_roll7")) %>%
   ggplot(aes(event_ahead, value)) +
@@ -187,7 +210,7 @@ lmk_data %>%
 #------------------------------------------------------------------------------#
 
 ## Hospital discharges of care home residents
-lmk_data %>%
+dat %>%
   group_by(date) %>%
   summarise(n_disch = sum(n_disch, na.rm = T)) %>%
   ggplot(aes(date, n_disch)) +

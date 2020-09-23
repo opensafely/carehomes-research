@@ -11,13 +11,15 @@
 ################################################################################
 
 theme_set(theme_bw())
+args = commandArgs(trailingOnly=TRUE)
+cutoff <- args[2]
 
 ## ------------------------------- Prediction -------------------------------- ##
 
 test$pred <- predict(fit_opt, newdata = test, type = "response")
 
 # Plot histograms of predicted risk for event/no event
-pdf(file = paste0("./test_pred_figs_",x,".pdf"), height = 7, width = 10)
+pdf(file = paste0("./test_pred_figs_",cutoff,".pdf"), height = 7, width = 10)
 
 print(
   ggplot(test, aes(x = pred, fill = as.factor(event_ahead), after_stat(density))) +

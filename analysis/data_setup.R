@@ -55,7 +55,6 @@ write("Data setup log",file="data_setup_log.txt")
 
 # args <- c("./output/input.csv")
 args = commandArgs(trailingOnly=TRUE)
-
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
 
 # ---------------------------------------------------------------------------- #
@@ -74,8 +73,8 @@ n_hh_nonmiss <- n_distinct(input$household_id)
 
 write(paste0("HHs with missing MSOA/type: n = ", n_hh_raw - n_hh_nonmiss), file="data_setup_log.txt", append = TRUE)
 write(paste0("Patients with missing HH MSOA/type: n = ", nrow(input_raw) - nrow(input)), file="data_setup_log.txt", append = TRUE)
-
-# summary(input)
+print("Summary: input")
+summary(input)
 
 # Run script to aggregate cases and populations by MSOA
 source("./analysis/get_community_prevalence.R")
@@ -89,10 +88,12 @@ input %>%
 # Remove care homes registered with more than one system
 # -> MIXEDSOFTWARE VARIABLE?
 ch %>%
-  # mutate(mixed_household = replace_na(mixed_household, 0)) %>%
+  mutate(mixed_household = replace_na(mixed_household, 0)) %>%
   filter(mixed_household == 0 | mixed_household == FALSE) -> ch_1sys
 
-write(paste0("Care homes registered under > 1 system: n = ", n_distinct(ch$household_id) - n_distinct(ch_1sys$household_id)), file="data_setup_log.txt", append = TRUE)
+write(paste0("Care homes registered under > 1 system: n = ", 
+             n_distinct(ch$household_id) - n_distinct(ch_1sys$household_id)), 
+      file="data_setup_log.txt", append = TRUE)
 write(paste0("Residents of care homes registered under > 1 system: n = ", 
              nrow(ch)- nrow(ch_1sys)), 
       file="data_setup_log.txt", append = TRUE)
@@ -121,6 +122,7 @@ ch_chars <- ch %>%
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() 
 
+print("Summary: ch_chars")
 summary(ch_chars)
 
 
@@ -141,17 +143,14 @@ ch_first_event <- ch %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
          ever_affected = (first_event < ymd("3000-01-01"))) 
 
+print("Summary: ch_first_event")
 summary(ch_first_event)
-summary(ch_chars)
-
 
 # Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%
   full_join(ch_first_event) %>%
   mutate(date = first_event) %>%
-  select(-first_primary_care_case_probable:-first_ons_covid_death_date) %>%
-  filter(first_event %within% interval(min(study_per), max(study_per)))
-
+  select(-first_primary_care_case_probable:-first_ons_covid_death_date) 
 
 # Expand rows in data.table for speed:
 start <- Sys.time()
@@ -168,7 +167,10 @@ ch_wevent <- ch_wevent[all_dates,roll=TRUE]
 # ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
 
 time <- Sys.time() - start
-write(paste0("Finished expanding carehome dates (time = ",round(time,2),")"), file="data_setup_log.txt", append = TRUE)
+write(paste0("Finished expanding carehome dates (time = ",
+             round(time,2),
+             ")"), 
+      file="data_setup_log.txt", append = TRUE)
 
 #-----------------------------#
 #   Discharges to care home   #
@@ -228,23 +230,30 @@ make_data_t <- function(t, ahead = 14){
 }
 
 # apply function for each date in range and bind
-lmk_data <- bind_rows(lapply(1:length(study_per), make_data_t))
+dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 
-summary(lmk_data)
+print("Summary: analysis data")
+summary(dat)
 
-lmk_data %>%
+dat %>%
   group_by(day, event_ahead) %>%
-  count() 
+  count() %>%
+  head(20)
 
 # ---------------------------------------------------------------------------- #
-# Save analysis data (?)
+# Save analysis data
 
-saveRDS(lmk_data, file = "./analysisdata.rds")
+saveRDS(input, file = "./input_clean.rds")
+saveRDS(ch, file = "./ch_linelist.rds")
+saveRDS(ch_long, file = "./ch_agg_long.rds")
+saveRDS(dat, file = "./analysisdata.rds")
 
 ################################################################################
 
 time_total <- Sys.time() - time_total
-write(paste0("Total time running data_setup: ",round(time_total,2)), file="data_setup_log.txt", append = TRUE)
+write(paste0("Total time running data_setup: ",
+             round(time_total,2)), 
+      file="data_setup_log.txt", append = TRUE)
 
 ################################################################################
 

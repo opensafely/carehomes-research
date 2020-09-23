@@ -30,12 +30,13 @@ write("Running get_community_prevalence...",file="data_setup_log.txt", append = 
 #----------------------------#
 
 input %>%
+  filter(!is.na(practice_id)) %>%
   group_by(msoa) %>%
   summarise(msoa_pop_total = sum(household_size, na.rm = T),
-            msoa_n_practices = n_distinct(practice_id, na.rm = T),
+            msoa_n_practices = n_distinct(practice_id),
             msoa_pop_ch = sum(household_size[care_home_type != "U"], na.rm = T),
             msoa_pop_comm = sum(household_size[care_home_type == "U"], na.rm = T),
-            n_ch = n_distinct(household_id[care_home_type != "U"]), na.rm = T) -> msoa_pop
+            n_ch = n_distinct(household_id[care_home_type != "U"])) -> msoa_pop
 
 #----------------------------#
 #  Create community dataset  #
@@ -98,8 +99,8 @@ comm_probable_expand %>%
 #        Save output         #
 #----------------------------#
 
-write.csv(comm_prev, "./data/community_prevalence.csv", row.names = FALSE)
-saveRDS(comm_prev, "./data/community_prevalence.rds")
+# write.csv(comm_prev, "./community_prevalence.csv", row.names = FALSE)
+saveRDS(comm_prev, "./community_prevalence.rds")
 
 ################################################################################
 

@@ -15,18 +15,29 @@ sink(paste0("./output_model_run_", cutoff, ".txt"))
 write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
 
 ###############################################################################
+
 dat <- readRDS(args[1])
-comm_prev <- readRDS(args[2])
+# comm_prev <- readRDS(args[2])
+tpp_cov <- readRDS(args[2])
+
 # --------------------------------- Subset data ------------------------------ #
 
 # As a proxy for low TPP coverage, exclude MSOAs with less than a specified cut
 # off of total probable cases per 100,000
-msoa_exclude <- comm_prev %>%
-  group_by(msoa) %>%
-  filter(probable_cases_rate_total < as.integer(cutoff)/1e5) %>%
+# msoa_exclude <- comm_prev %>%
+#   group_by(msoa) %>%
+#   filter(probable_cases_rate_total < as.integer(cutoff)/1e5) %>%
+#   pull(msoa) %>%
+#   unique()
+
+# Exclude MSOAs with less than specified cut off of TPP coverage, as estimated
+# from TPP household size and MSOA populations
+msoa_exclude <- tpp_cov %>%
+  filter(tpp_cov < cutoff) %>%
   pull(msoa) %>%
   unique()
 
+# write(paste0("MSOAs excluded: n = ",length(msoa_exclude)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
 write(paste0("MSOAs excluded: n = ",length(msoa_exclude)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
 dat <- filter(dat, !msoa %in% msoa_exclude)
 
@@ -88,6 +99,10 @@ fit_opt <- fits[[which.min(err)]]
 serr <- sandwich::vcovCL(fit_opt, cluster = train$household_id)
 coeffs <- lmtest::coeftest(fit_opt, vcov. = serr)
 print(coeffs)
+
+# Brier score of all models
+brier <- function(mod) mean(mod$residuals^2)
+brier_score_train <- lapply(fits, brier)
 
 ################################################################################
 

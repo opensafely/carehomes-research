@@ -5,7 +5,21 @@ actions:
     outputs:
       highly_sensitive:
         cohort: input.csv
-
+        
+  generate_cohort_coverage:
+    run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage --output-dir=/workspace
+    outputs:
+      highly_sensitive:
+        cohort: input_coverage.csv
+        
+  calc_coverage:
+    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv msoa_pops_allages.csv
+    needs: [generate_cohort_coverage]
+    outputs:
+      moderately_sensitive:
+        log: coverage_log.txt
+        data: tpp_msoa_coverage.rds
+        
   data_setup:
     run: r:latest analysis/data_setup.R input.csv
     needs: [generate_cohort]
@@ -29,9 +43,9 @@ actions:
         data: ch_gp_permsoa.csv
 
 
-  run_models_0_cutoff:
+  run_models_50_cutoff:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 0
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 50
     outputs:
       moderately_sensitive:
         coeffs: coeffs_bestmod_0.csv
@@ -41,17 +55,17 @@ actions:
         fit: fit_opt_0.rds
         data: testdata_0.rds
 
-  validate_models_0_cutoff:
+  validate_models_50_cutoff:
     needs: [run_models_0_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_0.rds testdata_0.rds 0
+    run: r:latest analysis/validate_models.R fit_opt_50.rds testdata_50.rds 50
     outputs:
       moderately_sensitive:
         report: test_pred_figs_0.pdf
 
 
-  run_models_50_cutoff:
+  run_models_90_cutoff:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 50
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 90
     outputs:
       moderately_sensitive:
         coeffs: coeffs_bestmod_50.csv
@@ -61,9 +75,9 @@ actions:
         fit: fit_opt_50.rds
         data: testdata_50.rds
 
-  validate_models_50_cutoff:
+  validate_models_90_cutoff:
     needs: [run_models_50_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_50.rds testdata_50.rds 50
+    run: r:latest analysis/validate_models.R fit_opt_90.rds testdata_90.rds 90
     outputs:
       moderately_sensitive:
         report: test_pred_figs_50.pdf
@@ -88,24 +102,6 @@ actions:
       moderately_sensitive:
         report: test_pred_figs_100.pdf
 
-  run_models_200_cutoff:
-    needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 200
-    outputs:
-      moderately_sensitive:
-        coeffs: coeffs_bestmod_200.csv
-        output: output_model_run_200.txt
-        log: log_model_run_200.txt
-      highly_sensitive:
-        fit: fit_opt_200.rds
-        data: testdata_200.rds
-
-  validate_models_200_cutoff:
-    needs: [run_models_200_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_200.rds testdata_200.rds 200
-    outputs:
-      moderately_sensitive:
-        report: test_pred_figs_200.pdf
 
   run_all:
     needs: [validate_models_200_cutoff, validate_models_100_cutoff, validate_models_50_cutoff, validate_models_0_cutoff, descriptive]

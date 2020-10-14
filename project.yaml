@@ -13,7 +13,7 @@ actions:
         cohort: input_coverage.csv
         
   calc_coverage:
-    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv msoa_pops_allages.csv
+    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv msoa_pops.csv
     needs: [generate_cohort_coverage]
     outputs:
       moderately_sensitive:
@@ -48,26 +48,6 @@ actions:
     run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 50
     outputs:
       moderately_sensitive:
-        coeffs: coeffs_bestmod_0.csv
-        output: output_model_run_0.txt
-        log: log_model_run_0.txt
-      highly_sensitive:
-        fit: fit_opt_0.rds
-        data: testdata_0.rds
-
-  validate_models_50_cutoff:
-    needs: [run_models_0_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_50.rds testdata_50.rds 50
-    outputs:
-      moderately_sensitive:
-        report: test_pred_figs_0.pdf
-
-
-  run_models_90_cutoff:
-    needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 90
-    outputs:
-      moderately_sensitive:
         coeffs: coeffs_bestmod_50.csv
         output: output_model_run_50.txt
         log: log_model_run_50.txt
@@ -75,12 +55,32 @@ actions:
         fit: fit_opt_50.rds
         data: testdata_50.rds
 
+  validate_models_50_cutoff:
+    needs: [run_models_0_cutoff]
+    run: r:latest analysis/validate_models.R fit_opt_50.rds testdata_50.rds 50
+    outputs:
+      moderately_sensitive:
+        report: test_pred_figs_50.pdf
+
+
+  run_models_90_cutoff:
+    needs: [data_setup]
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 90
+    outputs:
+      moderately_sensitive:
+        coeffs: coeffs_bestmod_90.csv
+        output: output_model_run_90.txt
+        log: log_model_run_90.txt
+      highly_sensitive:
+        fit: fit_opt_90.rds
+        data: testdata_90.rds
+
   validate_models_90_cutoff:
     needs: [run_models_50_cutoff]
     run: r:latest analysis/validate_models.R fit_opt_90.rds testdata_90.rds 90
     outputs:
       moderately_sensitive:
-        report: test_pred_figs_50.pdf
+        report: test_pred_figs_90.pdf
 
 
   run_models_100_cutoff:
@@ -104,7 +104,7 @@ actions:
 
 
   run_all:
-    needs: [validate_models_200_cutoff, validate_models_100_cutoff, validate_models_50_cutoff, validate_models_0_cutoff, descriptive]
+    needs: [validate_models_100_cutoff, validate_models_100_cutoff, validate_models_90_cutoff, validate_models_50_cutoff, descriptive]
     # In order to be valid this action needs to define a run commmand and
     # some output. We don't really care what these are but the below seems to
     # do the trick.

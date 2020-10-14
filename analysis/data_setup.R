@@ -11,10 +11,6 @@
 # Author: Emily S Nightingale
 # Date: 06/08/2020
 # 
-# NOTES: 
-# * Community risk so far only calculated from TPP so will be underestimated in 
-#   low-TPP coverage MSOAs. 
-# * 
 #
 ################################################################################
 
@@ -31,7 +27,7 @@ getmode <- function(v) {
 }
 
 # Set study period (excluding last month for testing - too few new CH introductions at this point of epidemic?)
-study_per <- seq(as.Date("2020-04-15"),as.Date("2020-08-31"), by = "days")
+study_per <- seq(as.Date("2020-04-15"),as.Date("2020-09-30"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
@@ -44,20 +40,27 @@ write("Data setup log",file="data_setup_log.txt")
 # ---------------------------------------------------------------------------- #
 
 #----------------------#
-#  LOAD AND TIDY DATA  #
+#  LOAD DATA  #
 #----------------------#
 
 # * input.csv 
 #   - individual health records for identification of covid events
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
-#   - Not yet pooled between TPP/EMIS
 
-# args <- c("./output/input.csv")
-args = commandArgs(trailingOnly=TRUE)
+args <- c("./output/input.csv","tpp_msoa_coverage.csv")
+# args = commandArgs(trailingOnly=TRUE)
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
 
+tpp_cov <- fread(args[2], data.table = FALSE, na.strings = "") 
+
 # ---------------------------------------------------------------------------- #
+#----------------------#
+#  TIDY DATA   #
+#----------------------#
+
+# drop rows with missing msoa or carehome flag, set up variable formats and join
+# msoa populations
 
 input <- input_raw %>%
   # drop missing MSOA and care home type
@@ -66,15 +69,26 @@ input <- input_raw %>%
   mutate(dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity)) %>%
   mutate_at(c(event_dates,"discharge_date"), ymd) %>%
+  left_join(tpp_cov, by = "msoa") %>%
   mutate(across(where(is.character), as.factor))
 
+write(paste0("Patients with missing HH MSOA/type: n = ", nrow(input_raw) - nrow(input)), file="data_setup_log.txt", append = TRUE)
+
+# No. HH in raw input data
 n_hh_raw <- n_distinct(input_raw$household_id)
+# No. HH in filtered data
 n_hh_nonmiss <- n_distinct(input$household_id)
 
 write(paste0("HHs with missing MSOA/type: n = ", n_hh_raw - n_hh_nonmiss), file="data_setup_log.txt", append = TRUE)
-write(paste0("Patients with missing HH MSOA/type: n = ", nrow(input_raw) - nrow(input)), file="data_setup_log.txt", append = TRUE)
-print("Summary: input")
+
 summary(input)
+
+# how many covid?
+input_raw %>%
+  filter((is.na(msoa) | is.na(care_home_type)) & any(!is.na(event_dates))) %>%
+  nrow() -> n_cov_miss
+
+write(paste0("COVID-19 patients with missing MSOA/type: n = ", n_cov_miss), file="data_setup_log.txt", append = TRUE)
 
 # Run script to aggregate cases and populations by MSOA
 source("./analysis/get_community_prevalence.R")
@@ -90,6 +104,13 @@ input %>%
 ch %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>%
   filter(mixed_household == 0 | mixed_household == FALSE) -> ch_1sys
+
+ch %>%
+  group_by(mixed_household) %>%
+  count()
+ch %>%
+  group_by(mixed_household) %>%
+  summarise(n_hh = n_distinct(household_id))
 
 write(paste0("Care homes registered under > 1 system: n = ", 
              n_distinct(ch$household_id) - n_distinct(ch_1sys$household_id)), 
@@ -122,9 +143,7 @@ ch_chars <- ch %>%
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() 
 
-print("Summary: ch_chars")
 summary(ch_chars)
-
 
 #-----------------------------#
 #    Care home first event    #
@@ -143,7 +162,6 @@ ch_first_event <- ch %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
          ever_affected = (first_event < ymd("3000-01-01"))) 
 
-print("Summary: ch_first_event")
 summary(ch_first_event)
 
 # Join care home characteristics with first event dates 
@@ -232,7 +250,6 @@ make_data_t <- function(t, ahead = 14){
 # apply function for each date in range and bind
 dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 
-print("Summary: analysis data")
 summary(dat)
 
 dat %>%

@@ -24,32 +24,15 @@ study = StudyDefinition(
         "2020-01-01", "2020-02-01"
     ),
 
-    household_id=patients.household_as_of(
-        "2020-02-01",
-        returning="pseudo_id",
-        return_expectations={
-            "int": {"distribution": "normal", "mean": 1000, "stddev": 200},
-            "incidence": 1,
-        },
-    ),
-
-    # extract household size and MSOA
-    household_size=patients.household_as_of(
-        "2020-02-01",
-        returning="household_size",
-        return_expectations={
-            "int": {"distribution": "normal", "mean": 3, "stddev": 1},
-            "incidence": 1,
-        },
-    ),
-
     msoa=patients.registered_practice_as_of(
         "2020-02-01",
         returning="msoa_code",
         return_expectations={
             "rate": "universal",
-            "category": {"ratios": {"MSOA1": 0.5, "MSOA2": 0.5}},
+            "category": {"ratios": {"E02000001": 0.5, "E02000002": 0.5}},
         },
     ),    
 
 )
+
+

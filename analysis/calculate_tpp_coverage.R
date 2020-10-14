@@ -26,27 +26,34 @@ sink("./coverage_log.txt", type = "output")
 
 # * input_coverage.csv 
 #   - household ID, size and MSOA for all TPP-registered patients
-# * msoa_pop_allages.csv 
+# * msoa_pop.csv 
 #   - total population estimates per MSOA
+#   - population estimates by single year age
 
-args <- c("./output/input_coverage.csv","./data/msoa_pops_allages.csv")
+args <- c("./output/input_coverage.csv","./data/msoa_pop.csv") 
 # args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
-  mutate(across(c("household_id", "msoa"), as.factor))
-msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") 
+  mutate(msoa = as.factor(msoa))
+
+msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
+  rename(msoa = `Area Codes`,
+         msoa_pop = `All Ages`) %>%
+  rowwise() %>%
+  mutate(`70+` = sum(`70`:`90+`)) %>%
+  dplyr::select(msoa, msoa_pop, `70+`)
 
 # Sum household sizes across all unique household IDs
 summary(input)
 
 input %>%
-  filter(!duplicated(household_id)) %>%
   group_by(msoa) %>%
-  summarise(tpp_pop = sum(household_size, na.rm = T)) %>%
+  count(name = "tpp_pop") %>%
   full_join(msoa_pop) %>%
-  mutate(tpp_cov = tpp_pop*100/pop) -> tpp_cov
+  mutate(tpp_cov = tpp_pop*100/msoa_pop) -> tpp_cov
 
 
 saveRDS(tpp_cov, file = "./tpp_msoa_coverage.rds")
+write.csv(tpp_cov, "./tpp_msoa_coverage.csv", row.names = FALSE)
 
 sink()

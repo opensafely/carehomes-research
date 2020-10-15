@@ -25,18 +25,6 @@ pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr")
 write("Running get_community_prevalence...",file="data_setup_log.txt", append = TRUE)
 
 # ---------------------------------------------------------------------------- #
-#----------------------------#
-#   Derive MSOA populations  #
-#----------------------------#
-
-input %>%
-  filter(!is.na(practice_id)) %>%
-  group_by(msoa) %>%
-  summarise(msoa_pop_total = sum(household_size, na.rm = T),
-            msoa_n_practices = n_distinct(practice_id),
-            msoa_pop_ch = sum(household_size[care_home_type != "U"], na.rm = T),
-            msoa_pop_comm = sum(household_size[care_home_type == "U"], na.rm = T),
-            n_ch = n_distinct(household_id[care_home_type != "U"])) -> msoa_pop
 
 #----------------------------#
 #  Create community dataset  #
@@ -44,9 +32,12 @@ input %>%
 
 # Want a dataset of daily incidence of probable cases in the community, with
 # estimates of CH/non-CH population per MSOA
+
+# Count number of patients and unique MSOAs in TPP without a carehome flag
 input %>%
   filter(care_home_type == "U") %>%
   summarise(n = n(), msoa = n_distinct(msoa)) -> comm_tally
+
 write(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"),file="data_setup_log.txt", append = TRUE)
 
 input %>%
@@ -56,7 +47,7 @@ input %>%
   # exclude any cases pre-2020 
   filter(date > ymd("2020-01-01")) %>%
   # count probable diagnoses per day and per msoa
-  group_by(msoa, date) %>%
+  group_by(msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date) %>%
   summarise(probable_cases = n()) %>%
   ungroup() -> comm_probable
 
@@ -75,11 +66,11 @@ start <- Sys.time()
 comm_probable <- as.data.table(comm_probable)
 
 # Replicate per region (by vars are all values I want to copy down per date):
-all_dates <- comm_probable[,.(date=obs_per),by = "msoa"]
+all_dates <- comm_probable[,.(date=obs_per),by = c("msoa","tpp_pop", "msoa_pop", "70+", "tpp_cov"),]
 
 # Merge and fill count with 0:
-setkey(comm_probable, msoa, date)
-setkey(all_dates, msoa, date)
+setkey(comm_probable, msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date)
+setkey(all_dates, msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date)
 comm_probable_expand <- comm_probable[all_dates,roll=FALSE]
 comm_probable_expand <- comm_probable_expand[is.na(probable_cases), probable_cases:=0]
 
@@ -88,18 +79,18 @@ write(paste0("Finished expanding community dates (time = ",round(time,2),")"), f
 
 comm_probable_expand %>%
   lazy_dt() %>%
-  full_join(msoa_pop) %>%
-  mutate(probable_cases_rate = probable_cases*1e6/msoa_pop_comm) %>%
-  group_by(msoa) %>%
-  mutate(probable_cases_rate_total = sum(probable_cases)/unique(msoa_pop_comm)) %>%
-  ungroup() %>%
+  # full_join(tpp_cov) %>%
+  mutate(probable_cases_rate = probable_cases*1e6/msoa_pop) %>%
+  # group_by(msoa) %>%
+  # mutate(probable_cases_rate_total = sum(probable_cases)/unique(msoa_pop)) %>%
+  # ungroup() %>%
   as.data.frame() -> comm_prev
 
 #----------------------------#
 #        Save output         #
 #----------------------------#
 
-# write.csv(comm_prev, "./community_prevalence.csv", row.names = FALSE)
+write.csv(comm_prev, "./community_prevalence.csv", row.names = FALSE)
 saveRDS(comm_prev, "./community_prevalence.rds")
 
 ################################################################################

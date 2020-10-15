@@ -61,7 +61,7 @@ study = StudyDefinition(
     # Registered death, any COVID
     ons_covid_death_date=patients.with_these_codes_on_death_certificate(
        covid_codelist,
-       on_or_before="2020-06-01",
+       on_or_before="2020-10-01",
        match_only_underlying_cause=False,
        returning="date_of_death",
        date_format="YYYY-MM-DD",
@@ -192,7 +192,7 @@ study = StudyDefinition(
         returning="msoa_code",
         return_expectations={
             "rate": "universal",
-            "category": {"ratios": {"MSOA1": 0.5, "MSOA2": 0.5}},
+            "category": {"ratios": {"E02000001": 0.5, "E02000002": 0.5}},
         },
     ),    
 

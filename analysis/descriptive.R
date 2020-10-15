@@ -14,7 +14,7 @@ time_desc <- Sys.time()
 
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate")
+pacman::p_load("tidyverse", "lubridate", "patchwork")
 theme_set(theme_bw())
 
 input <- readRDS("./input_clean.rds")
@@ -41,8 +41,7 @@ ch %>%
 
 write.csv(per_msoa, file = "./ch_gp_permsoa.csv", row.names = FALSE)
 
-# Average number of carehomes per msoa
-print("Summary: number of carehomes per MSOA")
+# Summary: number of carehomes per MSOA
 per_msoa %>%
   pull(n_ch) %>%
   summary() 
@@ -161,11 +160,18 @@ tab2
 ################################################################################
 ## FIGURES 
 ################################################################################
-pdf(file = "./descriptive.pdf", height = 7, width = 9)
+# pdf(file = "./descriptive.pdf", height = 7, width = 9)
+
+## Age distribution
+png("./age_histogram.png", height = 600, width = 800)
+ggplot(input, aes(age, fill = care_home_type)) +
+  geom_histogram() 
+dev.off()
 
 ## Care home survival
 # Cumulative care home survival
 
+png("./ch_survival.png", height = 500, width = 500)
 ch_long %>%
   group_by(date) %>%
   filter(first_event > date) %>%
@@ -174,6 +180,7 @@ ch_long %>%
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
        x = "", y = "No. without event")
+dev.off()
 
 #------------------------------------------------------------------------------#
 
@@ -184,6 +191,7 @@ comm_prev %>%
   summarise(probable_cases_rate = mean(probable_cases_rate)) -> comm_prev_avg
 
 # Community incidence over time
+png("./community_inc.png", height = 500, width = 500)
 comm_prev %>%
   filter(date > ymd("2020-01-01")) %>%
   ggplot(aes(date, probable_cases_rate)) +
@@ -191,10 +199,12 @@ comm_prev %>%
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        x = "", y = "Rate")
+dev.off()
 
 #------------------------------------------------------------------------------#
 
 ## Community incidence versus care home introduction
+png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
   pivot_longer(c("probable_cases_rate","probable_chg7","probable_roll7")) %>%
@@ -205,10 +215,12 @@ dat %>%
   labs(title = "Community incidence versus 14-day-ahead introduction",
        y = "Daily probable cases in community, per 100,000",
        x = "Introduction in next 14 days")
+dev.off()
 
 #------------------------------------------------------------------------------#
 
 ## Hospital discharges of care home residents
+png("./discharges.png", height = 500, width = 500)
 dat %>%
   group_by(date) %>%
   summarise(n_disch = sum(n_disch, na.rm = T)) %>%
@@ -216,18 +228,22 @@ dat %>%
   geom_line() + 
   labs(title = "Hospital discharges of care home residents",
        x = "", y = "Count")
+dev.off()
 
 #------------------------------------------------------------------------------#
 
 ## Community, care home and older population epidemics
-## Currently just absolute numbers as unsure of denominator for 70+ in community...
+## Currently just absolute numbers as don't have denominator of population in 
+## community and carehome per MSOA
+
+png("./compare_epidemics.png", height = 500, width = 500)
 input %>%
   filter(!is.na(primary_care_case_probable) & primary_care_case_probable > ymd("2020-01-01")) %>%
   mutate(group = case_when(care_home_type == "U" & age < 70 ~ "Community",
                            care_home_type != "U" ~ "Care home",
                            care_home_type == "U" & age >= 70 ~ "Community, aged 70+")) %>%
   group_by(primary_care_case_probable, group) %>%
-  count() %>% 
+  summarise(n = n(), msoa_pop = unique(msoa_pop), pop_gt70 = unique(`70+`)) %>% 
   ggplot(aes(primary_care_case_probable, n, col = group)) +
   geom_line() +
   labs(title = "Daily probable cases identified through primary care",
@@ -235,7 +251,6 @@ input %>%
        x = "Date",
        y = "Count") + 
   theme(legend.position = c(0.2,0.8))
-
 dev.off()
 
 

@@ -72,23 +72,8 @@ input <- input_raw %>%
   left_join(tpp_cov, by = "msoa") %>%
   mutate(across(where(is.character), as.factor))
 
-write(paste0("Patients with missing HH MSOA/type: n = ", nrow(input_raw) - nrow(input)), file="data_setup_log.txt", append = TRUE)
-
-# No. HH in raw input data
-n_hh_raw <- n_distinct(input_raw$household_id)
-# No. HH in filtered data
-n_hh_nonmiss <- n_distinct(input$household_id)
-
-write(paste0("HHs with missing MSOA/type: n = ", n_hh_raw - n_hh_nonmiss), file="data_setup_log.txt", append = TRUE)
-
 summary(input)
 
-# how many covid?
-input_raw %>%
-  filter((is.na(msoa) | is.na(care_home_type)) & any(!is.na(event_dates))) %>%
-  nrow() -> n_cov_miss
-
-write(paste0("COVID-19 patients with missing MSOA/type: n = ", n_cov_miss), file="data_setup_log.txt", append = TRUE)
 
 # Run script to aggregate cases and populations by MSOA
 source("./analysis/get_community_prevalence.R")
@@ -103,23 +88,7 @@ input %>%
 # -> MIXEDSOFTWARE VARIABLE?
 ch %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>%
-  filter(mixed_household == 0 | mixed_household == FALSE) -> ch_1sys
-
-ch %>%
-  group_by(mixed_household) %>%
-  count()
-ch %>%
-  group_by(mixed_household) %>%
-  summarise(n_hh = n_distinct(household_id))
-
-write(paste0("Care homes registered under > 1 system: n = ", 
-             n_distinct(ch$household_id) - n_distinct(ch_1sys$household_id)), 
-      file="data_setup_log.txt", append = TRUE)
-write(paste0("Residents of care homes registered under > 1 system: n = ", 
-             nrow(ch)- nrow(ch_1sys)), 
-      file="data_setup_log.txt", append = TRUE)
-
-ch <- ch_1sys
+  filter(mixed_household == 0 | mixed_household == FALSE) -> ch
 
 #-----------------------------#
 #  Care home characteristics  #
@@ -157,10 +126,11 @@ ch_first_event <- ch %>%
   group_by(household_id, msoa) %>%
   summarise_at(vars(all_of(event_dates)),min) %>%
   ungroup() %>%
-  rename_at(-1:-2, function(x) paste0("first_",x)) %>%
+  rename_at(-1:-2, function(x) paste0("first_",x)) %>% 
   rowwise() %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
-         ever_affected = (first_event < ymd("3000-01-01"))) 
+         first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))]),
+         ever_affected = (first_event < ymd("3000-01-01")))
 
 summary(ch_first_event)
 

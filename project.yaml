@@ -1,17 +1,17 @@
-version: '1.1'
+version: '1.0'
 actions:
   generate_cohort:
     run: cohortextractor:latest generate_cohort --output-dir=/workspace
     outputs:
       highly_sensitive:
-        cohort: input.csv
-        
+        cohort: output/input.csv
+
   generate_cohort_coverage:
     run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage --output-dir=/workspace
     outputs:
       highly_sensitive:
-        cohort: input_coverage.csv
-        
+        cohort: output/input_coverage.csv
+
   calc_coverage:
     run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv msoa_pops.csv
     needs: [generate_cohort_coverage]
@@ -19,18 +19,18 @@ actions:
       moderately_sensitive:
         log: coverage_log.txt
         data: tpp_msoa_coverage.rds
-        
-   data_check:
+
+  data_check:
     run: r:latest analysis/data_check.R tpp_msoa_coverage.csv msoa_shp.rds input.csv
-    needs: [generate_cohort calc_coverage]
+    needs: [generate_cohort, calc_coverage]
     outputs:
       moderately_sensitive:
         log: data_checks.txt
         figure: tpp_coverage_map.png
-        
+
   data_setup:
     run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds
-    needs: [generate_cohort calc_coverage]
+    needs: [generate_cohort, calc_coverage]
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt
@@ -46,7 +46,7 @@ actions:
     run: r:latest analysis/descriptive.R input_clean.rds ch_linelist.rds ch_agg_long.rds community_prevalence.rds
     outputs:
       moderately_sensitive:
-        report: descriptive.pdf
+        #report: descriptive.pdf
         log: log_descriptive.txt
         data: ch_gp_permsoa.csv
 

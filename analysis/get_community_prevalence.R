@@ -80,7 +80,7 @@ write(paste0("Finished expanding community dates (time = ",round(time,2),")"), f
 comm_probable_expand %>%
   lazy_dt() %>%
   # full_join(tpp_cov) %>%
-  mutate(probable_cases_rate = probable_cases*1e6/msoa_pop) %>%
+  mutate(probable_cases_rate = probable_cases*1e5/msoa_pop) %>%
   # group_by(msoa) %>%
   # mutate(probable_cases_rate_total = sum(probable_cases)/unique(msoa_pop)) %>%
   # ungroup() %>%

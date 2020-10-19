@@ -17,18 +17,9 @@ write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
 ###############################################################################
 
 dat <- readRDS(args[1])
-# comm_prev <- readRDS(args[2])
 tpp_cov <- readRDS(args[2])
 
 # --------------------------------- Subset data ------------------------------ #
-
-# As a proxy for low TPP coverage, exclude MSOAs with less than a specified cut
-# off of total probable cases per 100,000
-# msoa_exclude <- comm_prev %>%
-#   group_by(msoa) %>%
-#   filter(probable_cases_rate_total < as.integer(cutoff)/1e5) %>%
-#   pull(msoa) %>%
-#   unique()
 
 # Exclude MSOAs with less than specified cut off of TPP coverage, as estimated
 # from TPP household size and MSOA populations
@@ -37,16 +28,19 @@ msoa_exclude <- tpp_cov %>%
   pull(msoa) %>%
   unique()
 
-# write(paste0("MSOAs excluded: n = ",length(msoa_exclude)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
 write(paste0("MSOAs excluded: n = ",length(msoa_exclude)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
 dat <- filter(dat, !msoa %in% msoa_exclude)
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
-  filter_at(vars(n_resid,rural_urban,ch_type,hh_med_age,hh_p_female,hh_maj_ethn,hh_p_dem,probable_cases_rate, probable_chg7,probable_roll7), all_vars(!is.na(.)))
+  filter_at(vars(n_resid,rural_urban,ch_type,hh_med_age,hh_p_female,hh_maj_ethn,hh_p_dem), all_vars(!is.na(.)))
 
-write(paste0("Rows excluded due to missingness: n = ",nrow(dat)-nrow(dat_na_rm)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
+write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
 dat <- dat_na_rm
+
+# Subset time to account for 7-day time lag
+dat <- dat %>%
+  filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7), all_vars(!is.na(.)))
 
 # ------------------------ Split data into training and test------------------ #
 

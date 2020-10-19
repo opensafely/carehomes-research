@@ -144,5 +144,16 @@ input %>%
             n_pat = n(),
             n_case = sum(case, na.rm = TRUE))
 
+png("./tpp_coverage_carehomes.png", height = 800, width = 800)
+input %>%
+  filter(care_home_type != "U") %>%
+  dplyr::select(household_id, percent_tpp) %>%
+  unique() %>% 
+  ggplot(aes(percent_tpp)) +
+  geom_histogram(bins = 30, fill = "steelblue") +
+  theme_minimal()
+dev.off() 
+
+
 sink()
 

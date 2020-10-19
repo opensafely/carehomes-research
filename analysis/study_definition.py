@@ -132,7 +132,9 @@ study = StudyDefinition(
 
     percent_tpp=patients.household_as_of(
         "2020-02-01",
-        returning="percentage_of_members_with_ehr_data_available"
+        returning="percentage_of_members_with_ehr_data_available",
+        return_expectations={"int": {"distribution": "normal", "mean": 75, "stddev": 10},
+        },
     ),
 
     # GP practice ID 

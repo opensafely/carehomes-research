@@ -35,6 +35,7 @@ actions:
       moderately_sensitive:
         log: data_setup_log.txt
         data: community_prevalence.rds
+        figure: ch_events.png
       highly_sensitive:
         analysis_data: analysisdata.rds
         input_data: input_clean.rds
@@ -46,7 +47,7 @@ actions:
     run: r:latest analysis/descriptive.R input_clean.rds ch_linelist.rds ch_agg_long.rds community_prevalence.rds
     outputs:
       moderately_sensitive:
-        #report: descriptive.pdf
+        report: descriptive.pdf
         log: log_descriptive.txt
         data: ch_gp_permsoa.csv
 

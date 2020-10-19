@@ -11,7 +11,7 @@
 
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo")
+pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo","sf")
 
 sink("./data_checks.txt", type = "output")
 
@@ -26,21 +26,22 @@ sink("./data_checks.txt", type = "output")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
+# Identify vars containing event dates
+event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
+
 # args = commandArgs(trailingOnly=TRUE)
-args <- c("tpp_msoa_coverage.csv", "./data/msoa_shp.rds", "./output/input.csv")
+args <- c("tpp_msoa_coverage.rds", "./data/msoa_shp.rds", "./output/input.csv")
 # args = commandArgs(trailingOnly=TRUE)
 
-tpp_cov <- fread(args[1], data.table = FALSE, na.strings = "") 
+tpp_cov <- readRDS(args[1])
 
 ## Load shapefiles
-msoa_shp <- readRDS(args[2])
+msoa_shp <- readRDS(args[2]) 
 
 input <- fread(args[3], data.table = FALSE, na.strings = "") %>%
   left_join(tpp_cov, by = "msoa") %>% 
-  mutate(across(where(is.character), as.factor))
-
-# Identify vars containing event dates
-event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
+  mutate(across(where(is.character), as.factor)) %>%
+  mutate(case = any(!is.na(event_dates)))
 
 # ---------------------------------------------------------------------------- #
 
@@ -80,18 +81,20 @@ pat_miss_type
 pat_cov_miss
 
 
-# No. households and patients per carehome type
+# No. households, patients and probable cases per carehome type
 input %>%
   group_by(care_home_type) %>%
   summarise(n_hh = n_distinct(household_id),
-            n_pat = n()) 
+            n_pat = n(),
+            n_case = sum(case, na.rm = TRUE)) 
 
 # probable prisons/institutions
 input %>%
   mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
   group_by(institution) %>%
   summarise(n_hh = n_distinct(household_id),
-            n_pat = n()) 
+            n_pat = n(),
+            n_case = sum(case, na.rm = TRUE)) 
 
 # TPP coverage by MSOA
 png("./tpp_coverage_map.png", height = 800, width = 800)
@@ -112,7 +115,8 @@ input %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
   group_by(mixed_household) %>% 
   summarise(n_hh = n_distinct(household_id),
-            n_pat = n()) 
+            n_pat = n(),
+            n_case = sum(case, na.rm = TRUE)) 
 
 
 sink()

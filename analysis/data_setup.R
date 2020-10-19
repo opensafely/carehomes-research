@@ -35,7 +35,8 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 # Time horizon for prediction
 ahead <- 14
 
-write("Data setup log",file="data_setup_log.txt")
+# write("Data setup log",file="data_setup_log.txt")
+sink("data_setup_log.txt")
 
 # ---------------------------------------------------------------------------- #
 
@@ -48,12 +49,11 @@ write("Data setup log",file="data_setup_log.txt")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-args <- c("./output/input.csv","tpp_msoa_coverage.csv")
+args <- c("./output/input.csv","tpp_msoa_coverage.rds")
 # args = commandArgs(trailingOnly=TRUE)
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
 
-tpp_cov <- fread(args[2], data.table = FALSE, na.strings = "") 
-
+tpp_cov <- readRDS(args[2])
 # ---------------------------------------------------------------------------- #
 #----------------------#
 #  TIDY DATA   #
@@ -75,7 +75,7 @@ input <- input_raw %>%
 summary(input)
 
 
-# Run script to aggregate cases and populations by MSOA
+# Run script to aggregate non-carehome cases by MSOA
 source("./analysis/get_community_prevalence.R")
 
 # Split out carehome residents
@@ -129,8 +129,9 @@ ch_first_event <- ch %>%
   rename_at(-1:-2, function(x) paste0("first_",x)) %>% 
   rowwise() %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
-         first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))]),
-         ever_affected = (first_event < ymd("3000-01-01")))
+         ever_affected = (first_event < ymd("3000-01-01")),
+         first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))]))
+ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
 summary(ch_first_event)
 
@@ -154,11 +155,13 @@ setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, im
 ch_wevent <- ch_wevent[all_dates,roll=TRUE]
 # ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
 
-time <- Sys.time() - start
-write(paste0("Finished expanding carehome dates (time = ",
-             round(time,2),
-             ")"), 
-      file="data_setup_log.txt", append = TRUE)
+# Finished expanding carehome dates: time = 
+round(Sys.time() - start,2)
+
+# write(paste0("Finished expanding carehome dates (time = ",
+#              round(time,2),
+#              ")"), 
+#       file="data_setup_log.txt", append = TRUE)
 
 #-----------------------------#
 #   Discharges to care home   #
@@ -237,10 +240,14 @@ saveRDS(dat, file = "./analysisdata.rds")
 
 ################################################################################
 
-time_total <- Sys.time() - time_total
-write(paste0("Total time running data_setup: ",
-             round(time_total,2)), 
-      file="data_setup_log.txt", append = TRUE)
+# Total time running data_setup:
+round(Sys.time() - time_total,2)
+
+# write(paste0("Total time running data_setup: ",
+#              round(time_total,2)), 
+#       file="data_setup_log.txt", append = TRUE)
+
+sink()
 
 ################################################################################
 

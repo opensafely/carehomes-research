@@ -84,11 +84,9 @@ input %>%
 
 # ---------------------------------------------------------------------------- #
 
-# Remove care homes registered with more than one system
-# -> MIXEDSOFTWARE VARIABLE?
+# Remove care homes with low TPP coverage
 ch %>%
-  mutate(mixed_household = replace_na(mixed_household, 0)) %>%
-  filter(mixed_household == 0 | mixed_household == FALSE) -> ch
+  filter(percent_tpp > 90) -> ch
 
 #-----------------------------#
 #  Care home characteristics  #
@@ -143,15 +141,15 @@ ch_wevent <- ch_chars %>%
 
 # Expand rows in data.table for speed:
 start <- Sys.time()
-vars <- names(select(ch_wevent, household_id:hh_p_dem,first_event, ever_affected))
+vars <- names(select(ch_wevent, household_id:hh_p_dem,first_event:first_event_which))
 ch_wevent <- as.data.table(ch_wevent)
 
 # Replicate per region (by vars are all values I want to copy down per date):
 all_dates <- ch_wevent[,.(date=study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, date)
-setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, date)
+setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, first_event_which, date)
+setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, first_event_which, date)
 ch_wevent <- ch_wevent[all_dates,roll=TRUE]
 # ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
 

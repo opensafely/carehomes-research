@@ -130,6 +130,11 @@ study = StudyDefinition(
         },
     ),
 
+    percent_tpp=patients.household_as_of(
+        "2020-02-01",
+        returning="percentage_of_members_with_ehr_data_available"
+    ),
+
     # GP practice ID 
     practice_id=patients.registered_practice_as_of(
         "2020-02-01", 

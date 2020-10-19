@@ -118,6 +118,31 @@ input %>%
             n_pat = n(),
             n_case = sum(case, na.rm = TRUE)) 
 
+# Care homes % TPP coverage
+summary(
+  input %>%
+  filter(care_home_type != "U") %>%
+  dplyr::select(household_id, percent_tpp) %>%
+  unique() %>% 
+  pull(percent_tpp)
+)
+
+summary(
+  input %>%
+  filter(care_home_type != "U") %>%
+  dplyr::select(household_id, percent_tpp) %>%
+  unique() %>% 
+  mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
+  pull(percent_tpp_cat)
+)
+
+input %>%
+  filter(care_home_type != "U") %>%
+  mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
+  group_by(percent_tpp_cat) %>%
+  summarise(n_hh = n_distinct(household_id),
+            n_pat = n(),
+            n_case = sum(case, na.rm = TRUE))
 
 sink()
 

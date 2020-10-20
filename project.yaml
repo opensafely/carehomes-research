@@ -36,7 +36,6 @@ actions:
       moderately_sensitive:
         log: data_setup_log.txt
         data: community_prevalence.rds
-        figure: ch_events.png
       highly_sensitive:
         analysis_data: analysisdata.rds
         input_data: input_clean.rds

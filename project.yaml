@@ -21,8 +21,8 @@ actions:
         data: tpp_msoa_coverage.rds
 
   data_check:
-    run: r:latest analysis/data_check.R tpp_msoa_coverage.csv msoa_shp.rds input.csv
-    needs: [generate_cohort, calc_coverage]
+    run: r:latest analysis/data_check.R tpp_msoa_coverage.rds msoa_shp.rds input.csv
+    needs: [generate_cohort calc_coverage]
     outputs:
       moderately_sensitive:
         log: data_checks.txt
@@ -31,16 +31,16 @@ actions:
 
   data_setup:
     run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds
-    needs: [generate_cohort, calc_coverage]
+    needs: [generate_cohort calc_coverage]
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt
         data: community_prevalence.rds
       highly_sensitive:
-        analysis_data: analysisdata.rds
-        input_data: input_clean.rds
-        ch_data: ch_linelist.rds
-        cg_agg_data: ch_agg_long.rds
+        data: analysisdata.rds
+        data: input_clean.rds
+        data: ch_linelist.rds
+        data: ch_agg_long.rds
 
   descriptive:
     needs: [data_setup]
@@ -50,7 +50,6 @@ actions:
         report: descriptive.pdf
         log: log_descriptive.txt
         data: ch_gp_permsoa.csv
-
 
   run_models_50_cutoff:
     needs: [data_setup]

@@ -97,17 +97,24 @@ input %>%
             n_case = sum(case, na.rm = TRUE)) 
 
 # TPP coverage by MSOA
-png("./tpp_coverage_map.png", height = 800, width = 800)
+png("./tpp_coverage_msoa.png", height = 800, width = 800)
 input %>%
   group_by(msoa) %>%
   summarise(tpp_cov = unique(tpp_cov)) %>%
-  full_join(msoa_shp, by = c("msoa" = "MSOA11CD")) %>%
-  ggplot(aes(geometry = geometry, fill = tpp_cov)) +
-  geom_sf(lwd = 0) + 
-  scale_fill_gradient2() +
+  ggplot(aes(tpp_cov)) +
+  geom_histogram(bins = 30, fill = "steelblue") +
   theme_minimal()
-dev.off() 
-
+dev.off()
+# png("./tpp_coverage_map.png", height = 800, width = 800)
+# input %>%
+#   group_by(msoa) %>%
+#   summarise(tpp_cov = unique(tpp_cov)) %>%
+#   full_join(msoa_shp, by = c("msoa" = "MSOA11CD")) %>%
+#   ggplot(aes(geometry = geometry, fill = tpp_cov)) +
+#   geom_sf(lwd = 0) + 
+#   scale_fill_gradient2() +
+#   theme_minimal()
+# dev.off() 
 
 # Care homes registered under > 1 system
 input %>%

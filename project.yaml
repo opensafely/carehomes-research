@@ -26,7 +26,7 @@ actions:
     outputs:
       moderately_sensitive:
         log: data_checks.txt
-        figure: tpp_coverage_map.png
+#        figure: tpp_coverage_map.png
         figure: tpp_coverage_carehomes.png
 
   data_setup:

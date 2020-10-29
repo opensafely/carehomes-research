@@ -105,6 +105,7 @@ input %>%
   geom_histogram(bins = 30, fill = "steelblue") +
   theme_minimal()
 dev.off()
+
 # png("./tpp_coverage_map.png", height = 800, width = 800)
 # input %>%
 #   group_by(msoa) %>%

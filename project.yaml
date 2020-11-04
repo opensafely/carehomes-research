@@ -1,7 +1,7 @@
 version: '1.0'
 actions:
   generate_cohort:
-    run: cohortextractor:latest generate_cohort --study_definition study_definition --output-dir=/workspace
+    run: cohortextractor:latest generate_cohort --study-definition study_definition --output-dir=/workspace
     outputs:
       highly_sensitive:
         cohort: output/input.csv

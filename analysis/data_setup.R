@@ -49,8 +49,8 @@ sink("data_setup_log.txt")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-args <- c("./output/input.csv","tpp_msoa_coverage.rds")
-# args = commandArgs(trailingOnly=TRUE)
+# args <- c("./output/input.csv","tpp_msoa_coverage.rds")
+args = commandArgs(trailingOnly=TRUE)
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
 
 tpp_cov <- readRDS(args[2])

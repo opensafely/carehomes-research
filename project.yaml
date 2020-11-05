@@ -17,7 +17,7 @@ actions:
         cohort: output/input_coverage.csv
 
   calc_coverage:
-    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv msoa_pops.csv
+    run: r:latest analysis/calculate_tpp_coverage.R output/input_coverage.csv data/msoa_pops.csv
     needs: [generate_cohort_coverage]
     outputs:
       moderately_sensitive:
@@ -25,7 +25,7 @@ actions:
         data: tpp_msoa_coverage.rds
 
   data_check:
-    run: r:latest analysis/data_check.R tpp_msoa_coverage.rds msoa_shp.rds input.csv
+    run: r:latest analysis/data_check.R tpp_msoa_coverage.rds output/input.csv
     needs: [generate_cohort, calc_coverage]
     outputs:
       moderately_sensitive:

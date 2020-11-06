@@ -5,16 +5,16 @@ expectations:
 
 actions:
   generate_cohort:
-    run: cohortextractor:latest generate_cohort --study-definition study_definition --output-dir=/workspace
+    run: cohortextractor:latest generate_cohort --study-definition study_definition
     outputs:
       highly_sensitive:
-        cohort: output/input.csv
+        cohort: input.csv
 
   generate_cohort_coverage:
-    run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage --output-dir=/workspace
+    run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage
     outputs:
       highly_sensitive:
-        cohort: output/input_coverage.csv
+        cohort: input_coverage.csv
 
   calc_coverage:
     run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/msoa_pops.csv

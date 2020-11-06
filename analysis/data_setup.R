@@ -51,9 +51,9 @@ sink("data_setup_log.txt")
 
 # args <- c("./output/input.csv","tpp_msoa_coverage.rds")
 args = commandArgs(trailingOnly=TRUE)
-input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
+tpp_cov <- readRDS(args[1])
+input_raw <- fread(args[2], data.table = FALSE, na.strings = "") 
 
-tpp_cov <- readRDS(args[2])
 # ---------------------------------------------------------------------------- #
 #----------------------#
 #  TIDY DATA   #

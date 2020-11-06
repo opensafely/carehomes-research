@@ -1,17 +1,17 @@
 version: '3.0'
 
 expectations:
-  population_size: 1000
+  population_size: 10000
 
 actions:
   generate_cohort:
-    run: cohortextractor:latest generate_cohort --study-definition study_definition
+    run: cohortextractor:latest generate_cohort --study-definition study_definition --output-dir=/workspace
     outputs:
       highly_sensitive:
         cohort: input.csv
 
   generate_cohort_coverage:
-    run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage
+    run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage --output-dir=/workspace
     outputs:
       highly_sensitive:
         cohort: input_coverage.csv
@@ -25,7 +25,7 @@ actions:
         data: tpp_msoa_coverage.rds
 
   data_check:
-    run: r:latest analysis/data_check.R tpp_msoa_coverage.rds input.csv
+    run: r:latest analysis/data_check.R input.csv tpp_msoa_coverage.rds
     needs: [generate_cohort, calc_coverage]
     outputs:
       moderately_sensitive:
@@ -41,10 +41,10 @@ actions:
         log: data_setup_log.txt
         data: community_prevalence.rds
       highly_sensitive:
-        data: analysisdata.rds
-        data: input_clean.rds
-        data: ch_linelist.rds
-        data: ch_agg_long.rds
+        analysisdata: analysisdata.rds
+        input_clean: input_clean.rds
+        ch_linelist: ch_linelist.rds
+        ch_agg_long: ch_agg_long.rds
 
   descriptive:
     needs: [data_setup]

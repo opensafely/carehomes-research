@@ -33,15 +33,16 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 # args <- c("tpp_msoa_coverage.rds", "./data/msoa_shp.rds", "./output/input.csv")
 args = commandArgs(trailingOnly=TRUE)
 
-tpp_cov <- readRDS(args[1])
-
 ## Load shapefiles
 # msoa_shp <- readRDS(args[2]) 
 
-input <- fread(args[2], data.table = FALSE, na.strings = "") %>%
+input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   left_join(tpp_cov, by = "msoa") %>% 
   mutate(across(where(is.character), as.factor)) %>%
   mutate(case = any(!is.na(event_dates)))
+
+
+tpp_cov <- readRDS(args[2])
 
 # ---------------------------------------------------------------------------- #
 

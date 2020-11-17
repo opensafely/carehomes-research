@@ -13,7 +13,9 @@ time_total <- Sys.time()
 
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo")
+library(tidyverse)
+library(data.table)
+library(dtplyr)
 
 # write("Calculating TPP coverage",file="coverage_log.txt")
 sink("./coverage_log.txt", type = "output")

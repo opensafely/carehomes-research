@@ -20,7 +20,9 @@
 
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr")
+library(tidyverse)
+library(data.table)
+library(dtplyr)
 
 write("Running get_community_prevalence...",file="data_setup_log.txt", append = TRUE)
 

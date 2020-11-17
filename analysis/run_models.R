@@ -6,7 +6,11 @@
 #
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate", "sandwich", "boot", "lmtest")
+library(tidyverse)
+library(data.table)
+library(sandwich)
+library(boot)
+library(lmtest)
 
 args = commandArgs(trailingOnly=TRUE)
 cutoff <- args[3]

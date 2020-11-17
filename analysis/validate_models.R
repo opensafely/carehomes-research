@@ -10,7 +10,9 @@
 
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate")
+library(tidyverse)
+library(data.table)
+
 theme_set(theme_bw())
 args = commandArgs(trailingOnly=TRUE)
 cutoff <- args[3]
@@ -21,6 +23,9 @@ test <- readRDS(args[2])
 ## ------------------------------- Prediction -------------------------------- ##
 
 test$pred <- predict(fit_opt, newdata = test, type = "response")
+
+brier_score_test <- mean((test$pred - test$event_ahead)^2)
+brier_score_test
 
 # Plot histograms of predicted risk for event/no event
 pdf(file = paste0("./test_pred_figs_",cutoff,".pdf"), height = 7, width = 10)

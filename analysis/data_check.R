@@ -11,7 +11,9 @@
 
 ################################################################################
 
-pacman::p_load("tidyverse", "lubridate", "data.table", "dtplyr", "zoo","sf")
+library(tidyverse)
+library(data.table)
+library(dtplyr)
 
 sink("./data_checks.txt", type = "output")
 

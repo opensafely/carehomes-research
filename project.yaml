@@ -17,7 +17,7 @@ actions:
         cohort: input_coverage.csv
 
   calc_coverage:
-    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/msoa_pops.csv
+    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/msoa_pop.csv
     needs: [generate_cohort_coverage]
     outputs:
       moderately_sensitive:

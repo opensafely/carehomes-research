@@ -23,6 +23,7 @@ actions:
       moderately_sensitive:
         log: coverage_log.txt
         data: tpp_msoa_coverage.rds
+        map: map_coverage_msoa.pdf
 
   data_check:
     run: r:latest analysis/data_check.R input.csv tpp_msoa_coverage.rds
@@ -30,7 +31,6 @@ actions:
     outputs:
       moderately_sensitive:
         log: data_checks.txt
-#        figure: tpp_coverage_map.png
         figure: tpp_coverage_carehomes.png
 
   data_setup:

@@ -79,7 +79,7 @@ summary(input)
 
 
 # Run script to aggregate non-carehome cases by MSOA
-source("./analysis/get_community_prevalence.R")
+# source("./analysis/get_community_prevalence.R")
 
 # Split out carehome residents
 input %>%

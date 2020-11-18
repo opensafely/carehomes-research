@@ -23,7 +23,7 @@ actions:
       moderately_sensitive:
         log: coverage_log.txt
         data: tpp_msoa_coverage.rds
-        map: map_coverage_msoa.pdf
+#        map: map_coverage_msoa.pdf
 
   data_check:
     run: r:latest analysis/data_check.R input.csv tpp_msoa_coverage.rds

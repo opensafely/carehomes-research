@@ -20,8 +20,8 @@ library(dtplyr)
 # write("Calculating TPP coverage",file="coverage_log.txt")
 sink("./coverage_log.txt", type = "output")
 
-shp <- sf::st_read(dsn = "./data/Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC",  
-                   layer = "Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC")
+# shp <- sf::st_read(dsn = "./data/Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC",  
+#                    layer = "Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC")
 
 # ---------------------------------------------------------------------------- #
 
@@ -58,15 +58,15 @@ input %>%
   mutate(tpp_cov = tpp_pop*100/msoa_pop) -> tpp_cov
 
 
-shp %>%
-  full_join(shp, by = c("MSOA11CD" = "msoa")) %>%
-  ggplot() +
-  geom_sf(aes(geometry = geometry, fill = tpp_cov)) +
-  theme_bw() -> map_cov
-
-pdf("./map_coverage_msoa.pdf", height = 10, width = 10)
-map_cov
-dev.off()
+# shp %>%
+#   full_join(shp, by = c("MSOA11CD" = "msoa")) %>%
+#   ggplot() +
+#   geom_sf(aes(geometry = geometry, fill = tpp_cov)) +
+#   theme_bw() -> map_cov
+# 
+# pdf("./map_coverage_msoa.pdf", height = 10, width = 10)
+# map_cov
+# dev.off()
 
 saveRDS(tpp_cov, file = "./tpp_msoa_coverage.rds")
 write.csv(tpp_cov, "./tpp_msoa_coverage.csv", row.names = FALSE)

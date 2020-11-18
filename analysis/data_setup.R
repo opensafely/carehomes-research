@@ -22,6 +22,7 @@ library(tidyverse)
 library(lubridate)
 library(data.table)
 library(dtplyr)
+library(zoo)
 
 # Function to calculate mode value
 getmode <- function(v) {

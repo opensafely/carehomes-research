@@ -78,14 +78,14 @@ formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3)
 ## --------------------------------- Fitting --------------------------------- ##
 
 time1 <- Sys.time()
-fits <- lapply(formulae, function(f) glm(f, family = "binomial", data = train))
+fits <- lapply(formulae, function(f) stats::glm(f, family = "binomial", data = train))
 write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
 lapply(fits, summary)
 
 # 10-fold cross-validation
 time2 <- Sys.time()
-cv_err <- lapply(formulae, function(f) boot::cv.glm(data = train, glmfit = glm(f, family = "binomial", data = train), K = 10))
+cv_err <- lapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10))
 write(paste0("Time running cross-validation: ",round(time2-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
 # Cross-validated estimate of prediction error [raw / adj for k-fold rather than LOO]:
@@ -101,6 +101,7 @@ print(coeffs)
 # Brier score of all models
 brier <- function(mod) mean(mod$residuals^2)
 brier_score_train <- lapply(fits, brier)
+brier_score_train
 
 ################################################################################
 

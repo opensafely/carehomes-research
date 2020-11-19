@@ -35,7 +35,7 @@ sink("./coverage_log.txt", type = "output")
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 
-# args <- c("./output\/input_coverage.csv","./data/msoa_pop.csv") 
+# args <- c("./output/input_coverage.csv","./data/msoa_pop.csv")
 args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%

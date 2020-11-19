@@ -29,7 +29,8 @@ study = StudyDefinition(
         returning="msoa_code",
         return_expectations={
             "rate": "universal",
-            "category": {"ratios": {"E02000001": 0.5, "E02000002": 0.5}},
+            "category": {"ratios": {"E02000001": 0.125, "E02000002": 0.125,"E02000003": 0.125, "E02000004": 0.125,
+                                    "E02000005": 0.125, "E02000006": 0.125,"E02000007": 0.125, "E02000008": 0.125}},
         },
     ),    
 

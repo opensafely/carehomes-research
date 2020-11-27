@@ -14,6 +14,7 @@
 library(tidyverse)
 library(data.table)
 library(dtplyr)
+library(lubridate)
 
 sink("./data_checks.txt")
 
@@ -32,7 +33,7 @@ sink("./data_checks.txt")
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
 # args = commandArgs(trailingOnly=TRUE)
-# args <- c("./output/input.csv","tpp_msoa_coverage.rds")
+args <- c("input.csv","tpp_msoa_coverage.rds")
 args = commandArgs(trailingOnly=TRUE)
 
 ## Load shapefiles
@@ -40,11 +41,13 @@ args = commandArgs(trailingOnly=TRUE)
 
 tpp_cov <- readRDS(args[2])
 
+
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   left_join(tpp_cov, by = "msoa") %>% 
-  mutate(across(where(is.character), as.factor)) %>%
   rowwise() %>%
-  mutate(case = any(!is.na(c_across(event_dates))))
+  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
+  mutate(across(all_of(event_dates), ymd),
+         across(where(is.character), as.factor)) 
 
 # ---------------------------------------------------------------------------- #
 

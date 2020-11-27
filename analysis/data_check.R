@@ -44,8 +44,10 @@ tpp_cov <- readRDS(args[2])
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   left_join(tpp_cov, by = "msoa") %>% 
+  slice_head(n = 1000) %>%
   rowwise() %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
+  ungroup() %>%
   mutate(across(all_of(event_dates), ymd),
          across(where(is.character), as.factor)) 
 

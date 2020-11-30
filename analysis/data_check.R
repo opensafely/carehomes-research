@@ -41,6 +41,8 @@ args = commandArgs(trailingOnly=TRUE)
 
 tpp_cov <- readRDS(args[2])
 
+# See https://github.com/opensafely/carehomes-research/issues/19#issuecomment-734874901
+options(datatable.old.fread.datetime.character=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   left_join(tpp_cov, by = "msoa") %>% 

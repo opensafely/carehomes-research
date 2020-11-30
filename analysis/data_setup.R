@@ -57,6 +57,7 @@ sink("data_setup_log.txt")
 args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
+options(datatable.old.fread.datetime.character=TRUE)
 tpp_cov <- readRDS(args[2])
 ch_cov_cutoff <- args[3]
 

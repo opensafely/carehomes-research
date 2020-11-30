@@ -29,7 +29,7 @@
 #
 #
 # ### import libraries and data
-# The dataset used for this report is `/output/input.csv`, created using the study definition `\analysis\study_definintion.py`. The `input.csv` file is imported as a dataframe called `df` and is not exposed. Instead, a dataset containing the frequency of these events per day within each STP is created. 
+# The dataset used for this report is `/output/input.csv`, created using the study definition `\analysis\study_definintion.py`. The `input.csv` file is imported as a dataframe called `df` and is not exposed. Instead, a dataset containing the frequency of these events per day within each STP is created.
 
 
 # +
@@ -39,42 +39,43 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 date_cols = [
-        "primary_care_case",
-        "primary_care_suspect_case",
-        "first_pos_test_sgss",
-        "a_e_consult_date",
-        "ons_covid_death_date",
+    "primary_care_case",
+    "primary_care_suspect_case",
+    "first_pos_test_sgss",
+    "a_e_consult_date",
+    "ons_covid_death_date",
 ]
 
 # import data
 df = pd.read_csv(
     #'../output/simulated_input.csv', #dummy data
-    '../output/input.csv', #real data
-    
+    "../output/input.csv",  # real data
     parse_dates=date_cols,
 )
 
 
 # +
-## View dataframe 
-#print(df)
+## View dataframe
+# print(df)
 
 ## check types
 print(df.dtypes)
 
 ## check earliest and latest dates
-print(df[date_cols].agg(['min', 'max']).transpose())
+print(df[date_cols].agg(["min", "max"]).transpose())
 
 
 # +
 ## Some data tidying
 
 # replace NaN with ""
-df[['msoa','stp','region','care_home_type']] = df[['msoa','stp','region','care_home_type']].fillna('')
+df[["msoa", "stp", "region", "care_home_type"]] = df[
+    ["msoa", "stp", "region", "care_home_type"]
+].fillna("")
 
 # derive some values:
 # select start and end dates / first at-risk date
-start_date = pd.to_datetime("2020-02-01", format='%Y-%m-%d')
+start_date = pd.to_datetime("2020-02-01", format="%Y-%m-%d")
 df_start_date = df[date_cols].min().min()
 df_end_date = df[date_cols].max().max()
 
@@ -82,9 +83,8 @@ df_end_date = df[date_cols].max().max()
 # derive some variables:
 # start date and cause-specific death deaths
 df = df.assign(
-    start_date = start_date,
+    start_date=start_date,
 )
-
 
 
 # +
@@ -99,16 +99,17 @@ consec_dates = pd.DataFrame(
 
 # -
 
-# The following function is used to calculate the daily number of events. First events only, no subsequent events (for instance if a patient is admitted to ICU twice only the first admission is observed). 
+# The following function is used to calculate the daily number of events. First events only, no subsequent events (for instance if a patient is admitted to ICU twice only the first admission is observed).
 
 # +
 # this counts the number of people on each date who have experienced a covid-related event
+
 
 def firsteventcountdata(all_dates, event_dates):
 
     # initialise dataset
     in_counts = all_dates
-    
+
     for col in event_dates:
 
         # Creates a series of the entry date of the index event
@@ -120,13 +121,13 @@ def firsteventcountdata(all_dates, event_dates):
 
     # convert nan to zero
     in_counts = in_counts.fillna(0)
-    
-    return(in_counts)
+
+    return in_counts
 
 
 # -
 
-var = 'stp'
+var = "stp"
 strata = sorted(df[var].unique())
 df[var].value_counts()
 
@@ -135,7 +136,7 @@ df[var].value_counts()
 counts_per_day_list = list()
 
 for strat in strata:
-    events_strat = (event_dates[df[var] == strat])
+    events_strat = event_dates[df[var] == strat]
     counts_strat = firsteventcountdata(consec_dates, events_strat)
     counts_strat[var] = strat
     counts_per_day_list.append(counts_strat)
@@ -148,22 +149,16 @@ counts_per_day = pd.concat(counts_per_day_list)
 # Redact numbers between 1 and 5 inclusive
 
 counts_per_day_redacted = counts_per_day.copy()
-counts_per_day_redacted[date_cols] = (counts_per_day_redacted[date_cols]).apply(lambda x: np.where((x<6) & (x>0), np.nan, x))
+counts_per_day_redacted[date_cols] = (counts_per_day_redacted[date_cols]).apply(
+    lambda x: np.where((x < 6) & (x > 0), np.nan, x)
+)
 print(counts_per_day_redacted)
 
 # +
 # save to file
-counts_per_day_redacted.to_csv(path_or_buf = "../data/event_counts_by_"+var+".csv")
+counts_per_day_redacted.to_csv(path_or_buf="../data/event_counts_by_" + var + ".csv")
 
-df[var].value_counts().to_csv(path_or_buf = "../data/total_patient_counts_by_ "+var+".csv")
+df[var].value_counts().to_csv(
+    path_or_buf="../data/total_patient_counts_by_ " + var + ".csv"
+)
 # -
-
-
-
-
-
-
-
-
-
-

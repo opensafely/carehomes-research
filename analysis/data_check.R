@@ -24,9 +24,9 @@ sink("./data_checks.txt")
 #  LOAD DATA  #
 #----------------------#
 
-# * input.csv 
+# * input.csv
 #   - individual health records for identification of covid events
-# * community_prevalence.csv 
+# * community_prevalence.csv
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
 # Identify vars containing event dates
@@ -37,7 +37,7 @@ args <- c("input.csv","tpp_msoa_coverage.rds")
 args = commandArgs(trailingOnly=TRUE)
 
 ## Load shapefiles
-# msoa_shp <- readRDS(args[2]) 
+# msoa_shp <- readRDS(args[2])
 
 tpp_cov <- readRDS(args[2])
 
@@ -45,13 +45,13 @@ tpp_cov <- readRDS(args[2])
 options(datatable.old.fread.datetime.character=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
-  left_join(tpp_cov, by = "msoa") %>% 
+  left_join(tpp_cov, by = "msoa") %>%
   slice_head(n = 1000) %>%
   rowwise() %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
   ungroup() %>%
   mutate(across(all_of(event_dates), ymd),
-         across(where(is.character), as.factor)) 
+         across(where(is.character), as.factor))
 
 # ---------------------------------------------------------------------------- #
 
@@ -100,7 +100,7 @@ input %>%
   group_by(care_home_type) %>%
   summarise(n_hh = n_distinct(household_id),
             n_pat = n(),
-            n_case = sum(case, na.rm = TRUE)) 
+            n_case = sum(case, na.rm = TRUE))
 
 print("Probable prisons/institutions (size>15 and not CH)")
 input %>%
@@ -108,7 +108,7 @@ input %>%
   group_by(institution) %>%
   summarise(n_hh = n_distinct(household_id),
             n_pat = n(),
-            n_case = sum(case, na.rm = TRUE)) 
+            n_case = sum(case, na.rm = TRUE))
 
 # TPP coverage by MSOA
 png("./tpp_coverage_msoa.png", height = 800, width = 800)
@@ -126,26 +126,26 @@ dev.off()
 #   summarise(tpp_cov = unique(tpp_cov)) %>%
 #   full_join(msoa_shp, by = c("msoa" = "MSOA11CD")) %>%
 #   ggplot(aes(geometry = geometry, fill = tpp_cov)) +
-#   geom_sf(lwd = 0) + 
+#   geom_sf(lwd = 0) +
 #   scale_fill_gradient2() +
 #   theme_minimal()
-# dev.off() 
+# dev.off()
 
 print("Care homes registered under > 1 system:")
 input %>%
   filter(care_home_type != "U") %>%
-  mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
-  group_by(mixed_household) %>% 
+  mutate(mixed_household = replace_na(mixed_household, 0)) %>%
+  group_by(mixed_household) %>%
   summarise(n_hh = n_distinct(household_id),
             n_pat = n(),
-            n_case = sum(case, na.rm = TRUE)) 
+            n_case = sum(case, na.rm = TRUE))
 
 print("Care homes % TPP coverage:")
 summary(
   input %>%
   filter(care_home_type != "U") %>%
   dplyr::select(household_id, percent_tpp) %>%
-  unique() %>% 
+  unique() %>%
   pull(percent_tpp)
 )
 
@@ -154,7 +154,7 @@ summary(
   input %>%
   filter(care_home_type != "U") %>%
   dplyr::select(household_id, percent_tpp) %>%
-  unique() %>% 
+  unique() %>%
   mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
   pull(percent_tpp_cat)
 )
@@ -171,11 +171,11 @@ png("./tpp_coverage_carehomes.png", height = 800, width = 800)
 input %>%
   filter(care_home_type != "U") %>%
   dplyr::select(household_id, percent_tpp) %>%
-  unique() %>% 
+  unique() %>%
   ggplot(aes(percent_tpp)) +
   geom_histogram(bins = 30, fill = "steelblue") +
   theme_minimal()
-dev.off() 
+dev.off()
 
 
 sink()

@@ -46,7 +46,6 @@ options(datatable.old.fread.datetime.character=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   left_join(tpp_cov, by = "msoa") %>%
-  slice_head(n = 1000) %>%
   rowwise() %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
   ungroup() %>%

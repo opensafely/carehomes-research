@@ -17,7 +17,7 @@ actions:
         cohort: input_coverage.csv
 
   calc_coverage:
-    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/msoa_pop.csv
+    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/SAPE22DT15-mid-2019-msoa.csv
     needs: [generate_cohort_coverage]
     outputs:
       moderately_sensitive:
@@ -35,6 +35,7 @@ actions:
         log: data_checks.txt
         figure1: tpp_coverage_msoa.png
         figure2: tpp_coverage_carehomes.png
+        figure3: age_dist.png
 
   data_setup:
     run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 90

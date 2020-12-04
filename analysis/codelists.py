@@ -4,20 +4,20 @@ from cohortextractor import (
 )
 
 covid_primary_care_probable_case_clinical = codelist_from_csv(
-    "codelists/opensafely-covid-identification-in-primary-care-probable-covid-clinical-code.csv",
-    system="ctv3",
+    "codelists/opensafely-covid-identification-in-primary-care-probable-covid-clinical-code.csv", 
+    system="ctv3", 
     column="CTV3ID",
 )
 
 covid_primary_care_probable_case_test = codelist_from_csv(
     "codelists/opensafely-covid-identification-in-primary-care-probable-covid-positive-test.csv",
-    system="ctv3",
+    system="ctv3", 
     column="CTV3ID",
 )
 
 covid_primary_care_probable_case_seq = codelist_from_csv(
     "codelists/opensafely-covid-identification-in-primary-care-probable-covid-clinical-code.csv",
-    system="ctv3",
+    system="ctv3", 
     column="CTV3ID",
 )
 

@@ -42,11 +42,12 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(msoa))
 
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
-  rename(msoa = `Area Codes`,
+  rename(msoa = `MSOA Code`,
          msoa_pop = `All Ages`) %>%
   rowwise() %>%
-  mutate(`70+` = sum(`70`:`90+`)) %>%
-  dplyr::select(msoa, msoa_pop, `70+`)
+  mutate(`70+` = sum(`70-74`:`90+`)) %>%
+  dplyr::select(msoa, msoa_pop, `70+`) %>%
+  ungroup()
 
 # Sum household sizes across all unique household IDs
 summary(input)

@@ -53,11 +53,10 @@ sink("data_setup_log.txt")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./output/input.csv","tpp_msoa_coverage.rds")
+# args <- c("./input.csv","tpp_msoa_coverage.rds", 90)
 args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
-options(datatable.old.fread.datetime.character=TRUE)
 tpp_cov <- readRDS(args[2])
 ch_cov_cutoff <- args[3]
 
@@ -77,7 +76,8 @@ input <- input_raw %>%
          ethnicity = as.factor(ethnicity),
          # redefine -1 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         across(c(event_dates,"discharge_date"), ymd)) %>%
+         across(all_of(c(event_dates,"discharge_date")), function(x) case_when(ymd(x) < ymd("2020-01-01") ~ NA,
+                                                                               ymd(x) >= ymd("2020-01-01") ~ ymd(x)))) %>%
   left_join(tpp_cov, by = "msoa") %>%
   mutate(across(where(is.character), as.factor))
 

@@ -73,7 +73,7 @@ actions:
         fit: fit_opt.rds
         data: testdata.rds
 
-  validate_models_50_cutoff:
+  validate_models:
     needs: [run_models]
     run: r:latest analysis/validate_models.R fit_opt.rds testdata.rds 0
     outputs:

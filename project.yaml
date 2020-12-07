@@ -38,7 +38,7 @@ actions:
         figure3: age_dist.png
 
   data_setup:
-    run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 90
+    run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 80
     needs: [generate_cohort, calc_coverage]
     outputs:
       moderately_sensitive:
@@ -61,48 +61,28 @@ actions:
         data: ch_gp_permsoa.csv
 
 
-  run_models_50_cutoff:
+  run_models:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 50
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 0
     outputs:
       moderately_sensitive:
-        coeffs: coeffs_bestmod_50.csv
-        output: output_model_run_50.txt
-        log: log_model_run_50.txt
+        coeffs: coeffs_bestmod.csv
+        output: output_model_run.txt
+        log: log_model_run.txt
       highly_sensitive:
-        fit: fit_opt_50.rds
-        data: testdata_50.rds
+        fit: fit_opt.rds
+        data: testdata.rds
 
   validate_models_50_cutoff:
-    needs: [run_models_50_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_50.rds testdata_50.rds 50
+    needs: [run_models]
+    run: r:latest analysis/validate_models.R fit_opt.rds testdata.rds 0
     outputs:
       moderately_sensitive:
-        report: test_pred_figs_50.pdf
-
-
-  run_models_90_cutoff:
-    needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 90
-    outputs:
-      moderately_sensitive:
-        coeffs: coeffs_bestmod_90.csv
-        output: output_model_run_90.txt
-        log: log_model_run_90.txt
-      highly_sensitive:
-        fit: fit_opt_90.rds
-        data: testdata_90.rds
-
-  validate_models_90_cutoff:
-    needs: [run_models_90_cutoff]
-    run: r:latest analysis/validate_models.R fit_opt_90.rds testdata_90.rds 90
-    outputs:
-      moderately_sensitive:
-        report: test_pred_figs_90.pdf
+        report: test_pred_figs.pdf
 
 
   run_all:
-    needs: [validate_models_90_cutoff, validate_models_50_cutoff, descriptive]
+    needs: [validate_models, validate_models, descriptive]
     # In order to be valid this action needs to define a run commmand and
     # some output. We don't really care what these are but the below seems to
     # do the trick.

@@ -33,7 +33,7 @@ sink("./data_checks.txt")
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
 # args = commandArgs(trailingOnly=TRUE)
-args <- c("input.csv","tpp_msoa_coverage.rds")
+# args <- c("input.csv","tpp_msoa_coverage.rds")
 args = commandArgs(trailingOnly=TRUE)
 
 ## Load shapefiles
@@ -49,7 +49,9 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
   ungroup() %>%
   mutate(across(all_of(event_dates), ymd),
-         across(where(is.character), as.factor)) 
+         across(where(is.character), as.factor),
+         test_death_delay = ons_covid_death_date - first_pos_test_sgss,
+         prob_death_delay = ons_covid_death_date - first_pos_test_sgss) 
 
 # ---------------------------------------------------------------------------- #
 
@@ -187,6 +189,24 @@ input %>%
   theme_minimal()
 dev.off() 
 
+
+print("Care home residents test-diagnosis delay")
+summary(
+input %>%
+  filter(care_home_type != "U") %>%
+  pull(prob_death_delay, test_death_delay) 
+)
+  
+
+png("./infection_death_delays.png", height = 800, width = 1200)
+input %>%
+  filter(care_home_type != "U") %>%
+  pivot_longer(prob_death_delay:test_death_delay) %>%
+  ggplot(aes(value)) +
+  geom_histogram(bins = 30, fill = "steelblue") +
+  facet_wrap(~name) +
+  theme_minimal()
+dev.off() 
 
 sink()
 

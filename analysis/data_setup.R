@@ -24,6 +24,9 @@ library(data.table)
 library(dtplyr)
 library(zoo)
 
+
+options(datatable.old.fread.datetime.character=TRUE)
+
 # Function to calculate mode value
 getmode <- function(v) {
   uniqv <- unique(v)
@@ -35,6 +38,7 @@ study_per <- seq(as.Date("2020-04-15"),as.Date("2020-09-30"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
+dates <- c(event_dates,"discharge_date")
 
 # Time horizon for prediction
 ahead <- 14
@@ -53,7 +57,7 @@ sink("data_setup_log.txt")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input.csv","tpp_msoa_coverage.rds", 90)
+args <- c("./output/input.csv","tpp_msoa_coverage.rds", 90)
 args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
@@ -68,6 +72,13 @@ ch_cov_cutoff <- args[3]
 # drop rows with missing msoa or carehome flag, set up variable formats and join
 # msoa populations
 
+replace_old_dates <- function(x) {
+  x[x < '2020-01-01'] <- NA
+  return(as_date(x))
+}
+
+summary(replace_old_dates(ymd(input_raw$primary_care_case_probable)))
+
 input <- input_raw %>%
   # drop missing MSOA and care home type
   filter(!is.na(msoa) & !is.na(care_home_type)) %>%
@@ -76,13 +87,16 @@ input <- input_raw %>%
          ethnicity = as.factor(ethnicity),
          # redefine -1 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         across(all_of(c(event_dates,"discharge_date")), function(x) case_when(ymd(x) < ymd("2020-01-01") ~ NA,
-                                                                               ymd(x) >= ymd("2020-01-01") ~ ymd(x)))) %>%
+         # replace any dates < 2020 as na
+         across(all_of(dates), ymd),
+         across(all_of(dates), replace_old_dates)
+         ) %>% 
   left_join(tpp_cov, by = "msoa") %>%
   mutate(across(where(is.character), as.factor))
 
-summary(input)
+# mutate(dat, dist = ifelse(speed == 4, dist * 100, dist)
 
+summary(input)
 
 # Run script to aggregate non-carehome cases by MSOA
 source("./analysis/get_community_prevalence.R")

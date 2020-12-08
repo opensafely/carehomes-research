@@ -37,8 +37,10 @@ actions:
         figure1: tpp_coverage_msoa.png
         figure2: tpp_coverage_carehomes.png
         figure3: age_dist.png
+        figure4: infection_death_delays.png
 
   data_setup:
+  # last numeric argument relates to cut off for carehome TPP coverage >= X%
     run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 80
     needs: [generate_cohort, calc_coverage]
     outputs:

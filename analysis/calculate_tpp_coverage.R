@@ -43,8 +43,9 @@ args = commandArgs(trailingOnly=TRUE)
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(msoa))
 
-summary(input)
+n_distinct(input$msoa)
 
+summary(input)
 
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   rename(msoa = `MSOA Code`,
@@ -54,6 +55,7 @@ msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   dplyr::select(msoa, msoa_pop, `70+`) %>%
   ungroup()
 
+n_distinct(msoa_pop$msoa)
 
 input %>%
   group_by(msoa) %>%
@@ -65,7 +67,7 @@ summary(tpp_cov)
 
 png("./total_vs_tpp_pop.png", height = 800, width = 800)
 tpp_cov %>%
-  ggplot(aes(msoa_pop - tpp_pop)) +
+  ggplot(aes(tpp_cov)) +
   geom_histogram(bins = 30, fill = "steelblue") +
   theme_minimal()
 dev.off() 
@@ -82,5 +84,8 @@ dev.off()
 
 saveRDS(tpp_cov, file = "./tpp_msoa_coverage.rds")
 write.csv(tpp_cov, "./tpp_msoa_coverage.csv", row.names = FALSE)
+
+tpp_msoas <- unique(input$msoa)
+write.csv(tpp_msoas, "./msoas_in_tpp.csv", row.names = FALSE)
 
 sink()

@@ -24,6 +24,7 @@ actions:
         log: coverage_log.txt
         rds: tpp_msoa_coverage.rds
         csv: tpp_msoa_coverage.csv
+        csv2: msoas_in_tpp.csv
         figure: total_vs_tpp_pop.png
 #        map: map_coverage_msoa.pdf
 

@@ -17,7 +17,7 @@ actions:
         cohort: input_coverage.csv
 
   calc_coverage:
-    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/SAPE22DT15-mid-2019-msoa.csv
+    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/SAPE22DT15_mid_2019_msoa.csv
     needs: [generate_cohort_coverage]
     outputs:
       moderately_sensitive:

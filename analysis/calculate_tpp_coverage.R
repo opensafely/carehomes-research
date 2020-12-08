@@ -20,6 +20,8 @@ library(dtplyr)
 # write("Calculating TPP coverage",file="coverage_log.txt")
 sink("./coverage_log.txt", type = "output")
 
+options(datatable.old.fread.datetime.character=TRUE)
+
 # shp <- sf::st_read(dsn = "./data/Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC",  
 #                    layer = "Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC")
 
@@ -35,11 +37,14 @@ sink("./coverage_log.txt", type = "output")
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 
-# args <- c("./output/input_coverage.csv","./data/msoa_pop.csv")
+# args <- c("./output/input_coverage.csv","./data/SAPE22DT15-mid-2019-msoa.csv")
 args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(msoa))
+
+summary(input)
+
 
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   rename(msoa = `MSOA Code`,
@@ -49,8 +54,6 @@ msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   dplyr::select(msoa, msoa_pop, `70+`) %>%
   ungroup()
 
-# Sum household sizes across all unique household IDs
-summary(input)
 
 input %>%
   group_by(msoa) %>%

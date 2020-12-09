@@ -85,6 +85,7 @@ input <- input_raw %>%
   # set up var formats
   mutate(dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),
+         rural_urban = as.factor(rural_urban),
          # redefine -1 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
          # replace any dates < 2020 as na

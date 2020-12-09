@@ -50,8 +50,8 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   ungroup() %>%
   mutate(across(all_of(event_dates), ymd),
          across(where(is.character), as.factor),
-         test_death_delay = ons_covid_death_date - first_pos_test_sgss,
-         prob_death_delay = ons_covid_death_date - first_pos_test_sgss) 
+         test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
+         prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss)) 
 
 # ---------------------------------------------------------------------------- #
 
@@ -194,7 +194,7 @@ print("Care home residents test-diagnosis delay")
 summary(
 input %>%
   filter(care_home_type != "U") %>%
-  pull(prob_death_delay, test_death_delay) 
+  dplyr::select(prob_death_delay, test_death_delay) 
 )
   
 

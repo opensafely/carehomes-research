@@ -41,6 +41,7 @@ options(datatable.old.fread.datetime.character=TRUE)
 args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+  filter(!is.na(msoa)) %>%
   mutate(msoa = as.factor(msoa))
 
 n_distinct(input$msoa)
@@ -48,19 +49,20 @@ n_distinct(input$msoa)
 summary(input)
 
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
-  rename(msoa = `MSOA Code`,
+  mutate(msoa = as.factor(`MSOA Code`),
          msoa_pop = `All Ages`) %>%
   rowwise() %>%
   mutate(`70+` = sum(`70-74`:`90+`)) %>%
   dplyr::select(msoa, msoa_pop, `70+`) %>%
   ungroup()
 
+print("No. unique MSOAs with patients registered in TPP:")
 n_distinct(msoa_pop$msoa)
 
 input %>%
   group_by(msoa) %>%
   count(name = "tpp_pop") %>%
-  full_join(msoa_pop) %>%
+  inner_join(msoa_pop) %>%
   mutate(tpp_cov = tpp_pop*100/msoa_pop) -> tpp_cov
 
 summary(tpp_cov)

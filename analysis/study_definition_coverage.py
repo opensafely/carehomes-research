@@ -34,6 +34,15 @@ study = StudyDefinition(
                                     "E02000009": 0.0625, "E02000010": 0.0625,"E02000011": 0.0625, "E02000012": 0.0625,
                                     "E02000013": 0.0625, "E02000014": 0.0625,"E02000015": 0.0625, "E02000016": 0.0625}},        },
     ),    
+    
+    household_id=patients.household_as_of(
+        "2020-02-01",
+        returning="pseudo_id",
+        return_expectations={
+            "int": {"distribution": "normal", "mean": 1000, "stddev": 200},
+            "incidence": 1,
+        },
+    ),
 
 )
 

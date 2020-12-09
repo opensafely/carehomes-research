@@ -37,31 +37,32 @@ options(datatable.old.fread.datetime.character=TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 
-# args <- c("./output/input_coverage.csv","./data/SAPE22DT15-mid-2019-msoa.csv")
+args <- c("./output/input_coverage.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
 args = commandArgs(trailingOnly=TRUE)
 
-input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+input <- fread(args[1], data.table = FALSE, na.strings = "", drop = 1) %>%
   filter(!is.na(msoa)) %>%
-  mutate(msoa = as.factor(msoa))
+  mutate(msoa = as.factor(msoa)) %>%
+  unique()
 
+print("No. unique MSOAs with patients registered in TPP:")
 n_distinct(input$msoa)
-
-summary(input)
 
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(`MSOA Code`),
          msoa_pop = `All Ages`) %>%
+  filter(grep("E", msoa)) %>%
   rowwise() %>%
   mutate(`70+` = sum(`70-74`:`90+`)) %>%
   dplyr::select(msoa, msoa_pop, `70+`) %>%
   ungroup()
 
-print("No. unique MSOAs with patients registered in TPP:")
+print("No. MSOAs in England:")
 n_distinct(msoa_pop$msoa)
 
 input %>%
   group_by(msoa) %>%
-  count(name = "tpp_pop") %>%
+  summarise(tpp_pop = sum(household_size, na.rm = TRUE)) %>%
   inner_join(msoa_pop) %>%
   mutate(tpp_cov = tpp_pop*100/msoa_pop) -> tpp_cov
 

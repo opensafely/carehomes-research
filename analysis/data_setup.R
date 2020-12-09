@@ -57,7 +57,7 @@ sink("data_setup_log.txt")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-args <- c("./output/input.csv","tpp_msoa_coverage.rds", 90)
+# args <- c("./output/input.csv","tpp_msoa_coverage.rds", 90)
 args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
@@ -77,7 +77,7 @@ replace_old_dates <- function(x) {
   return(as_date(x))
 }
 
-summary(replace_old_dates(ymd(input_raw$primary_care_case_probable)))
+summary(input_raw)
 
 input <- input_raw %>%
   # drop missing MSOA and care home type

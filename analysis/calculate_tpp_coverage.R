@@ -37,10 +37,11 @@ options(datatable.old.fread.datetime.character=TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 
-# args <- c("./output/input_coverage.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
-args = commandArgs(trailingOnly=TRUE)
+args <- c("./output/input_coverage.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
+# args = commandArgs(trailingOnly=TRUE)
 
-input <- fread(args[1], data.table = FALSE, na.strings = "", drop = 1) %>%
+input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+  dplyr::select(-patient_id) %>%
   filter(!is.na(msoa)) %>%
   mutate(msoa = as.factor(msoa)) %>%
   unique()

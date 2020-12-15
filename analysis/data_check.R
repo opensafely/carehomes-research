@@ -15,6 +15,8 @@ library(tidyverse)
 library(data.table)
 library(dtplyr)
 library(lubridate)
+library(ggplot2)
+library(sf)
 
 sink("./data_checks.txt")
 
@@ -33,13 +35,13 @@ sink("./data_checks.txt")
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
 # args = commandArgs(trailingOnly=TRUE)
-# args <- c("input.csv","tpp_msoa_coverage.rds")
+# args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds")
 args = commandArgs(trailingOnly=TRUE)
 
-## Load shapefiles
-# msoa_shp <- readRDS(args[2]) 
-
 tpp_cov <- readRDS(args[2])
+
+## Load shapefiles
+msoa_shp <- readRDS(args[3])
 
 options(datatable.old.fread.datetime.character=TRUE)
 
@@ -132,17 +134,6 @@ input %>%
   theme_minimal()
 dev.off()
 
-# png("./tpp_coverage_map.png", height = 800, width = 800)
-# input %>%
-#   group_by(msoa) %>%
-#   summarise(tpp_cov = unique(tpp_cov)) %>%
-#   full_join(msoa_shp, by = c("msoa" = "MSOA11CD")) %>%
-#   ggplot(aes(geometry = geometry, fill = tpp_cov)) +
-#   geom_sf(lwd = 0) + 
-#   scale_fill_gradient2() +
-#   theme_minimal()
-# dev.off() 
-
 print("Care homes registered under > 1 system:")
 input %>%
   filter(care_home_type != "U") %>%
@@ -189,6 +180,17 @@ input %>%
   theme_minimal()
 dev.off() 
 
+input %>%
+  group_by(msoa) %>%
+  summarise(tpp_cov = mean(tpp_cov, na.rm = T)) -> by_msoa
+png("./tpp_coverage_map.png", height = 800, width = 800)
+msoa_shp %>% 
+  full_join(by_msoa, by = c("MSOA11CD" = "msoa")) %>%
+  ggplot(aes(geometry = geometry, fill = tpp_cov)) +
+  geom_sf(lwd = 0) +
+  scale_fill_gradient2(midpoint = 100) +
+  theme_minimal()
+dev.off()
 
 print("Care home residents test-diagnosis delay")
 summary(

@@ -44,7 +44,9 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   dplyr::select(-patient_id) %>%
   filter(!is.na(msoa)) %>%
   mutate(msoa = as.factor(msoa)) %>%
-  unique()
+  group_by(household_id) %>%
+  #keep one row per household to sum sizes
+  slice_head()
 
 print("No. unique MSOAs with patients registered in TPP:")
 n_distinct(input$msoa)

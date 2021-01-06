@@ -25,6 +25,7 @@ actions:
         rds: tpp_msoa_coverage.rds
         csv: tpp_msoa_coverage.csv
         csv2: msoas_in_tpp.csv
+        csv3: msoa_gt_100_cov.csv
         figure: total_vs_tpp_pop.png
 #        map: map_coverage_msoa.pdf
 

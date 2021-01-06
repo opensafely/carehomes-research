@@ -46,10 +46,21 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(msoa)) %>%
   group_by(household_id) %>%
   #keep one row per household to sum sizes
-  slice_head()
+  slice_sample(n = 1) 
 
 print("No. unique MSOAs with patients registered in TPP:")
 n_distinct(input$msoa)
+
+print("No. rows per household ID:")
+input %>% 
+  group_by(household_id) %>%
+  tally() %>%
+  pull(n) %>%
+  summary()
+
+input %>%
+  group_by(msoa) %>%
+  summarise(tpp_pop = sum(household_size, na.rm = TRUE)) -> tpp_pop
 
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(`MSOA Code`),
@@ -63,13 +74,15 @@ msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
 print("No. MSOAs in England:")
 n_distinct(msoa_pop$msoa)
 
-input %>%
-  group_by(msoa) %>%
-  summarise(tpp_pop = sum(household_size, na.rm = TRUE)) %>%
+tpp_pop %>%
   inner_join(msoa_pop) %>%
-  mutate(tpp_cov = tpp_pop*100/msoa_pop) -> tpp_cov
+  mutate(tpp_cov = tpp_pop*100/msoa_pop,
+         cov_gt_100 = ifelse(tpp_cov > 100, "Yes", "No")) -> tpp_cov
 
 summary(tpp_cov)
+
+over100 <- filter(tpp_cov, cov_gt_100 == "Yes")
+write.csv(over100, "./msoa_gt_100_cov.csv", row.names = FALSE)
 
 png("./total_vs_tpp_pop.png", height = 800, width = 800)
 tpp_cov %>%

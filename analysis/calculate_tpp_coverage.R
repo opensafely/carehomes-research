@@ -65,13 +65,13 @@ input %>%
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(`MSOA Code`),
          msoa_pop = `All Ages`) %>%
-  filter(grepl("E", msoa)) %>%
+  # filter(grepl("E", msoa)) %>%
   rowwise() %>%
   mutate(`70+` = sum(`70-74`:`90+`)) %>%
   dplyr::select(msoa, msoa_pop, `70+`) %>%
   ungroup()
 
-print("No. MSOAs in England:")
+print("No. MSOAs in England & Wales:")
 n_distinct(msoa_pop$msoa)
 
 tpp_pop %>%

@@ -195,7 +195,7 @@ study = StudyDefinition(
     # obtain RESIDENT msoa rather than PRACTICE**
     msoa=patients.household_as_of(
         "2020-02-01",
-        returning="MSOA",
+        returning="msoa",
         return_expectations={
             "rate": "universal",
             "category": {"ratios": {"E02000001": 0.0625, "E02000002": 0.0625,"E02000003": 0.0625, "E02000004": 0.0625,

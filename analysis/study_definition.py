@@ -147,9 +147,6 @@ study = StudyDefinition(
         },
     ),
     
-    # The rest of the lines define the covariates with associated GitHub issues
-    # https://github.com/ebmdatalab/tpp-sql-notebook/issues/33
-
     # region - one of NHS England 9 regions
     region=patients.registered_practice_as_of(
         "2020-02-01",
@@ -194,9 +191,11 @@ study = StudyDefinition(
         },
     ),
 
-    msoa=patients.registered_practice_as_of(
+    # **Using household_as_of instead of registered_practice_as_of in order to 
+    # obtain RESIDENT msoa rather than PRACTICE**
+    msoa=patients.household_as_of(
         "2020-02-01",
-        returning="msoa_code",
+        returning="MSOA",
         return_expectations={
             "rate": "universal",
             "category": {"ratios": {"E02000001": 0.0625, "E02000002": 0.0625,"E02000003": 0.0625, "E02000004": 0.0625,

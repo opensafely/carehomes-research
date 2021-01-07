@@ -24,9 +24,9 @@ study = StudyDefinition(
         "2020-01-01", "2020-02-01"
     ),
 
-    msoa=patients.registered_practice_as_of(
+    msoa=patients.household_as_of(
         "2020-02-01",
-        returning="msoa_code",
+        returning="MSOA",
         return_expectations={
             "rate": "universal",
             "category": {"ratios": {"E02000001": 0.0625, "E02000002": 0.0625,"E02000003": 0.0625, "E02000004": 0.0625,

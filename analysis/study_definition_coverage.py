@@ -24,7 +24,7 @@ study = StudyDefinition(
         "2020-01-01", "2020-02-01"
     ),
 
-    msoa=patients.household_as_of(
+    msoa=patients.address_as_of(
         "2020-02-01",
         returning="msoa",
         return_expectations={

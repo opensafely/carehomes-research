@@ -193,7 +193,7 @@ study = StudyDefinition(
 
     # **Using household_as_of instead of registered_practice_as_of in order to 
     # obtain RESIDENT msoa rather than PRACTICE**
-    msoa=patients.household_as_of(
+    msoa=patients.address_as_of(
         "2020-02-01",
         returning="msoa",
         return_expectations={

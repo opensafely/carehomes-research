@@ -216,7 +216,7 @@ ch_long %>%
 # png("./community_inc.png", height = 500, width = 500)
 ch_long %>%
   filter(date > ymd("2020-01-01")) %>%
-  ggplot(aes(date, probable_cases_roll7)) +
+  ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",

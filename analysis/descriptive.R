@@ -98,7 +98,7 @@ chars_waffect %>%
             `No. residents` = sum(n_resid, na.rm = T),
             ch_size_mean = round(mean(ch_size, na.rm = T),2),
             ch_size_sd = round(sqrt(var(ch_size, na.rm = T)),2),
-            `% rural` = round(sum(rural_urban == "rural")/N, 2),
+            # `% rural` = round(sum(rural_urban == "rural")/N, 2),
             imd_mean = round(mean(imd, na.rm = T)),
             imd_sd = round(sqrt(var(imd, na.rm = T)),2)) %>%
   mutate(N_perc = round(N/N_ch_tot,2),
@@ -107,7 +107,7 @@ chars_waffect %>%
          `IMD mean(sd)` = paste0(imd_mean, " (",imd_sd,")")) %>%
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
-  dplyr::select(N, `% rural`, `IMD mean(sd)`, `size mean(sd)`, `No. residents`) %>%
+  dplyr::select(N, `IMD mean(sd)`, `size mean(sd)`, `No. residents`) %>% #`% rural`,
   cbind(tab_type) -> tab1
 
 tab1
@@ -185,6 +185,15 @@ ch_long %>%
        x = "", y = "No. without event")
 # dev.off()
 
+ch_long %>%
+  group_by(date, ch_type) %>%
+  filter(first_event > date) %>%
+  summarise(n = n_distinct(household_id)) %>%
+  ggplot(aes(date, n, col = ch_type)) +
+  geom_line() +
+  labs(title = "Survival of care homes from COVID-19 introduction - by type",
+       x = "", y = "No. without event")
+
 # Type of first event
 # png("./ch_events.png", height = 800, width = 1000)
 ch_long %>%
@@ -199,15 +208,15 @@ ch_long %>%
 
 ## Community burden
 # Average daily incidence
-comm_prev %>%
+ch_long %>%
   group_by(date) %>%
   summarise(probable_cases_rate = mean(probable_cases_rate)) -> comm_prev_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
-comm_prev %>%
+ch_long %>%
   filter(date > ymd("2020-01-01")) %>%
-  ggplot(aes(date, probable_cases_rate)) +
+  ggplot(aes(date, probable_cases_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
@@ -220,7 +229,7 @@ comm_prev %>%
 # png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
-  pivot_longer(c("probable_cases_rate","probable_chg7","probable_roll7")) %>%
+  pivot_longer(c("probable_cases_rate","probable_roll7")) %>%
   ggplot(aes(event_ahead, value)) +
   geom_boxplot() +
   coord_flip() +

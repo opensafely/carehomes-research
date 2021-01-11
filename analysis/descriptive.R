@@ -210,12 +210,13 @@ ch_long %>%
 # Average daily incidence
 ch_long %>%
   group_by(date) %>%
-  summarise(probable_cases_rate = mean(probable_cases_rate)) -> comm_prev_avg
+  summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
+  ungroup() -> comm_prev_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 ch_long %>%
-  filter(date > ymd("2020-01-01")) %>%
+  filter(date > ymd("2020-01-01")) %>% 
   ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 

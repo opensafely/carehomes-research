@@ -43,7 +43,7 @@ actions:
 
   data_setup:
   # last numeric argument relates to cut off for carehome TPP coverage >= X%
-    run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 80
+    run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 95
     needs: [generate_cohort, calc_coverage]
     outputs:
       moderately_sensitive:
@@ -68,22 +68,22 @@ actions:
 
   run_models:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 0
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 90
     outputs:
       moderately_sensitive:
-        coeffs: coeffs_bestmod_0.csv
-        output: output_model_run_0.txt
-        log: log_model_run_0.txt
+        coeffs: coeffs_bestmod_90.csv
+        output: output_model_run_90.txt
+        log: log_model_run_90.txt
       highly_sensitive:
-        fit: fit_opt_0.rds
-        data: testdata_0.rds
+        fit: fit_opt_90.rds
+        data: testdata_90.rds
 
   validate_models:
     needs: [run_models]
-    run: r:latest analysis/validate_models.R fit_opt_0.rds testdata_0.rds 0
+    run: r:latest analysis/validate_models.R fit_opt_90.rds testdata_90.rds 0
     outputs:
       moderately_sensitive:
-        report: test_pred_figs_0.pdf
+        report: test_pred_figs_90.pdf
 
 
   run_all:

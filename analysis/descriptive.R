@@ -167,8 +167,9 @@ pdf(file = "./descriptive.pdf", height = 7, width = 9)
 
 ## Age distribution
 # png("./age_histogram.png", height = 600, width = 800)
-ggplot(input, aes(age, fill = care_home_type)) +
-  geom_histogram() 
+ggplot(input, aes(age)) +
+  geom_histogram() +
+  facet_wrap(~ care_home_type)
 # dev.off()
 
 ## Care home survival
@@ -200,7 +201,8 @@ ch_long %>%
   filter(ever_affected) %>%
   ggplot(aes(first_event, fill = first_event_which)) +
   geom_histogram() + 
-  theme_minimal()
+  theme_minimal() +
+  theme(legend.position = c(0.8,0.8))
 # dev.off()
 
 
@@ -230,7 +232,7 @@ ch_long %>%
 # png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
-  pivot_longer(c("probable_cases_rate","probable_roll7")) %>%
+  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
   ggplot(aes(event_ahead, value)) +
   geom_boxplot() +
   coord_flip() +
@@ -249,7 +251,7 @@ dat %>%
   summarise(n_disch = sum(n_disch, na.rm = T)) %>%
   ggplot(aes(date, n_disch)) +
   geom_line() + 
-  labs(title = "Hospital discharges of care home residents",
+  labs(title = "Total hospital discharges of care home residents",
        x = "", y = "Count")
 # dev.off()
 

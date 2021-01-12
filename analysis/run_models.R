@@ -15,7 +15,7 @@ library(lmtest)
 args = commandArgs(trailingOnly=TRUE)
 cutoff <- args[3]
 # cutoff<- 100
-sink(paste0("./output_model_run_", cutoff, ".txt"))
+sink(paste0("./output_model_run_", cutoff, ".txt"), type = "output")
 write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
 
 ###############################################################################
@@ -69,11 +69,11 @@ f2 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn +
 # Time-varying (3): 7-day rolling average
 f3 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7
 
-# Time varying (4): Multiple lags
-# f4a <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag1wk
-# f4b <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag2wk
+# Time varying (4): Lagged
+f4a <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag1wk
+f4b <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag2wk
 
-formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3)
+formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b)
 
 ## --------------------------------- Fitting --------------------------------- ##
 
@@ -81,6 +81,7 @@ time1 <- Sys.time()
 fits <- lapply(formulae, function(f) stats::glm(f, family = "binomial", data = train))
 write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
+print("Summary: Model fits")
 lapply(fits, summary)
 
 # 10-fold cross-validation
@@ -88,7 +89,7 @@ time2 <- Sys.time()
 cv_err <- lapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10))
 write(paste0("Time running cross-validation: ",round(time2-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
-# Cross-validated estimate of prediction error [raw / adj for k-fold rather than LOO]:
+print("Cross-validated estimate of prediction error [raw / adj for k-fold rather than LOO]:")
 err <- lapply(cv_err, function(cv) cv$delta[2])
 print(err)
 fit_opt <- fits[[which.min(err)]]
@@ -100,9 +101,11 @@ serr <- sandwich::vcovCL(fit, cluster = train$household_id)
 coeffs <- lmtest::coeftest(fit, vcov. = serr)
 print(coeffs)
 }
+
+print("Summary: Model coeffs with robust SEs")
 lapply(fits, print_coeffs)
 
-# Brier score of all models
+print("Brier score w/ training data")
 brier <- function(mod) mean(mod$residuals^2)
 brier_score_train <- lapply(fits, brier)
 brier_score_train

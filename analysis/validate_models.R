@@ -20,10 +20,13 @@ cutoff <- args[3]
 fit_opt <- readRDS(args[1])
 test <- readRDS(args[2])
 
+sink(paste0("./output_model_val_", cutoff, ".txt"), type = "output")
+
 ## ------------------------------- Prediction -------------------------------- ##
 
 test$pred <- predict(fit_opt, newdata = test, type = "response")
 
+print("Brier score w/ test data")
 brier_score_test <- mean((test$pred - test$event_ahead)^2)
 brier_score_test
 
@@ -74,6 +77,6 @@ dev.off()
 
 ################################################################################
 
-# sink()
+sink()
 
 ################################################################################

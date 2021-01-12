@@ -44,7 +44,7 @@ dates <- c(event_dates,"discharge_date")
 ahead <- 14
 
 # write("Data setup log",file="data_setup_log.txt")
-sink("data_setup_log.txt")
+sink("data_setup_log.txt", type = "output")
 
 # ---------------------------------------------------------------------------- #
 
@@ -77,6 +77,7 @@ replace_old_dates <- function(x) {
   return(as_date(x))
 }
 
+print("Summary: Raw input")
 summary(input_raw)
 
 input <- input_raw %>%
@@ -97,6 +98,7 @@ input <- input_raw %>%
 
 # mutate(dat, dist = ifelse(speed == 4, dist * 100, dist)
 
+print("Summary: Cleaned input")
 summary(input)
 
 # Run script to aggregate non-carehome cases by MSOA
@@ -134,6 +136,7 @@ ch_chars <- ch %>%
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() 
 
+print("Summary: Care home characteristics")
 summary(ch_chars)
 
 #-----------------------------#
@@ -155,6 +158,7 @@ ch_first_event <- ch %>%
          first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))]))
 ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
+print("Summary: First care home events")
 summary(ch_first_event)
 
 # Join care home characteristics with first event dates 
@@ -245,6 +249,7 @@ make_data_t <- function(t, ahead = 14){
 # apply function for each date in range and bind
 dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 
+print("Summary: Analysis data")
 summary(dat)
 
 dat %>%

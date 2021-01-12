@@ -8,7 +8,7 @@
 #
 ################################################################################
 
-sink("./log_descriptive.txt")
+sink("./log_descriptive.txt", type = "output")
 
 time_desc <- Sys.time()
 
@@ -44,7 +44,7 @@ ch %>%
 
 write.csv(per_msoa, file = "./ch_gp_permsoa.csv", row.names = FALSE)
 
-# Summary: number of carehomes per MSOA
+print("Summary: number of carehomes per MSOA")
 per_msoa %>%
   pull(n_ch) %>%
   summary() 
@@ -63,9 +63,11 @@ ch_chars <- ch_long %>%
   dplyr::select(all_of(chars)) %>%
   distinct()
 
-# Missingness in care home characteristics:
+print("Missingness in care home characteristics:")
+print(
 ch_chars %>%
   summarise_all(function(x) sum(is.na(x))) 
+)
 
 ch_overall <- ch_chars %>%
   mutate(ever_affected = "Overall")
@@ -95,7 +97,7 @@ chars_waffect %>%
 chars_waffect %>%
   group_by(ever_affected) %>%
   summarise(N = n(),
-            `No. residents` = sum(n_resid, na.rm = T),
+            `No. TPP residents` = sum(n_resid, na.rm = T),
             ch_size_mean = round(mean(ch_size, na.rm = T),2),
             ch_size_sd = round(sqrt(var(ch_size, na.rm = T)),2),
             # `% rural` = round(sum(rural_urban == "rural")/N, 2),
@@ -107,9 +109,10 @@ chars_waffect %>%
          `IMD mean(sd)` = paste0(imd_mean, " (",imd_sd,")")) %>%
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
-  dplyr::select(N, `IMD mean(sd)`, `size mean(sd)`, `No. residents`) %>% #`% rural`,
+  dplyr::select(N, `IMD mean(sd)`, `size mean(sd)`, `No. TPP residents`) %>% #`% rural`,
   cbind(tab_type) -> tab1
 
+print("Summarise carehome characteristics by ever affected:")
 tab1
 
 #------------------------------------------------------------------------------#
@@ -130,7 +133,7 @@ ch %>%
 
 ch_resid_all %>%
   group_by(ever_affected) %>%
-  summarise(`No. residents` = n(),
+  summarise(`No. TPP residents` = n(),
             med_age = round(median(age, na.rm = T)),
             q_age = paste(round(quantile(age, 
                                          probs = c(0.25, 0.75), 
@@ -141,7 +144,7 @@ ch_resid_all %>%
          `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. residents`,2),")")) %>%
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
-  dplyr::select(`No. residents`, `age med[IQR]`, `dementia n(%)` ) -> tab_age
+  dplyr::select(`No. TPP residents`, `age med[IQR]`, `dementia n(%)` ) -> tab_age
 
 ch_resid_all %>%
   group_by(ever_affected, ethnicity) %>%
@@ -158,6 +161,8 @@ ch_resid_all %>%
   dplyr::select(-n_resid) -> tab_ethn
 
 tab2 <- cbind(tab_age, tab_ethn)
+
+print("Summarise resident characteristics by ever affected:")
 tab2
 
 ################################################################################
@@ -190,8 +195,9 @@ ch_long %>%
   group_by(date, ch_type) %>%
   filter(first_event > date) %>%
   summarise(n = n_distinct(household_id)) %>%
-  ggplot(aes(date, n, col = ch_type)) +
+  ggplot(aes(date, n)) +
   geom_line() +
+  facet_wrap(~ch_type) +
   labs(title = "Survival of care homes from COVID-19 introduction - by type",
        x = "", y = "No. without event")
 

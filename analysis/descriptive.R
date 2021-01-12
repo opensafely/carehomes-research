@@ -141,7 +141,7 @@ ch_resid_all %>%
             n_dem = sum(dementia, na.rm = T)
   ) %>% 
   mutate(`age med[IQR]` = paste0(med_age, " [",q_age,"]"),
-         `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. residents`,2),")")) %>%
+         `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. TPP residents`,2),")")) %>%
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(`No. TPP residents`, `age med[IQR]`, `dementia n(%)` ) -> tab_age

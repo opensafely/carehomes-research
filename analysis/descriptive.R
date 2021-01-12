@@ -66,7 +66,8 @@ ch_chars <- ch_long %>%
 print("Missingness in care home characteristics:")
 print(
 ch_chars %>%
-  summarise_all(function(x) sum(is.na(x))) 
+  summarise_all(function(x) sum(is.na(x))) %>%
+  pivot_longer(cols = everything())
 )
 
 ch_overall <- ch_chars %>%
@@ -174,7 +175,7 @@ pdf(file = "./descriptive.pdf", height = 7, width = 9)
 # png("./age_histogram.png", height = 600, width = 800)
 ggplot(input, aes(age)) +
   geom_histogram() +
-  facet_wrap(~ care_home_type)
+  facet_wrap(~ care_home_type, scales = "free_y")
 # dev.off()
 
 ## Care home survival
@@ -197,7 +198,7 @@ ch_long %>%
   summarise(n = n_distinct(household_id)) %>%
   ggplot(aes(date, n)) +
   geom_line() +
-  facet_wrap(~ch_type) +
+  facet_wrap(~ch_type, scales = "free_y") +
   labs(title = "Survival of care homes from COVID-19 introduction - by type",
        x = "", y = "No. without event")
 

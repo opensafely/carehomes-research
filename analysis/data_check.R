@@ -18,7 +18,7 @@ library(lubridate)
 library(ggplot2)
 library(sf)
 
-sink("./data_checks.txt")
+sink("./data_checks.txt", type = "output")
 
 # ---------------------------------------------------------------------------- #
 

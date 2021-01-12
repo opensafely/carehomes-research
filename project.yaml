@@ -68,22 +68,22 @@ actions:
 
   run_models:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 80
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 50
     outputs:
       moderately_sensitive:
-        coeffs: coeffs_bestmod_80.csv
-        output: output_model_run_80.txt
-        log: log_model_run_80.txt
+        coeffs: coeffs_bestmod_50.csv
+        output: output_model_run_50.txt
+        log: log_model_run_50.txt
       highly_sensitive:
-        fit: fit_opt_80.rds
-        data: testdata_80.rds
+        fit: fit_opt_50.rds
+        data: testdata_50.rds
 
   validate_models:
     needs: [run_models]
-    run: r:latest analysis/validate_models.R fit_opt_80.rds testdata_80.rds 80
+    run: r:latest analysis/validate_models.R fit_opt_50.rds testdata_50.rds 50
     outputs:
       moderately_sensitive:
-        report: test_pred_figs_80.pdf
+        report: test_pred_figs_50.pdf
 
 
   run_all:

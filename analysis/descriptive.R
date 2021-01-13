@@ -65,9 +65,8 @@ ch_chars <- ch_long %>%
 
 print("Missingness in care home characteristics:")
 print(
-ch_chars %>%
-  summarise_all(function(x) sum(is.na(x))) %>%
-  pivot_longer(cols = everything())
+  ch_chars %>%
+    summarise_all(function(x) sum(is.na(x))) 
 )
 
 ch_overall <- ch_chars %>%
@@ -194,7 +193,7 @@ ch_long %>%
 
 ch_long %>%
   group_by(date, ch_type) %>%
-  filter(first_event > date) %>%
+  filter(first_event > date & ch_type != "PS") %>%
   summarise(n = n_distinct(household_id)) %>%
   ggplot(aes(date, n)) +
   geom_line() +
@@ -230,7 +229,8 @@ ch_long %>%
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
-       x = "", y = "Rate")
+       x = "", y = "Rate") + 
+  ylim(c(0,100))
 # dev.off()
 
 #------------------------------------------------------------------------------#
@@ -253,13 +253,13 @@ dat %>%
 
 ## Hospital discharges of care home residents
 # png("./discharges.png", height = 500, width = 500)
-dat %>%
-  group_by(date) %>%
-  summarise(n_disch = sum(n_disch, na.rm = T)) %>%
-  ggplot(aes(date, n_disch)) +
-  geom_line() + 
-  labs(title = "Total hospital discharges of care home residents",
-       x = "", y = "Count")
+# dat %>%
+#   group_by(date) %>%
+#   summarise(n_disch = sum(n_disch, na.rm = T)) %>%
+#   ggplot(aes(date, n_disch)) +
+#   geom_line() + 
+#   labs(title = "Total hospital discharges of care home residents",
+#        x = "", y = "Count")
 # dev.off()
 
 #------------------------------------------------------------------------------#

@@ -92,6 +92,17 @@ input %>%
             n_pat = n(),
             n_case = sum(case, na.rm = TRUE)) 
 
+# Distribution of household size, 
+png("./hh_size_dist.png", height = 800, width = 1500)
+input %>%
+  group_by(care_home_type, household_id) %>%
+  summarise(household_size = median(household_size, na.rm = T)) %>%
+  ggplot(aes(household_size)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(~group, scales = "free") +
+  theme_minimal()
+dev.off()
+
 print("Probable prisons/institutions (size>15 and not CH)")
 input %>%
   mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
@@ -99,7 +110,6 @@ input %>%
   summarise(n_hh = n_distinct(household_id),
             n_pat = n(),
             n_case = sum(case, na.rm = TRUE)) 
-
 
 # Age distribution in carehomes/community
 png("./age_dist.png", height = 800, width = 1500)

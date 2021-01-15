@@ -72,7 +72,7 @@ actions:
     run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 80
     outputs:
       moderately_sensitive:
-        coeffs: coeffs_bestmod_80.csv
+       # coeffs: coeffs_bestmod_80.csv
         output: output_model_run_80.txt
         log: log_model_run_80.txt
       highly_sensitive:

@@ -37,7 +37,7 @@ dat <- filter(dat, !msoa %in% msoa_exclude)
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
-  filter_at(vars(ch_size,ch_type,hh_med_age,hh_p_female,hh_maj_ethn,hh_p_dem), all_vars(!is.na(.)))
+  filter_at(vars(ch_size,ch_type,hh_med_age,hh_p_female,hh_p_dem), all_vars(!is.na(.)))
 
 write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
 dat <- dat_na_rm
@@ -58,20 +58,20 @@ saveRDS(test, paste0("./testdata_",cutoff,".rds"))
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk
-f0 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem
+f0 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem #hh_maj_ethn + 
 
 # Time-varying (1): current day cases
-f1 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_cases_rate
+f1 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_cases_rate
 
 # Time-varying (2): 7-day change
-f2 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_chg7
+f2 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_chg7
 
 # Time-varying (3): 7-day rolling average
-f3 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7
+f3 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7
 
 # Time varying (4): Lagged
-f4a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag2wk
+f4a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag1wk
+f4b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk
 
 formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b)
 
@@ -120,7 +120,7 @@ fit_opt <- fits[[which.min(err)]]
 ################################################################################
 
 saveRDS(fit_opt, paste0("./fit_opt_",cutoff,".rds"))
-write.csv(coeffs,paste0("./coeffs_bestmod_",cutoff,".csv"))
+# write.csv(coeffs,paste0("./coeffs_bestmod_",cutoff,".csv"))
 
 ################################################################################
 

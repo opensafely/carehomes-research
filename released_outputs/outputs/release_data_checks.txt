@@ -1,41 +1,44 @@
-[1] "HHs with missing MSOA: n = "
-[1] 3325
+[1] "Patients with missing HH MSOA:"
+    Mode    FALSE 
+ logical 20688918 
 
-[1] "Patients with missing MSOA: n = "
-[1] 2966688
+[1] "Patients with missing HH type:"
+    Mode    FALSE     TRUE 
+ logical 20688741      177
+ 
+[1] "HHs with missing MSOA: n = "
+[1] 0
 
 [1] "HHs with missing type: n = "
-[1] 134
+[1] 133
 
-[1] "Patients with missing HH type: n = "
-[1] 216203
-
-[1] "Probable COVID cases with missing MSOA or HH type: n = "
-[1] 101542
+[1] "COVID cases with missing MSOA or HH type: n = "
+[1] [REDACTED]
 
 [1] "No. households, patients and probable cases per carehome type:"
 # A tibble: 5 x 4
   care_home_type    n_hh    n_pat n_case
   <fct>            <int>    <int>  <int>
-1 PC               10551    55869  10428
-2 PN                7365    47288  10500
-3 PS                 315     2470    580
-4 U              9214820 23334359 767630
-5 <NA>               134   216203   7220
+1 PC               10541    54553  10284
+2 PN                7364    46093  10356
+3 PS                 314     2415    566
+4 U              9211073 20585680 673607
+5 <NA>               133      177 [REDACTED]
 
 [1] "Probable prisons/institutions (size>15 and not CH)"
 # A tibble: 3 x 4
   institution    n_hh    n_pat n_case
   <lgl>         <int>    <int>  <int>
-1 FALSE       9226138 23517619 790037
+1 FALSE       9222382 20550348 688497
 2 TRUE           4435   138567   6321
-
+3 NA       [REDACTED][REDACTED]     0
+ 
 [1] "Care homes registered under > 1 system:"
 # A tibble: 2 x 4
   mixed_household  n_hh n_pat n_case
             <dbl> <int> <int>  <int>
-1               0  7404 32176   6190
-2               1 10413 73451  15318
+1               0  7397 29618   5892
+2               1 10410 73443  15314
 
 [1] "Care homes % TPP coverage:"
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -43,23 +46,24 @@
 
 [1] "Care homes % TPP coverage category:"
 (-0.1,20]   (20,40]   (40,60]   (60,80]  (80,100] 
-      598       622       840      2032     13725 
+      597       622       840      2031     13717 
 
 # A tibble: 5 x 4
   percent_tpp_cat  n_hh n_pat n_case
   <fct>           <int> <int>  <int>
-1 (-0.1,20]         598  6880   1078
+1 (-0.1,20]         597  4328    783
 2 (20,40]           622  3582    904
 3 (40,60]           840  5135   1050
-4 (60,80]          2032 13300   2984
-5 (80,100]        13725 76730  15492
+4 (60,80]          2031 13294   2982
+5 (80,100]        13717 76722  15487
 
-[1] "Care home residents test/diagnosis to death"
+[1] "Care home residents test-diagnosis delay"
  prob_death_delay test_death_delay
  Min.   :-17.00   Min.   :-17.00  
  1st Qu.:  4.00   1st Qu.:  4.00  
  Median :  7.00   Median :  7.00  
- Mean   : 11.54   Mean   : 11.54  
+ Mean   : 11.53   Mean   : 11.53  
  3rd Qu.: 14.00   3rd Qu.: 14.00  
  Max.   :148.00   Max.   :148.00  
- NA's   :102394   NA's   :102394  
+ NA's   :99865    NA's   :99865   
+

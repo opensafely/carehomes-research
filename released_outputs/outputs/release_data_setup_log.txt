@@ -1,85 +1,88 @@
 [1] "Summary: Cleaned input"
- primary_care_case_probable first_pos_test_sgss 
- Min.   :2020-01-01         Min.   :2020-02-05  
- 1st Qu.:2020-09-29         1st Qu.:2020-10-13  
- Median :2020-10-28         Median :2020-11-10  
- Mean   :2020-10-02         Mean   :2020-10-23  
- 3rd Qu.:2020-11-14         3rd Qu.:2020-12-15  
- Max.   :2020-12-30         Max.   :2021-01-02  
- NA's   :20293434           NA's   :20052711    
+   patient_id       primary_care_case_probable first_pos_test_sgss 
+ Min.   :    2878   Min.   :2020-01-01         Min.   :2020-02-05  
+ 1st Qu.:10827203   1st Qu.:2020-09-29         1st Qu.:2020-10-13  
+ Median :22300232   Median :2020-10-28         Median :2020-11-10  
+ Mean   :23667079   Mean   :2020-10-02         Mean   :2020-10-23  
+ 3rd Qu.:35471154   3rd Qu.:2020-11-14         3rd Qu.:2020-12-15  
+ Max.   :54273726   Max.   :2020-12-30         Max.   :2021-01-02  
+                    NA's   :20292854           NA's   :20052128    
 
  covid_admission_date ons_covid_death_date discharge_date       care_home_type
  Min.   :2020-02-01   Min.   :2020-02-02   Min.   :2020-01-08   PC:   54553   
  1st Qu.:2020-04-07   1st Qu.:2020-04-10   1st Qu.:2020-03-11   PN:   46093   
  Median :2020-05-07   Median :2020-04-22   Median :2020-06-22   PS:    2415   
- Mean   :2020-06-24   Mean   :2020-04-30   Mean   :2020-06-18   U :20586263   
+ Mean   :2020-06-24   Mean   :2020-04-30   Mean   :2020-06-18   U :20585680   
  3rd Qu.:2020-10-13   3rd Qu.:2020-05-10   3rd Qu.:2020-09-13                 
  Max.   :2020-11-30   Max.   :2020-10-01   Max.   :2020-11-30                 
- NA's   :20635171     NA's   :20672170     NA's   :18739430     
-              
+ NA's   :20634588     NA's   :20671587     NA's   :18738860    
+               
   household_id     household_size     mixed_household   percent_tpp    
  Min.   :      1   Min.   :   1.000   Min.   :0.0000   Min.   :  0.00  
- 1st Qu.:2382051   1st Qu.:   2.000   1st Qu.:0.0000   1st Qu.:100.00  
- Median :4798372   Median :   3.000   Median :0.0000   Median :100.00  
- Mean   :4812208   Mean   :   5.552   Mean   :0.1506   Mean   : 94.65  
- 3rd Qu.:7188094   3rd Qu.:   4.000   3rd Qu.:0.0000   3rd Qu.:100.00  
+ 1st Qu.:2382056   1st Qu.:   2.000   1st Qu.:0.0000   1st Qu.:100.00  
+ Median :4798366   Median :   3.000   Median :0.0000   Median :100.00  
+ Mean   :4812201   Mean   :   5.552   Mean   :0.1506   Mean   : 94.65  
+ 3rd Qu.:7188062   3rd Qu.:   4.000   3rd Qu.:0.0000   3rd Qu.:100.00  
  Max.   :9736582   Max.   :2589.000   Max.   :1.0000   Max.   :100.00  
                                                                        
   practice_id                          region               stp          
- Min.   :    16   East                    :4848167   E54000005: 1967470  
- 1st Qu.:297090   East Midlands           :3676741   E54000027: 1468245  
- Median :298213   Yorkshire and The Humber:2864504   E54000049: 1438399  
- Mean   :286460   South West              :2800119   E54000026: 1044230  
- 3rd Qu.:301223   North West              :1772647   E54000009:  954237  
- Max.   :395964   (Other)                 :4721751   (Other)  :13811348  
-                  NA's                    :   5395   NA's     :    5395 
- 
+ Min.   :    16   East                    :4848139   E54000005: 1967452  
+ 1st Qu.:297090   East Midlands           :3676715   E54000027: 1468210  
+ Median :298213   Yorkshire and The Humber:2864483   E54000049: 1437990  
+ Mean   :286460   South West              :2800088   E54000026: 1044228  
+ 3rd Qu.:301223   North West              :1772234   E54000009:  954227  
+ Max.   :395964   (Other)                 :4721687   (Other)  :13811239  
+                  NA's                    :   5395   NA's     :    5395  
+
         msoa           rural_urban            imd              age        
- E02003475:   23272   3      :10649880   Min.   :    0    Min.   :  0.00  
- E02003725:   23029   1      : 4345992   1st Qu.: 7900    1st Qu.: 21.00  
- E02000274:   19876   5      : 2240673   Median :16000    Median : 39.00  
- E02000263:   17233   7      : 1663740   Mean   :15968    Mean   : 40.54  
- E02002226:   16947   2      : 1290770   3rd Qu.:23900    3rd Qu.: 59.00  
- E02003539:   16895   (Other):  254892   Max.   :32800    Max.   :121.00  
- (Other)  :20572072   NA's   :  243377   NA's   :238809   NA's   :1   
-    
- sex          ethnicity          dementia           tpp_pop     
- F:10416091   1   :12808980   Min.   :0.000000   Min.   :    1  
- I:     168   2   :  285064   1st Qu.:0.000000   1st Qu.: 5649  
- M:10272839   3   : 1308483   Median :0.000000   Median : 7174  
- U:     226   4   :  465064   Mean   :0.002425   Mean   : 7343  
-              5   :  426711   3rd Qu.:0.000000   3rd Qu.: 8888  
-              NA's: 5395022   Max.   :1.000000   Max.   :23449  
-                                                 NA's   :480    
-
-    msoa_pop          70+            tpp_cov         cov_gt_100     
- Min.   : 2224   Min.   :   204   Min.   :  0.0064   No  :17590582  
- 1st Qu.: 7243   1st Qu.: 45843   1st Qu.: 75.1090   Yes : 3098262  
- Median : 8437   Median : 84084   Median : 89.4765   NA's:     480  
- Mean   : 8803   Mean   :106954   Mean   : 83.3166                  
- 3rd Qu.: 9930   3rd Qu.:142480   3rd Qu.: 96.4306                  
- Max.   :26513   Max.   :914664   Max.   :172.3033                  
- NA's   :480     NA's   :480      NA's   :480    
-
-                   
+ E02003475:   23272   3      :10649813   Min.   :    0    Min.   :  0.00  
+ E02003725:   23029   1      : 4345985   1st Qu.: 7900    1st Qu.: 21.00  
+ E02000274:   19876   5      : 2240662   Median :16000    Median : 39.00  
+ E02000263:   17233   7      : 1663733   Mean   :15968    Mean   : 40.54  
+ E02002226:   16947   2      : 1290768   3rd Qu.:23900    3rd Qu.: 59.00  
+ E02003539:   16895   (Other):  254868   Max.   :32800    Max.   :121.00  
+ (Other)  :20571489   NA's   :  242912   NA's   :238239   NA's   :[REDACTED]
+       
+ sex          ethnicity          dementia        institution     
+ F:10415805   1   :12808587   Min.   :0.000000   Mode :logical   
+ I:     168   2   :  285062   1st Qu.:0.000000   FALSE:20550174  
+ M:10272542   3   : 1308472   Median :0.000000   TRUE :138567    
+ U:     226   4   :  465062   Mean   :0.002425                   
+              5   :  426705   3rd Qu.:0.000000                   
+              NA's: 5394853   Max.   :1.000000                   
+                                                                 
+    tpp_pop         msoa_pop          70+            tpp_cov         
+ Min.   :    1   Min.   : 2224   Min.   :   204   Min.   :  0.00637  
+ 1st Qu.: 5649   1st Qu.: 7243   1st Qu.: 45843   1st Qu.: 75.10904  
+ Median : 7174   Median : 8437   Median : 84084   Median : 89.47651  
+ Mean   : 7343   Mean   : 8803   Mean   :106954   Mean   : 83.31699  
+ 3rd Qu.: 8888   3rd Qu.: 9930   3rd Qu.:142480   3rd Qu.: 96.43061  
+ Max.   :23449   Max.   :26513   Max.   :914664   Max.   :172.30333  
+                                                                     
+ cov_gt_100    
+ No :17590479  
+ Yes: 3098262  
+               
+               
 [1] "Summary: Care home characteristics"
-        msoa        n_resid           ch_size        ch_type 
- E02004533: 46   Min.   :  1.000   Min.   :  1.000   PC:594  
- E02002854: 29   1st Qu.:  1.000   1st Qu.:  1.000   PN:467  
- E02002856: 27   Median :  2.000   Median :  2.000   PS:  9  
- E02004426: 20   Mean   :  7.733   Mean   :  8.973   U :  0  
- E02003548: 15   3rd Qu.:  8.000   3rd Qu.: 11.000           
- E02006249: 15   Max.   :102.000   Max.   :106.000           
- (Other)  :918                                   
+  household_id            msoa        n_resid           ch_size        ch_type 
+ Min.   :   3581   E02004533: 46   Min.   :  1.000   Min.   :  1.000   PC:594  
+ 1st Qu.:6124020   E02002854: 29   1st Qu.:  1.000   1st Qu.:  1.000   PN:467  
+ Median :8186408   E02002856: 27   Median :  2.000   Median :  2.000   PS:  9  
+ Mean   :7121857   E02004426: 20   Mean   :  7.733   Mean   :  8.973   U :  0  
+ 3rd Qu.:8908020   E02003548: 15   3rd Qu.:  8.000   3rd Qu.: 11.000           
+ Max.   :9736555   E02006249: 15   Max.   :102.000   Max.   :106.000           
+                   (Other)  :918                                   
             
   rural_urban       imd          hh_med_age     hh_p_female     hh_maj_ethn
  3      :710   Min.   :    0   Min.   : 11.0   Min.   :0.0000   1   :818   
- 1      :110   1st Qu.: 7500   1st Qu.: 82.0   1st Qu.:0.5000   2   : [REDACTED]   
+ 1      :110   1st Qu.: 7500   1st Qu.: 82.0   1st Qu.:0.5000   2   :[REDACTED]   
  5      : 94   Median :15900   Median : 86.5   Median :0.8000   3   : 10   
- 2      : 82   Mean   :15781   Mean   : 84.4   Mean   :0.7048   4   : [REDACTED]   
- 7      : 65   3rd Qu.:22400   3rd Qu.: 90.0   3rd Qu.:1.0000   5   : [REDACTED]    
+ 2      : 82   Mean   :15781   Mean   : 84.4   Mean   :0.7048   4   :[REDACTED]   
+ 7      : 65   3rd Qu.:22400   3rd Qu.: 90.0   3rd Qu.:1.0000   5   :[REDACTED]   
  (Other):  8   Max.   :32700   Max.   :106.0   Max.   :1.0000   NA's:234   
-                                                  
+ NA's   :[REDACTED]   NA's   :[REDACTED]                                  
+                 
     hh_p_dem     
  Min.   :0.0000  
  1st Qu.:0.0000  
@@ -89,12 +92,35 @@
  Max.   :1.0000  
                  
 [1] "Summary: First care home events"
-          
-              first_event_which
+  household_id            msoa     first_primary_care_case_probable
+ Min.   :   3581   E02004533: 46   Min.   :2020-01-01              
+ 1st Qu.:6124020   E02002854: 29   1st Qu.:2020-11-19              
+ Median :8186408   E02002856: 27   Median :3000-01-01              
+ Mean   :7121857   E02004426: 20   Mean   :2723-07-20              
+ 3rd Qu.:8908020   E02003548: 15   3rd Qu.:3000-01-01              
+ Max.   :9736555   E02006249: 15   Max.   :3000-01-01              
+                   (Other)  :918                    
+               
+ first_first_pos_test_sgss first_covid_admission_date
+ Min.   :2020-03-13        Min.   :2020-02-08        
+ 1st Qu.:2020-11-05        1st Qu.:3000-01-01        
+ Median :3000-01-01        Median :3000-01-01        
+ Mean   :2671-05-20        Mean   :2868-03-01        
+ 3rd Qu.:3000-01-01        3rd Qu.:3000-01-01        
+ Max.   :3000-01-01        Max.   :3000-01-01        
+                                                     
+ first_ons_covid_death_date  first_event         ever_affected  
+ Min.   :2020-03-20         Min.   :2020-01-01   Mode :logical  
+ 1st Qu.:3000-01-01         1st Qu.:2020-09-11   FALSE:670      
+ Median :3000-01-01         Median :3000-01-01   TRUE :400      
+ Mean   :2857-03-02         Mean   :2633-11-01                  
+ 3rd Qu.:3000-01-01         3rd Qu.:3000-01-01                  
+ Max.   :3000-01-01         Max.   :3000-01-01                  
+                                                                
+                  first_event_which
  primary_care_case_probable: 71    
  first_pos_test_sgss       :253    
  covid_admission_date      : 44    
  ons_covid_death_date      : 32    
  NA's                      :670    
                                    
- 

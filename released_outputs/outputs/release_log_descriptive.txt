@@ -40,5 +40,3 @@ Overall    55 (0.01) 23 (0) 32 (0)  2186 (0.26)
 Affected   37 (0.01) 13 (0) 21 (0)  1439 (0.26)
 Unaffected 18 (0.01) 10 (0) 11 (0)   747 (0.28)
 
-
-Total time running descriptive: 1.33

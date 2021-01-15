@@ -66,7 +66,8 @@ ch_chars <- ch_long %>%
 print("Missingness in care home characteristics:")
 print(
   ch_chars %>%
-    summarise_all(function(x) sum(is.na(x))) 
+    summarise_all(function(x) sum(is.na(x))) %>%
+    pivot_longer(cols = everything())
 )
 
 ch_overall <- ch_chars %>%

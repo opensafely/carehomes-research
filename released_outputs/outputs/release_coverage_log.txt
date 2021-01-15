@@ -1,0 +1,26 @@
+[1] "No. unique MSOAs with patients registered in TPP:"
+[1] 6366
+
+[1] "No. rows per household ID:"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      1       1       1       1       1       1 
+
+[1] "No. MSOAs in England & Wales:"
+[1] 7201
+
+        msoa         tpp_pop         msoa_pop          70+        
+ E02000001:   1   Min.   :    1   Min.   : 2224   Min.   :   204  
+ E02000002:   1   1st Qu.:   12   1st Qu.: 6883   1st Qu.: 39270  
+ E02000003:   1   Median : 1542   Median : 8042   Median : 72333  
+ E02000004:   1   Mean   : 3293   Mean   : 8347   Mean   : 93360  
+ E02000005:   1   3rd Qu.: 6349   3rd Qu.: 9404   3rd Qu.:123800  
+ E02000007:   1   Max.   :23449   Max.   :26513   Max.   :914664  
+ (Other)  :6307                                                   
+    tpp_cov           cov_gt_100       
+ Min.   :  0.00637   Length:6313       
+ 1st Qu.:  0.14763   Class :character  
+ Median : 18.35367   Mode  :character  
+ Mean   : 39.59356                     
+ 3rd Qu.: 85.50096                     
+ Max.   :172.30333                     
+                                       

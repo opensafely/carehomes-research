@@ -1,0 +1,44 @@
+[1] "Summary: number of carehomes per MSOA"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   3.000   3.591   5.000  46.000 
+
+[1] "Missingness in care home characteristics:"
+# A tibble: 13 x 2
+   name          value
+   <chr>         <int>
+ 1 household_id      0
+ 2 msoa              0
+ 3 n_resid           0
+ 4 ch_size           0
+ 5 ch_type           0
+ 6 rural_urban       1
+ 7 imd               1
+ 8 hh_med_age        0
+ 9 hh_p_female       0
+10 hh_maj_ethn     234
+11 hh_p_dem          0
+12 first_event       0
+13 ever_affected     0
+
+[1] "Summarise carehome characteristics by ever affected:"
+              N    IMD mean(sd) size mean(sd) No. TPP residents    Type:PC
+Overall    1070 15781 (8585.85)   8.97 (13.8)              8274 594 (0.56)
+Affected    400 15635 (8696.97) 16.22 (17.35)              5596 219 (0.55)
+Unaffected  670 15868 (8524.07)   4.65 (8.65)              2678 375 (0.56)
+              Type:PN  Type:PS
+Overall    467 (0.44) 9 (0.01)
+Affected   177 (0.44) [REDACTED]
+Unaffected 290 (0.43) [REDACTED]
+
+[1] "Summarise resident characteristics by ever affected:"
+           No. TPP residents age med[IQR] dementia n(%)      Ethn:1 Ethn:2
+Overall                 8274  87 [80, 92]   1246 (0.15) 5958 (0.72) 20 (0)
+Affected                5596  87 [80, 91]    875 (0.16) 4076 (0.73) 10 (0)
+Unaffected              2678  87 [79, 92]    371 (0.14)  1882 (0.7) 10 (0)
+              Ethn:3 Ethn:4 Ethn:5 Ethn:missing
+Overall    55 (0.01) 23 (0) 32 (0)  2186 (0.26)
+Affected   37 (0.01) 13 (0) 21 (0)  1439 (0.26)
+Unaffected 18 (0.01) 10 (0) 11 (0)   747 (0.28)
+
+
+Total time running descriptive: 1.33

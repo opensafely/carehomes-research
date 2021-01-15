@@ -35,7 +35,7 @@ sink("./data_checks.txt", type = "output")
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
 # args = commandArgs(trailingOnly=TRUE)
-# args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds")
+args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds")
 args = commandArgs(trailingOnly=TRUE)
 
 tpp_cov <- readRDS(args[2])
@@ -45,7 +45,7 @@ msoa_shp <- readRDS(args[3])
 
 options(datatable.old.fread.datetime.character=TRUE)
 
-input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+input <- fread(args[1], data.table = TRUE, na.strings = "") %>%
   # Filter just to records from England
   filter(grepl("E",msoa)) %>%
   inner_join(tpp_cov, by = "msoa") %>% 
@@ -63,7 +63,7 @@ print("Patients with missing HH MSOA:")
 summary(is.na(input$msoa))
 
 print("Patients with missing HH type:")
-summary(is.na(care_home_type))
+summary(is.na(input$care_home_type))
 
 print("HHs with missing MSOA: n = ")
 input %>%
@@ -81,7 +81,7 @@ print("COVID cases with missing MSOA or HH type: n = ")
 input %>%
   filter(is.na(msoa) | is.na(care_home_type)) %>%
   rowwise() %>%
-  filter(any(!is.na(c_across(event_dates)))) %>%
+  filter(any(!is.na(c_across(all_of(event_dates))))) %>%
   pull(patient_id) %>%
   n_distinct()
 
@@ -99,8 +99,8 @@ input %>%
   group_by(care_home_type, household_id) %>%
   summarise(household_size = median(household_size, na.rm = T)) %>%
   ggplot(aes(household_size)) +
-  geom_histogram(bins = 30) +
-  facet_wrap(~group, scales = "free") +
+  geom_histogram() +
+  facet_wrap(~care_home_type, scales = "free") +
   theme_minimal()
 dev.off()
 

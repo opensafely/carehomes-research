@@ -85,6 +85,8 @@ input <- input_raw %>%
   filter(grepl("E",msoa)) %>%
   # drop missing MSOA and care home type
   filter(!is.na(msoa) & !is.na(care_home_type)) %>%
+  # exclude potential prisons/institutions
+  mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
   # set up var formats
   mutate(dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),

@@ -70,10 +70,16 @@ f2 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn +
 f3 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7
 
 # Time varying (4): Lagged
-f4a <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag2wk
+f4a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag1wk
+f4b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_maj_ethn + hh_p_dem + probable_roll7_lag2wk
 
 formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b)
+
+## ------------------------- Check variable levels ---------------------------##
+
+summary(dat)
+summary(train)
+summary(test)
 
 ## --------------------------------- Fitting --------------------------------- ##
 

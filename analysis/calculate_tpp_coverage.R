@@ -77,7 +77,7 @@ n_distinct(msoa_pop$msoa)
 tpp_pop %>%
   inner_join(msoa_pop) %>%
   mutate(tpp_cov = tpp_pop*100/msoa_pop,
-         cov_gt_100 = ifelse(tpp_cov > 100, "Yes", "No")) -> tpp_cov
+         cov_gt_100 = as.factor(ifelse(tpp_cov > 100, "Yes", "No"))) -> tpp_cov
 
 summary(tpp_cov)
 

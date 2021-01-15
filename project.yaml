@@ -37,7 +37,7 @@ actions:
         log: data_checks.txt
         figure1: tpp_coverage_msoa.png
         figure2: tpp_coverage_carehomes.png
-        figure3: tpp_coverage_map.png
+        figure3: tpp_coverage_map.pdf
         figure4: age_dist.png
         figure5: infection_death_delays.png
         figure6: hh_size_dist.png

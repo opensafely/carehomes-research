@@ -40,6 +40,7 @@ actions:
         figure3: tpp_coverage_map.png
         figure4: age_dist.png
         figure5: infection_death_delays.png
+        figure6: hh_size_dist.png
 
   data_setup:
   # last numeric argument relates to cut off for carehome TPP coverage >= X%

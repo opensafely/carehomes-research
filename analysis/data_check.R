@@ -46,6 +46,8 @@ msoa_shp <- readRDS(args[3])
 options(datatable.old.fread.datetime.character=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+  # Filter just to records from England
+  filter(grepl("E",msoa)) %>%
   left_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
@@ -57,44 +59,30 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
 
 # ---------------------------------------------------------------------------- #
 
-hh_miss_msoa <- input %>%
+print("Patients with missing HH MSOA:")
+summary(is.na(input$msoa))
+
+print("Patients with missing HH type:")
+summary(is.na(care_home_type))
+
+print("HHs with missing MSOA: n = ")
+input %>%
   filter(is.na(msoa)) %>%
   pull(household_id) %>%
   n_distinct()
 
-pat_miss_msoa <- input %>%
-  filter(is.na(msoa)) %>%
-  nrow()
-
-hh_miss_type <- input %>%
+print("HHs with missing type: n = ")
+input %>%
   filter(is.na(care_home_type)) %>%
   pull(household_id) %>%
   n_distinct()
 
-pat_miss_type <- input %>%
-  filter(is.na(care_home_type)) %>%
-  nrow()
-
-pat_cov_miss <- input %>%
-  filter((is.na(msoa) | is.na(care_home_type))) %>%
+print("COVID cases with missing MSOA or HH type: n = ")
+input %>%
+  filter(is.na(msoa) | is.na(care_home_type)) %>%
   rowwise() %>%
   filter(any(!is.na(c_across(event_dates)))) %>%
   nrow()
-
-print("HHs with missing MSOA: n = ")
-hh_miss_msoa
-
-print("Patients with missing HH MSOA: n = ")
-pat_miss_msoa
-
-print("HHs with missing type: n = ")
-hh_miss_type
-
-print("Patients with missing HH type: n = ")
-pat_miss_type
-
-print("COVID cases with missing MSOA or HH type: n = ")
-pat_cov_miss
 
 
 print("No. households, patients and probable cases per carehome type:")

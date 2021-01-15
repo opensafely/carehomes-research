@@ -81,6 +81,8 @@ print("Summary: Raw input")
 summary(input_raw)
 
 input <- input_raw %>%
+  # Filter just to records from England
+  filter(grepl("E",msoa)) %>%
   # drop missing MSOA and care home type
   filter(!is.na(msoa) & !is.na(care_home_type)) %>%
   # set up var formats

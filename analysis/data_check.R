@@ -48,7 +48,7 @@ options(datatable.old.fread.datetime.character=TRUE)
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # Filter just to records from England
   filter(grepl("E",msoa)) %>%
-  left_join(tpp_cov, by = "msoa") %>% 
+  inner_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
   ungroup() %>%
@@ -82,7 +82,8 @@ input %>%
   filter(is.na(msoa) | is.na(care_home_type)) %>%
   rowwise() %>%
   filter(any(!is.na(c_across(event_dates)))) %>%
-  nrow()
+  pull(patient_id) %>%
+  n_distinct()
 
 
 print("No. households, patients and probable cases per carehome type:")

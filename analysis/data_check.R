@@ -183,7 +183,7 @@ dev.off()
 input %>%
   group_by(msoa) %>%
   summarise(tpp_cov = mean(tpp_cov, na.rm = T)) -> by_msoa
-png("./tpp_coverage_map.png", height = 800, width = 800)
+pdf("./tpp_coverage_map.pdf", height = 10, width = 8)
 msoa_shp %>% 
   full_join(by_msoa, by = c("MSOA11CD" = "msoa")) %>%
   ggplot(aes(geometry = geometry, fill = tpp_cov)) +

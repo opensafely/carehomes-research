@@ -14,6 +14,7 @@ library(lmtest)
 
 args = commandArgs(trailingOnly=TRUE)
 cutoff <- args[3]
+test_sample <- args[4]
 # cutoff<- 100
 sink(paste0("./output_model_run_", cutoff, ".txt"), type = "output")
 write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
@@ -48,7 +49,7 @@ dat <- dat %>%
 
 # ------------------------ Split data into training and test------------------ #
 
-samp <- sample(unique(dat$household_id),0.9*n_distinct(dat$household_id))
+samp <- sample(unique(dat$household_id),(1-test_sample)*n_distinct(dat$household_id))
 train <- filter(dat, household_id %in% samp)
 test <- filter(dat, !household_id %in% samp)
 

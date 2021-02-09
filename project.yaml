@@ -69,7 +69,7 @@ actions:
 
   run_models:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 80
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 80 0
     outputs:
       moderately_sensitive:
        # coeffs: coeffs_bestmod_80.csv

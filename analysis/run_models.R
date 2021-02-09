@@ -76,18 +76,18 @@ f4b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + p
 
 formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b)
 
-f00 <- event_ahead ~ 1
-f0 <- event_ahead ~ ch_size
-f1 <- event_ahead ~ ch_type
-f2 <- event_ahead ~ hh_med_age
-f3 <- event_ahead ~ hh_p_female
-f4 <- event_ahead ~ hh_p_dem
-f5 <- event_ahead ~ probable_cases_rate
-f6 <- event_ahead ~ probable_roll7
-f7 <- event_ahead ~ probable_roll7_lag1wk
-f8 <- event_ahead ~ probable_roll7_lag2wk
-
-formulae_test <- list(f00,f0,f1,f2,f3,f4,f5,f6,f7,f8)
+# f00 <- event_ahead ~ 1
+# f0 <- event_ahead ~ ch_size
+# f1 <- event_ahead ~ ch_type
+# f2 <- event_ahead ~ hh_med_age
+# f3 <- event_ahead ~ hh_p_female
+# f4 <- event_ahead ~ hh_p_dem
+# f5 <- event_ahead ~ probable_cases_rate
+# f6 <- event_ahead ~ probable_roll7
+# f7 <- event_ahead ~ probable_roll7_lag1wk
+# f8 <- event_ahead ~ probable_roll7_lag2wk
+# 
+# formulae_test <- list(f00,f0,f1,f2,f3,f4,f5,f6,f7,f8)
 
 ## ------------------------- Check variable levels ---------------------------##
 
@@ -98,7 +98,7 @@ summary(test)
 ## --------------------------------- Fitting --------------------------------- ##
 
 time1 <- Sys.time()
-fits <- lapply(formulae_test, function(f) stats::glm(f, family = "binomial", data = train))
+fits <- lapply(formulae, function(f) stats::glm(f, family = "binomial", data = train))
 write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
 print("Summary: Model fits")

@@ -45,7 +45,7 @@ dat <- dat_na_rm
 
 # Subset time to account for 7-day time lag
 dat <- dat %>%
-  filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7), all_vars(!is.na(.)))
+  filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
 
 # ------------------------ Split data into training and test------------------ #
 

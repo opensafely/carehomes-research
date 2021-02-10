@@ -89,9 +89,9 @@ f4a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + p
 f4b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk
 
 # Time interaction (5)
-f5a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7*ns(day, 3)
-f5b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag1wk*ns(day, 3)
-f5c <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk*ns(day, 3)
+f5a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7*day
+f5b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag1wk*day
+f5c <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk*day
 
 
 formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, 

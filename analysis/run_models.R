@@ -12,11 +12,11 @@ library(sandwich)
 library(boot)
 library(lmtest)
 
-args <- c("analysisdata.rds", "community_prevalence.rds", 80, 0.1)
+# args <- c("analysisdata.rds", "community_prevalence.rds", 80, 0.1)
 args <- commandArgs(trailingOnly=TRUE)
 cutoff <- as.numeric(args[3])
 test_sample <- as.numeric(args[4])
-sink(paste0("./output_model_run_", cutoff, ".txt"), type = "output")
+sink(paste0("./output_model_run_", cutoff, ".txt"))
 write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
 
 ###############################################################################
@@ -28,13 +28,23 @@ tpp_cov <- readRDS(args[2])
 
 # Exclude MSOAs with less than specified cut off of TPP coverage, as estimated
 # from TPP household size and MSOA populations
-msoa_exclude <- tpp_cov %>%
-  filter(tpp_cov < cutoff) %>%
-  pull(msoa) %>%
-  unique()
+# msoa_exclude <- tpp_cov %>%
+#   filter(tpp_cov < cutoff) %>%
+#   pull(msoa) %>%
+#   unique()
 
-write(paste0("MSOAs excluded: n = ",length(msoa_exclude)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
-dat <- filter(dat, !msoa %in% msoa_exclude)
+print("Summary: All data")
+summary(dat)
+
+dat_covcutoff <- dat %>%
+  filter(tpp_cov > cutoff)
+
+write(paste0("MSOAs excluded: n = ",n_distinct(dat$msoa)-n_distinct(dat_covcutoff$msoa)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
+# dat <- filter(dat, !msoa %in% msoa_exclude)
+dat <- dat_covcutoff
+
+print("Summary: Coverage filtered data")
+summary(dat)
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
@@ -46,6 +56,10 @@ dat <- dat_na_rm
 # Subset time to account for 7-day time lag
 dat <- dat %>%
   filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
+
+
+print("Summary: Coverage and NA filtered data")
+summary(dat)
 
 # ------------------------ Split data into training and test------------------ #
 
@@ -74,7 +88,14 @@ f3 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + pr
 f4a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag1wk
 f4b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk
 
-formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b)
+# Time interaction (5)
+f5a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7*ns(day, 3)
+f5b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag1wk*ns(day, 3)
+f5c <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk*ns(day, 3)
+
+
+formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, 
+                 interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
 
 # f00 <- event_ahead ~ 1
 # f0 <- event_ahead ~ ch_size
@@ -91,18 +112,22 @@ formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_av
 
 ## ------------------------- Check variable levels ---------------------------##
 
-summary(dat)
+print("Summary: Training data")
 summary(train)
-summary(test)
+# summary(test)
 
 ## --------------------------------- Fitting --------------------------------- ##
 
 time1 <- Sys.time()
-fits <- lapply(formulae, function(f) stats::glm(f, family = "binomial", data = train))
-write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
+fits <- lapply(formulae, try(function(f) stats::glm(f, family = "binomial", data = train)))
+suwrite(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
 print("Summary: Model fits")
 lapply(fits, summary)
+
+# ypred<-predict(fits[[7]], newdata = train, type = "response")
+# plot(train$day,train$event_ahead)
+# points(train$day,ypred,col="blue")
 
 # Robust SEs for coefficient significance:
 print_coeffs <- function(fit){
@@ -134,13 +159,13 @@ print("Cross-validated estimate of prediction error [raw / adj for k-fold rather
 err <- lapply(cv_err, function(cv) cv$delta[2])
 print(err)
 
-fit_opt_brier <- fits[[which.min(brier_score_train)]]
-fit_opt_cv <- fits[[which.min(err)]]
+# fit_opt_brier <- fits[[which.min(brier_score_train)]]
+# fit_opt_cv <- fits[[which.min(err)]]
+
 
 ################################################################################
 
-saveRDS(fit_opt_brier, paste0("./fit_opt_",cutoff,".rds"))
-saveRDS(fit_opt_cv, paste0("./fit_opt_cv",cutoff,".rds"))
+saveRDS(fits, paste0("./fits",cutoff,".rds"))
 
 ################################################################################
 

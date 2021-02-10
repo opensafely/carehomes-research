@@ -81,7 +81,7 @@ actions:
 
   validate_models:
     needs: [run_models]
-    run: r:latest analysis/validate_models.R fit_opt_0.rds testdata_0.rds 1
+    run: r:latest analysis/validate_models.R fit_opt_0.rds testdata_0.rds 0
     outputs:
       moderately_sensitive:
         report: test_pred_figs_0.pdf

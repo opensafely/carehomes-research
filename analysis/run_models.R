@@ -12,9 +12,9 @@ library(sandwich)
 library(boot)
 library(lmtest)
 
-# args <- c("analysisdata.rds", "community_prevalence.rds", 80, 0.1)
+args <- c("analysisdata.rds", "community_prevalence.rds", 80, 0.1)
 args <- commandArgs(trailingOnly=TRUE)
-cutoff <- args[3]
+cutoff <- as.numeric(args[3])
 test_sample <- as.numeric(args[4])
 sink(paste0("./output_model_run_", cutoff, ".txt"), type = "output")
 write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
@@ -106,10 +106,14 @@ lapply(fits, summary)
 
 # Robust SEs for coefficient significance:
 print_coeffs <- function(fit){
-  print(fit$formula)
-  serr <- sandwich::vcovCL(fit, cluster = train$household_id)
-  coeffs <- lmtest::coeftest(fit, vcov. = serr)
-  print(coeffs)
+  confints <- coefci(fit, df = Inf, vcov = vcovCL, cluster = train$household_id)
+  testcoeffs <- lmtest::coeftest(fit, vcov = vcovCL, cluster = train$household_id)
+  
+  out <- as.data.frame(round(cbind(exp(cbind(testcoeffs[,1],confints,testcoeffs[,2])),testcoeffs[,3:4]),4))
+  names(out) <- c("Estimate","2.5%","97.5%","Std. Err.","z","Pr(>|z|)")
+
+  # print(fit$formula)
+  return(out)
 }
 
 print("Summary: Model coeffs with robust SEs")
@@ -129,12 +133,14 @@ write(paste0("Time running cross-validation: ",round(time2-Sys.time(),2)), file=
 print("Cross-validated estimate of prediction error [raw / adj for k-fold rather than LOO]:")
 err <- lapply(cv_err, function(cv) cv$delta[2])
 print(err)
-fit_opt <- fits[[which.min(err)]]
+
+fit_opt_brier <- fits[[which.min(brier_score_train)]]
+fit_opt_cv <- fits[[which.min(err)]]
 
 ################################################################################
 
-saveRDS(fit_opt, paste0("./fit_opt_",cutoff,".rds"))
-# write.csv(coeffs,paste0("./coeffs_bestmod_",cutoff,".csv"))
+saveRDS(fit_opt_brier, paste0("./fit_opt_",cutoff,".rds"))
+saveRDS(fit_opt_cv, paste0("./fit_opt_cv",cutoff,".rds"))
 
 ################################################################################
 

@@ -4,13 +4,13 @@ expectations:
   population_size: 1000000
 
 actions:
-  generate_cohort:
+  generate_study_population:
     run: cohortextractor:latest generate_cohort --study-definition study_definition 
     outputs:
       highly_sensitive:
         cohort: input.csv
 
-  generate_cohort_coverage:
+  generate_coverage_population:
     run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage
     outputs:
       highly_sensitive:
@@ -18,7 +18,7 @@ actions:
 
   calc_coverage:
     run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/SAPE22DT15_mid_2019_msoa.csv
-    needs: [generate_cohort_coverage]
+    needs: [generate_coverage_population]
     outputs:
       moderately_sensitive:
         log: coverage_log.txt
@@ -31,7 +31,7 @@ actions:
 
   data_check:
     run: r:latest analysis/data_check.R input.csv tpp_msoa_coverage.rds data/msoa_shp.rds
-    needs: [generate_cohort, calc_coverage]
+    needs: [generate_study_population, calc_coverage]
     outputs:
       moderately_sensitive:
         log: data_checks.txt
@@ -45,7 +45,7 @@ actions:
   data_setup:
   # last numeric argument relates to cut off for carehome TPP coverage >= X%
     run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 95
-    needs: [generate_cohort, calc_coverage]
+    needs: [generate_study_population, calc_coverage]
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt
@@ -67,7 +67,7 @@ actions:
         data: ch_gp_permsoa.csv
 
 
-  run_models:
+  run_models_nocutoff:
     needs: [data_setup]
     run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 0 0.1
     outputs:
@@ -79,14 +79,31 @@ actions:
         fit: fit_opt_0.rds
         data: testdata_0.rds
 
-  validate_models:
+  validate_models_nocutoff:
     needs: [run_models]
     run: r:latest analysis/validate_models.R fit_opt_0.rds testdata_0.rds 0
     outputs:
       moderately_sensitive:
         report: test_pred_figs_0.pdf
 
+  run_models:
+    needs: [data_setup]
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds 80 0.1
+    outputs:
+      moderately_sensitive:
+       # coeffs: coeffs_bestmod_0.csv
+        output: output_model_run_80.txt
+        log: log_model_run_80.txt
+      highly_sensitive:
+        fit: fit_opt_80.rds
+        data: testdata_80.rds
 
+  validate_models:
+    needs: [run_models]
+    run: r:latest analysis/validate_models.R fit_opt_80.rds testdata_80.rds 80
+    outputs:
+      moderately_sensitive:
+        report: test_pred_figs_80.pdf
   run_all:
     needs: [validate_models, descriptive]
     # In order to be valid this action needs to define a run commmand and

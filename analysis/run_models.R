@@ -207,7 +207,7 @@ train %>%
 
 }
 
-pdf("./model_resids_map.pdf", height = 10, width = 8)
+pdf(paste0("model_resids_map_",cutoff,".pdf"), height = 10, width = 8)
 lapply(fits, map_resids)
 dev.off()
 

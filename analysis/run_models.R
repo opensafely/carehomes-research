@@ -11,6 +11,7 @@ library(data.table)
 library(sandwich)
 library(boot)
 library(lmtest)
+library(sf)
 
 # args <- c("analysisdata.rds", "community_prevalence.rds", "data/msoa_shp.rds", 0, 0.1)
 args <- commandArgs(trailingOnly=TRUE)
@@ -120,24 +121,23 @@ summary(train)
 ## --------------------------------- Fitting --------------------------------- ##
 
 fit_mods <- function(formulae){
-  
+
   out <- tryCatch(
-    
+
     {
       message("Attempting model fit")
       lapply(formulae, function(f) stats::glm(f, family = "binomial", data = train))
     },
-    
+
     error=function(cond) {
       message("Error in model fitting")
       message(cond)
       # Choose a return value in case of error
       return(NA)
     }
-  )    
-  return(out) 
+  )
+  return(out)
 }
-
 
 time1 <- Sys.time()
 fits <- fit_mods(formulae)
@@ -192,18 +192,16 @@ train %>%
   group_by(msoa) %>%
   summarise(mean_res = mean(res, na.rm = TRUE)) -> msoa_resids
   
-  if (nrow(msoa_resids) == nrow(msoa_shp)){
-
+  try(
     msoa_shp %>% 
       full_join(msoa_resids, by = c("MSOA11CD" = "msoa")) %>%
       ggplot(aes(geometry = geometry, fill = mean_res)) +
       geom_sf(lwd = 0) +
       scale_fill_viridis_c() +
-      theme_minimal() -> map
-    
-     return(map)
-    
-  }else{return("Incorrect number of observations")}
+      theme_minimal() -> map, silent = TRUE)
+  
+  return(map)
+
 
 }
 

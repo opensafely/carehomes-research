@@ -95,7 +95,7 @@ actions:
         output: output_model_run_80.txt
         log: log_model_run_80.txt
       highly_sensitive:
-        fit: fit_opt_80.rds
+        fit: fits_80.rds
         data: testdata_80.rds
 
   validate_models:

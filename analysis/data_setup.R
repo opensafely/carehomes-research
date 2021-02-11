@@ -33,8 +33,8 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-# Set study period (excluding last month for testing - too few new CH introductions at this point of epidemic?)
-study_per <- seq(as.Date("2020-04-15"),as.Date(Sys.Date()), by = "days")
+# Set study period 
+study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-10"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
@@ -57,7 +57,7 @@ sink("data_setup_log.txt", type = "output")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./output/input.csv","tpp_msoa_coverage.rds", 90)
+# args <- c("./input.csv","tpp_msoa_coverage.rds", 90)
 args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
@@ -97,7 +97,7 @@ input <- input_raw %>%
          across(all_of(dates), ymd),
          across(all_of(dates), replace_old_dates)
          ) %>% 
-  left_join(tpp_cov, by = "msoa") %>%
+  inner_join(tpp_cov, by = "msoa") %>%
   mutate(across(where(is.character), as.factor))
 
 # mutate(dat, dist = ifelse(speed == 4, dist * 100, dist)
@@ -129,16 +129,21 @@ ch %>%
 
 ch_chars <- ch %>%
   group_by(household_id, msoa) %>%
-  summarise(n_resid = n(),                        # number of individuals registered under CHID
+  summarise(region = unique(region),
+            n_resid = n(),                        # number of individuals registered under CHID
             ch_size = median(household_size),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = unique(care_home_type)[1],  # Care, nursing, other
-            rural_urban = unique(rural_urban)[1], # Rural/urban location classification 
+            rural_urban8 = unique(rural_urban)[1], # Rural/urban location classification 
             imd = unique(imd)[1],                 # Average IMD of MSOA/specific CH location? 
             hh_med_age = median(age, na.rm = T),  # average age of registered residents
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
-  ungroup() 
+  ungroup() %>%
+  mutate(imd_quint = cut(imd, 5),
+         hh_dem_gt25 = (hh_p_dem > 0.25),
+         rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
+                                 rural_urban8 %in% 5:8 ~ "rural")))
 
 print("Summary: Care home characteristics")
 summary(ch_chars)
@@ -173,15 +178,15 @@ ch_wevent <- ch_chars %>%
 
 # Expand rows in data.table for speed:
 start <- Sys.time()
-vars <- names(select(ch_wevent, household_id:hh_p_dem,first_event:first_event_which))
+vars <- names(select(ch_wevent, household_id:rural_urban,first_event:first_event_which))
 ch_wevent <- as.data.table(ch_wevent)
 
 # Replicate per region (by vars are all values I want to copy down per date):
 all_dates <- ch_wevent[,.(date=study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, first_event_which, date)
-setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, first_event, ever_affected, first_event_which, date)
+setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
+setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
 ch_wevent <- ch_wevent[all_dates,roll=TRUE]
 # ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
 
@@ -209,7 +214,7 @@ ch %>%
 # Join with discharges: keep only those which occurred within study period
 ch_wdisch <- ch_wevent %>%
   lazy_dt() %>%
-  group_by_at(vars(household_id:hh_p_dem,first_event, ever_affected)) %>%
+  group_by_at(vars(household_id:rural_urban,first_event, ever_affected)) %>%
   left_join(disch) %>%
   mutate(n_disch = replace_na(n_disch, 0)) %>%
   as.data.frame()

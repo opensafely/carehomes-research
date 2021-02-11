@@ -120,7 +120,7 @@ summary(train)
 
 time1 <- Sys.time()
 fits <- lapply(formulae, try(function(f) stats::glm(f, family = "binomial", data = train)))
-suwrite(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
+write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
 print("Summary: Model fits")
 lapply(fits, summary)

@@ -12,10 +12,11 @@ library(sandwich)
 library(boot)
 library(lmtest)
 
-# args <- c("analysisdata.rds", "community_prevalence.rds", 80, 0.1)
+# args <- c("analysisdata.rds", "community_prevalence.rds", "data/msoa_shp.rds", 0, 0.1)
 args <- commandArgs(trailingOnly=TRUE)
-cutoff <- as.numeric(args[3])
-test_sample <- as.numeric(args[4])
+msoa_shp <- readRDS(args[3])
+cutoff <- as.numeric(args[4])
+test_sample <- as.numeric(args[5])
 sink(paste0("./output_model_run_", cutoff, ".txt"))
 write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
 
@@ -48,7 +49,7 @@ summary(dat)
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
-  filter_at(vars(ch_size,ch_type,hh_med_age,hh_p_female,hh_p_dem), all_vars(!is.na(.)))
+  filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_med_age, hh_p_female, hh_dem_gt25, hh_maj_ethn), all_vars(!is.na(.)))
 
 write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
 dat <- dat_na_rm
@@ -73,25 +74,25 @@ saveRDS(test, paste0("./testdata_",cutoff,".rds"))
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk
-f0 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem #hh_maj_ethn + 
+f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn 
 
 # Time-varying (1): current day cases
-f1 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_cases_rate
+f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_cases_rate
 
 # Time-varying (2): 7-day change
-f2 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_chg7
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_chg7
 
 # Time-varying (3): 7-day rolling average
-f3 <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7
+f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7
 
 # Time varying (4): Lagged
-f4a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk
+f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag1wk
+f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag2wk
 
 # Time interaction (5)
-f5a <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7*day
-f5b <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag1wk*day
-f5c <- event_ahead ~ ch_size + ch_type + hh_med_age + hh_p_female + hh_p_dem + probable_roll7_lag2wk*day
+f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7:day
+f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag1wk:day
+f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag2wk:day
 
 
 formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, 
@@ -118,8 +119,28 @@ summary(train)
 
 ## --------------------------------- Fitting --------------------------------- ##
 
+fit_mods <- function(formulae){
+  
+  out <- tryCatch(
+    
+    {
+      message("Attempting model fit")
+      lapply(formulae, function(f) stats::glm(f, family = "binomial", data = train))
+    },
+    
+    error=function(cond) {
+      message("Error in model fitting")
+      message(cond)
+      # Choose a return value in case of error
+      return(NA)
+    }
+  )    
+  return(out) 
+}
+
+
 time1 <- Sys.time()
-fits <- lapply(formulae, try(function(f) stats::glm(f, family = "binomial", data = train)))
+fits <- fit_mods(formulae)
 write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
 
 print("Summary: Model fits")
@@ -136,7 +157,7 @@ print_coeffs <- function(fit){
   
   out <- as.data.frame(round(cbind(exp(cbind(testcoeffs[,1],confints,testcoeffs[,2])),testcoeffs[,3:4]),4))
   names(out) <- c("Estimate","2.5%","97.5%","Std. Err.","z","Pr(>|z|)")
-
+  
   # print(fit$formula)
   return(out)
 }
@@ -162,6 +183,33 @@ print(err)
 # fit_opt_brier <- fits[[which.min(brier_score_train)]]
 # fit_opt_cv <- fits[[which.min(err)]]
 
+## MAP RESIDUALS ##
+
+map_resids <- function(fit){
+
+train %>%
+  mutate(res = residuals(fit, type = "pearson")) %>%
+  group_by(msoa) %>%
+  summarise(mean_res = mean(res, na.rm = TRUE)) -> msoa_resids
+  
+  if (nrow(msoa_resids) == nrow(msoa_shp)){
+
+    msoa_shp %>% 
+      full_join(msoa_resids, by = c("MSOA11CD" = "msoa")) %>%
+      ggplot(aes(geometry = geometry, fill = mean_res)) +
+      geom_sf(lwd = 0) +
+      scale_fill_viridis_c() +
+      theme_minimal() -> map
+    
+     return(map)
+    
+  }else{return("Incorrect number of observations")}
+
+}
+
+pdf("./model_resids_map.pdf", height = 10, width = 8)
+lapply(fits, map_resids)
+dev.off()
 
 ################################################################################
 

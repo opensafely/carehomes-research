@@ -57,9 +57,9 @@ lapply(fits, brier_testdata)
 # Plot distribution of predicted risk for event/no event
 pdf(file = paste0("./test_pred_figs_",cutoff,".pdf"), height = 7, width = 10)
 
-for (fit in seq_along(fits)){
+for (f in seq_along(fits)){
 
-  test$pred <- predict(fit, newdata = test, type = "response")
+  test$pred <- predict(fits[[f]], newdata = test, type = "response")
 
   # Boxplot of predicted risk for event/no event
   print(

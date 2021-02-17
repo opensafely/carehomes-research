@@ -34,14 +34,17 @@ sink("./data_checks.txt", type = "output")
 # Identify vars containing event dates
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
-# args = commandArgs(trailingOnly=TRUE)
-# args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds")
+# args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds", 80)
 args = commandArgs(trailingOnly=TRUE)
 
+## Load MSOA TPP coverage
 tpp_cov <- readRDS(args[2])
 
 ## Load shapefiles
 msoa_shp <- readRDS(args[3])
+
+## MSOA TPP coverage cut off
+cutoff <- args[4]
 
 options(datatable.old.fread.datetime.character=TRUE)
 
@@ -58,6 +61,18 @@ input <- fread(args[1], data.table = TRUE, na.strings = "") %>%
          prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss)) 
 
 # ---------------------------------------------------------------------------- #
+
+# Filter MSOAs by TPP coverage
+
+input_covcutoff <- input %>%
+  filter(tpp_cov > cutoff)
+
+print(paste0("MSOAs excluded: n = ",n_distinct(input$msoa)-n_distinct(input_covcutoff$msoa)))
+
+input <- input_covcutoff
+
+print("Total Patients")
+summary(nrow(input))
 
 print("Patients with missing HH MSOA:")
 summary(is.na(input$msoa))

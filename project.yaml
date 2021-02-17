@@ -30,7 +30,7 @@ actions:
 #        map: map_coverage_msoa.pdf
 
   data_check:
-    run: r:latest analysis/data_check.R input.csv tpp_msoa_coverage.rds data/msoa_shp.rds
+    run: r:latest analysis/data_check.R input.csv tpp_msoa_coverage.rds data/msoa_shp.rds 80
     needs: [generate_study_population, calc_coverage]
     outputs:
       moderately_sensitive:
@@ -43,8 +43,8 @@ actions:
         figure6: hh_size_dist.png
 
   data_setup:
-  # last numeric argument relates to cut off for carehome TPP coverage >= X%
-    run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 80
+  # last numeric arguments relate to cut off for MSOA and carehome TPP coverage >= X%
+    run: r:latest analysis/data_setup.R input.csv tpp_msoa_coverage.rds 80 80
     needs: [generate_study_population, calc_coverage]
     outputs:
       moderately_sensitive:
@@ -90,24 +90,24 @@ actions:
 
   run_models:
     needs: [data_setup]
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds data/msoa_shp.rds 80 0.1
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds data/msoa_shp.rds 0.1
     outputs:
       moderately_sensitive:
        # coeffs: coeffs_bestmod_0.csv
-        output: output_model_run_80.txt
-        log: log_model_run_80.txt
-        figure: model_resids_map_80.pdf
+        output: output_model_run.txt
+        log: log_model_run.txt
+        figure: model_resids_map.pdf
       highly_sensitive:
-        fit: fits_80.rds
-        data: testdata_80.rds
+        fit: fits.rds
+        data: testdata.rds
 
   validate_models:
     needs: [run_models]
-    run: r:latest analysis/validate_models.R fits_80.rds testdata_80.rds 80
+    run: r:latest analysis/validate_models.R fits.rds testdata.rds
     outputs:
       moderately_sensitive:
-        output: output_model_val_80.txt
-        report: test_pred_figs_80.pdf
+        output: output_model_val.txt
+        report: test_pred_figs.pdf
         
   run_all:
     needs: [validate_models, descriptive]

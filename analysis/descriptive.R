@@ -36,6 +36,7 @@ dat <- readRDS("./analysisdata.rds")
 
 # Total care homes in analysis dataset
 N_ch_tot <- n_distinct(dplyr::select(dat, household_id, msoa))
+N_ch_tot
 
 # Number of carehomes per MSOA
 ch %>% 
@@ -212,14 +213,14 @@ ch_long %>%
        x = "", y = "No. without event")
 
 # Type of first event
-png("./ch_first_event_type.png", height = 800, width = 1000)
+# png("./ch_first_event_type.png", height = 800, width = 1000)
 ch_long %>%
   filter(ever_affected) %>%
   ggplot(aes(first_event, fill = first_event_which)) +
   geom_histogram() + 
   theme_minimal() +
   theme(legend.position = c(0.8,0.8))
-dev.off()
+# dev.off()
 
 ch_long %>%
   group_by(msoa, household_id) %>%

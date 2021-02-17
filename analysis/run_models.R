@@ -18,8 +18,8 @@ args <- commandArgs(trailingOnly=TRUE)
 msoa_shp <- readRDS(args[3])
 cutoff <- as.numeric(args[4])
 test_sample <- as.numeric(args[5])
-sink(paste0("./output_model_run_", cutoff, ".txt"))
-write("Run models",file=paste0("log_model_run_",cutoff,".txt"))
+sink("./output_model_run.txt")
+write("Run models",file="log_model_run.txt")
 
 ###############################################################################
 
@@ -38,21 +38,11 @@ tpp_cov <- readRDS(args[2])
 print("Summary: All data")
 summary(dat)
 
-dat_covcutoff <- dat %>%
-  filter(tpp_cov > cutoff)
-
-write(paste0("MSOAs excluded: n = ",n_distinct(dat$msoa)-n_distinct(dat_covcutoff$msoa)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
-# dat <- filter(dat, !msoa %in% msoa_exclude)
-dat <- dat_covcutoff
-
-print("Summary: Coverage filtered data")
-summary(dat)
-
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
   filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_med_age, hh_p_female, hh_dem_gt25, hh_maj_ethn), all_vars(!is.na(.)))
 
-write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file=paste0("log_model_run_",cutoff,".txt"), append = T)
+write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file="log_model_run.txt", append = T)
 dat <- dat_na_rm
 
 # Subset time to account for 7-day time lag
@@ -60,7 +50,7 @@ dat <- dat %>%
   filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
 
 
-print("Summary: Coverage and NA filtered data")
+print("Summary: NA filtered data")
 summary(dat)
 
 # ------------------------ Split data into training and test------------------ #
@@ -70,7 +60,7 @@ train <- filter(dat, household_id %in% samp)
 test <- filter(dat, !household_id %in% samp)
 
 # Save test data for use in model validation
-saveRDS(test, paste0("./testdata_",cutoff,".rds"))
+saveRDS(test,"./testdata.rds")
 
 ## ----------------------------- Model Formulae -------------------------------##
 
@@ -141,7 +131,7 @@ fit_mods <- function(formulae){
 
 time1 <- Sys.time()
 fits <- fit_mods(formulae)
-write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
+write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file="log_model_run.txt", append = TRUE)
 
 print("Summary: Model fits")
 lapply(fits, summary)
@@ -205,7 +195,7 @@ train %>%
 
 }
 
-pdf(paste0("model_resids_map_",cutoff,".pdf"), height = 10, width = 8)
+pdf("model_resids_map.pdf", height = 10, width = 8)
 lapply(fits, map_resids)
 dev.off()
 

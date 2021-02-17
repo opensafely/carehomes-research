@@ -15,12 +15,11 @@ library(data.table)
 
 theme_set(theme_bw())
 args = commandArgs(trailingOnly=TRUE)
-cutoff <- args[3]
 
 fits <- readRDS(args[1])
 test <- readRDS(args[2])
 
-sink(paste0("./output_model_val_", cutoff, ".txt"), type = "output")
+sink("./output_model_val.txt", type = "output")
 
 ## ------------------------------- Functions -------------------------------- ##
 
@@ -55,7 +54,7 @@ print("Brier score w/ test data")
 lapply(fits, brier_testdata)
 
 # Plot distribution of predicted risk for event/no event
-pdf(file = paste0("./test_pred_figs_",cutoff,".pdf"), height = 7, width = 10)
+pdf(file = "./test_pred_figs.pdf", height = 7, width = 10)
 
 for (f in seq_along(fits)){
 
@@ -65,7 +64,8 @@ for (f in seq_along(fits)){
   print(
   ggplot(test, aes(x = as.factor(event_ahead), y = pred, fill = as.factor(event_ahead))) +
     geom_boxplot() +
-    labs(title = "Model-predicted risk versus observed outcome", y = "Predicted risk",x = "14-day event") +
+    labs(title = "Model-predicted risk versus observed outcome", y = "Predicted risk",x = "14-day event",
+         subtitle = paste0("Median predictions: ",round(median(test$pred[test$event_ahead == 1]),4), " for event = 1 and ",round(median(test$pred[test$event_ahead == 0]),4), " for event = 0.")) +
     theme(legend.position = "none") +
     coord_flip()
   )
@@ -80,12 +80,11 @@ for (f in seq_along(fits)){
   ggplot(roc, aes(FPR, TPR)) +
     geom_line(lty = "dashed", col = "blue") +
     geom_abline() +
-    labs(title = paste0("AUC = ",auc))
+    labs(title = paste0("AUC = ",round(auc,2)))
   )
 }
 
 dev.off()
-
 
 
 ################################################################################

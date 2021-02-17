@@ -34,7 +34,7 @@ sink("./data_checks.txt", type = "output")
 # Identify vars containing event dates
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
-# args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds", 80)
+# args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds", 2)
 args = commandArgs(trailingOnly=TRUE)
 
 ## Load MSOA TPP coverage
@@ -67,12 +67,12 @@ input <- fread(args[1], data.table = TRUE, na.strings = "") %>%
 input_covcutoff <- input %>%
   filter(tpp_cov > cutoff)
 
-print(paste0("MSOAs excluded: n = ",n_distinct(input$msoa)-n_distinct(input_covcutoff$msoa)))
+print(paste0("MSOAs excluded with ",cutoff,"% coverage cut off: n = ",n_distinct(input$msoa)-n_distinct(input_covcutoff$msoa)))
 
 input <- input_covcutoff
 
 print("Total Patients")
-summary(nrow(input))
+nrow(input)
 
 print("Patients with missing HH MSOA:")
 summary(is.na(input$msoa))

@@ -57,7 +57,7 @@ sink("data_setup_log.txt", type = "output")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input.csv","tpp_msoa_coverage.rds", 80, 90)
+# args <- c("./input.csv","tpp_msoa_coverage.rds", 2, 80)
 args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
@@ -177,7 +177,9 @@ ch_first_event <- ch %>%
 ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
 print("Summary: First care home events")
-summary(ch_first_event)
+ch_first_event %>%
+  filter(ever_affected) %>%
+  summary()
 
 # Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%

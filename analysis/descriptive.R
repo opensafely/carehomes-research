@@ -17,8 +17,12 @@ time_desc <- Sys.time()
 library(tidyverse)
 library(lubridate)
 library(data.table)
+library(sf)
 
 theme_set(theme_bw())
+
+## Load shapefiles
+msoa_shp <- readRDS("data/msoa_shp.rds")
 
 input <- readRDS("./input_clean.rds")
 comm_prev <- readRDS("./community_prevalence.rds")
@@ -102,12 +106,16 @@ chars_waffect %>%
             ch_size_mean = round(mean(ch_size, na.rm = T),2),
             ch_size_sd = round(sqrt(var(ch_size, na.rm = T)),2),
             # `% rural` = round(sum(rural_urban == "rural")/N, 2),
-            imd_mean = round(mean(imd, na.rm = T)),
-            imd_sd = round(sqrt(var(imd, na.rm = T)),2)) %>%
+            imd_mean= round(mean(imd, na.rm = T)),
+            imd_sd= round(sqrt(var(imd, na.rm = T))),
+            imd_quants = paste(round(quantile(imd, 
+                                              probs = c(0.25, 0.75), 
+                                              na.rm = T)), collapse = ", "),
+            ) %>%
   mutate(N_perc = round(N/N_ch_tot,2),
          # `N (%)` = paste0(N, " (",N_perc,")"),
          `size mean(sd)` = paste0(ch_size_mean, " (",ch_size_sd,")"),
-         `IMD mean(sd)` = paste0(imd_mean, " (",imd_sd,")")) %>%
+         `IMD mean(sd)` = paste0(imd_mean, " (",imd_sd,")")) %>% 
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(N, `IMD mean(sd)`, `size mean(sd)`, `No. TPP residents`) %>% #`% rural`,
@@ -169,6 +177,7 @@ tab2
 ################################################################################
 ## FIGURES 
 ################################################################################
+
 pdf(file = "./descriptive.pdf", height = 7, width = 9)
 
 ## Age distribution
@@ -203,35 +212,74 @@ ch_long %>%
        x = "", y = "No. without event")
 
 # Type of first event
-# png("./ch_events.png", height = 800, width = 1000)
+png("./ch_first_event_type.png", height = 800, width = 1000)
 ch_long %>%
   filter(ever_affected) %>%
   ggplot(aes(first_event, fill = first_event_which)) +
   geom_histogram() + 
   theme_minimal() +
   theme(legend.position = c(0.8,0.8))
+dev.off()
+
+ch_long %>%
+  group_by(msoa, household_id) %>%
+  summarise(ever_affected = unique(ever_affected)) %>%
+  group_by(msoa) %>%
+  summarise(affect_prop = mean(as.numeric(ever_affected))) -> affect_bymsoa
+
+# png("./ch_first_event_map.png", height = 1000, width = 1000, res = 150)
+msoa_shp %>%
+  full_join(affect_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
+  ggplot(aes(geometry = geometry, fill = affect_prop)) +
+  geom_sf(lwd = 0) +
+  labs(title = "Proportion of TPP-covered carehomes ever affected during study period",
+       fill = "Proportion") +
+  theme(legend.position = c(0.2,0.9))
 # dev.off()
 
+
+ch_long %>%
+  filter(ever_affected == TRUE) %>%
+  group_by(msoa, household_id) %>%
+  summarise(first_event = unique(first_event)) %>%
+  group_by(msoa) %>%
+  summarise(average_first_event = median(first_event, na.rm = TRUE),
+            first_event = min(first_event)) -> first_bymsoa
+
+msoa_shp %>%
+  full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
+  ggplot(aes(geometry = geometry, fill = average_first_event)) +
+  geom_sf(lwd = 0) +
+  labs(title = "Average timing of first care home event per MSOA",
+       fill = "Date of first event") +
+  theme(legend.position = c(0.2,0.9))
+
+msoa_shp %>%
+  full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
+  ggplot(aes(geometry = geometry, fill = first_event)) +
+  geom_sf(lwd = 0) +
+  labs(title = "First care home event per MSOA",
+       fill = "Date of first event") +
+  theme(legend.position = c(0.2,0.9))
 
 #------------------------------------------------------------------------------#
 
 ## Community burden
 # Average daily incidence
-ch_long %>%
+comm_prev %>%
   group_by(date) %>%
-  summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
+  summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T)) %>%
   ungroup() -> comm_prev_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
-ch_long %>%
-  filter(date > ymd("2020-01-01")) %>% 
-  ggplot(aes(date, probable_roll7)) +
+comm_prev %>%
+  filter(date > ymd("2020-04-15")) %>% 
+  ggplot(aes(date, probable_cases_rate)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
-       x = "", y = "Rate") + 
-  ylim(c(0,100))
+       x = "", y = "Rate") 
 # dev.off()
 
 #------------------------------------------------------------------------------#

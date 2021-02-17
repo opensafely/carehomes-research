@@ -35,7 +35,7 @@ sink("./data_checks.txt", type = "output")
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
 # args = commandArgs(trailingOnly=TRUE)
-args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds")
+# args <- c("input.csv","tpp_msoa_coverage.rds", "data/msoa_shp.rds")
 args = commandArgs(trailingOnly=TRUE)
 
 tpp_cov <- readRDS(args[2])
@@ -169,6 +169,7 @@ input %>%
             n_pat = n(),
             n_case = sum(case, na.rm = TRUE))
 
+
 png("./tpp_coverage_carehomes.png", height = 800, width = 800)
 input %>%
   filter(care_home_type != "U") %>%
@@ -188,6 +189,7 @@ msoa_shp %>%
   ggplot(aes(geometry = geometry, fill = tpp_cov)) +
   geom_sf(lwd = 0) +
   scale_fill_gradient2(midpoint = 100) +
+  theme(legend.position = c(0.2,0.9)) +
   theme_minimal()
 dev.off()
 

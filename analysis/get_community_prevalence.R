@@ -37,7 +37,7 @@ write("Running get_community_prevalence...",file="data_setup_log.txt", append = 
 
 # Count number of patients and unique MSOAs in TPP without a carehome flag
 input %>%
-  filter(care_home_type == "U") %>%
+  filter(care_home_type == "U" & !institution) %>%
   summarise(n = n(), msoa = n_distinct(msoa)) -> comm_tally
 
 write(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"),file="data_setup_log.txt", append = TRUE)

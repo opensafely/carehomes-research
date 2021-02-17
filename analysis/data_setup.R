@@ -57,12 +57,13 @@ sink("data_setup_log.txt", type = "output")
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input.csv","tpp_msoa_coverage.rds", 90)
+# args <- c("./input.csv","tpp_msoa_coverage.rds", 80, 90)
 args = commandArgs(trailingOnly=TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
 tpp_cov <- readRDS(args[2])
-ch_cov_cutoff <- args[3]
+msoa_cov_cutoff <- args[3]
+ch_cov_cutoff <- args[4]
 
 # ---------------------------------------------------------------------------- #
 #----------------------#
@@ -85,7 +86,7 @@ input <- input_raw %>%
   filter(grepl("E",msoa)) %>%
   # drop missing MSOA and care home type
   filter(!is.na(msoa) & !is.na(care_home_type)) %>%
-  # exclude potential prisons/institutions
+  # identify potential prisons/institutions
   mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
   # set up var formats
   mutate(dementia = replace_na(dementia,0),
@@ -98,6 +99,8 @@ input <- input_raw %>%
          across(all_of(dates), replace_old_dates)
          ) %>% 
   inner_join(tpp_cov, by = "msoa") %>%
+  # Filter to MSOAs with > X% TPP coverage
+  filter(tpp_cov > msoa_cov_cutoff) %>%
   mutate(across(where(is.character), as.factor))
 
 # mutate(dat, dist = ifelse(speed == 4, dist * 100, dist)
@@ -115,6 +118,12 @@ input %>%
 # ---------------------------------------------------------------------------- #
 
 # Remove care homes with low TPP coverage
+
+ch %>%
+  mutate(include = (percent_tpp > ch_cov_cutoff)) %>%
+  group_by(include) %>%
+  summarise(n_ch = n_distinct(household_id))
+
 ch %>%
   filter(percent_tpp > ch_cov_cutoff) -> ch
 

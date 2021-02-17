@@ -235,7 +235,8 @@ msoa_shp %>%
   geom_sf(lwd = 0) +
   labs(title = "Proportion of TPP-covered carehomes ever affected during study period",
        fill = "Proportion") +
-  theme(legend.position = c(0.2,0.9))
+  scale_fill_viridis_c() +
+  theme(legend.position = c(0.2,0.8))
 # dev.off()
 
 
@@ -253,7 +254,8 @@ msoa_shp %>%
   geom_sf(lwd = 0) +
   labs(title = "Average timing of first care home event per MSOA",
        fill = "Date of first event") +
-  theme(legend.position = c(0.2,0.9))
+  scale_fill_viridis_c() +
+  theme(legend.position = c(0.2,0.8))
 
 msoa_shp %>%
   full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
@@ -261,7 +263,8 @@ msoa_shp %>%
   geom_sf(lwd = 0) +
   labs(title = "First care home event per MSOA",
        fill = "Date of first event") +
-  theme(legend.position = c(0.2,0.9))
+  scale_fill_viridis_c() +
+  theme(legend.position = c(0.2,0.8))
 
 #------------------------------------------------------------------------------#
 

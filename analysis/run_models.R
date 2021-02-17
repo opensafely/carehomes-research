@@ -13,11 +13,10 @@ library(boot)
 library(lmtest)
 library(sf)
 
-# args <- c("analysisdata.rds", "community_prevalence.rds", "data/msoa_shp.rds", 0, 0.1)
+# args <- c("analysisdata.rds", "community_prevalence.rds", "data/msoa_shp.rds", 0.1)
 args <- commandArgs(trailingOnly=TRUE)
 msoa_shp <- readRDS(args[3])
-cutoff <- as.numeric(args[4])
-test_sample <- as.numeric(args[5])
+test_sample <- as.numeric(args[4])
 sink("./output_model_run.txt")
 write("Run models",file="log_model_run.txt")
 

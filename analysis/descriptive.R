@@ -278,7 +278,7 @@ comm_prev %>%
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 comm_prev %>%
-  filter(date > ymd("2020-04-15")) %>% 
+  filter(date > ymd("2020-04-15") & date < ymd("2020-12-10")) %>% 
   ggplot(aes(date, probable_cases_rate)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 

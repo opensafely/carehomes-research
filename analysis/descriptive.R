@@ -30,6 +30,8 @@ ch <- readRDS("./ch_linelist.rds")
 ch_long <- readRDS("./ch_agg_long.rds")
 dat <- readRDS("./analysisdata.rds")
 
+study_per <- range(dat$date)
+
 ################################################################################
 
 ## Care home characteristics: summary tables
@@ -276,6 +278,7 @@ ch_long %>%
 ## Community burden
 # Average daily incidence
 comm_prev %>%
+  filter(msoa %in% dat$msoa) %>%
   group_by(date) %>%
   summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T)) %>%
   ungroup() -> comm_prev_avg
@@ -283,12 +286,13 @@ comm_prev %>%
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 comm_prev %>%
-  filter(date > ymd("2020-04-15") & date < ymd("2020-12-10")) %>% 
+  filter(msoa %in% dat$msoa) %>%
   ggplot(aes(date, probable_cases_rate)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
-       x = "", y = "Rate") 
+       x = "", y = "Rate") +
+  scale_x_date(limits = study_per)
 # dev.off()
 
 #------------------------------------------------------------------------------#

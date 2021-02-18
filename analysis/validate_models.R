@@ -21,6 +21,9 @@ test <- readRDS(args[2])
 
 sink("./output_model_val.txt", type = "output")
 
+print("No. care homes in testing data:")
+n_distinct(test$household_id)
+
 ## ------------------------------- Functions -------------------------------- ##
 
 brier_testdata <- function(fit){
@@ -28,10 +31,7 @@ brier_testdata <- function(fit){
   test$pred <- predict(fit, newdata = test, type = "response")
   
   test %>%
-    mutate(score = (pred - event_ahead)^2) %>% #View()
-    summarise(score = mean(score)) %>% #View()
-    # ungroup() %>%
-    # summarise(score = mean(score)) %>%
+    summarise(score = mean((pred - event_ahead)^2)) %>% #View()
     pull(score)
 }
 

@@ -73,11 +73,14 @@ ch_cov_cutoff <- args[4]
 # drop rows with missing msoa or carehome flag, set up variable formats and join
 # msoa populations
 
-replace_dates <- function(x) {
-  x[x < study_per[1]] <- NA
-  x[x > study_per[2]] <- NA
+
+# Replace dates outside specified range with NAs (default outside 2020)
+na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
+  x[x < min] <- NA
+  x[x > max] <- NA
   return(as_date(x))
 }
+
 
 print("Summary: Raw input")
 summary(input_raw)
@@ -95,9 +98,9 @@ input <- input_raw %>%
          rural_urban = as.factor(rural_urban),
          # redefine -1 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         # replace any dates outside study period as na
          across(all_of(dates), ymd),
-         across(all_of(dates), replace_dates)
+         # replace dates pre 2020 and post end of study as na
+         across(all_of(dates), na_replace_dates, max = max(study_per))
          ) %>% 
   inner_join(tpp_cov, by = "msoa") %>%
   mutate(across(where(is.character), as.factor))
@@ -159,7 +162,7 @@ ch_chars <- ch %>%
             hh_prop_min = mean(ethnicity != 1, na.rm = T),
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
-  mutate(imd_quint = cut(imd, 5, labels = F),
+  mutate(imd_quint = cut(imd, 5, ordered_result = T),
          hh_dem_gt25 = (hh_p_dem > 0.25),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                  rural_urban8 %in% 5:8 ~ "rural")))
@@ -172,7 +175,8 @@ summary(ch_chars)
 #-----------------------------#
 
 # Identify first covid event in care home, out of all possible events of interest.
-# Care homes which don't have an event in period are assigned the date "3000-01-01"
+# Exclude care homes with first event prior to 2020-04-15
+# Care homes which don't have any event in period are assigned the date "3000-01-01"
 
 ch_first_event <- ch %>%
   mutate_at(vars(all_of(event_dates)), function(x) replace_na(ymd(x),ymd("3000-01-01"))) %>%

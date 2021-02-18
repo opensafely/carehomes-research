@@ -15,8 +15,7 @@ library(sf)
 
 # args <- c("analysisdata.rds", "community_prevalence.rds", "data/msoa_shp.rds", 0.1)
 args <- commandArgs(trailingOnly=TRUE)
-msoa_shp <- readRDS(args[3])
-test_sample <- as.numeric(args[4])
+
 sink("./output_model_run.txt")
 write("Run models",file="log_model_run.txt")
 
@@ -24,18 +23,10 @@ write("Run models",file="log_model_run.txt")
 
 dat <- readRDS(args[1])
 tpp_cov <- readRDS(args[2])
+msoa_shp <- readRDS(args[3])
+test_sample <- as.numeric(args[4])
 
 # --------------------------------- Subset data ------------------------------ #
-
-# Exclude MSOAs with less than specified cut off of TPP coverage, as estimated
-# from TPP household size and MSOA populations
-# msoa_exclude <- tpp_cov %>%
-#   filter(tpp_cov < cutoff) %>%
-#   pull(msoa) %>%
-#   unique()
-
-print("Summary: All data")
-summary(dat)
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
@@ -48,9 +39,11 @@ dat <- dat_na_rm
 dat <- dat %>%
   filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
 
-
 print("Summary: NA filtered data")
 summary(dat)
+
+print("No. care homes in final analysis data:")
+n_distinct(dat$household_id)
 
 # ------------------------ Split data into training and test------------------ #
 
@@ -60,6 +53,9 @@ test <- filter(dat, !household_id %in% samp)
 
 # Save test data for use in model validation
 saveRDS(test,"./testdata.rds")
+
+print("No. care homes in training data:")
+n_distinct(train$household_id)
 
 ## ----------------------------- Model Formulae -------------------------------##
 
@@ -105,7 +101,6 @@ formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_av
 
 print("Summary: Training data")
 summary(train)
-# summary(test)
 
 ## --------------------------------- Fitting --------------------------------- ##
 
@@ -155,7 +150,7 @@ print("Summary: Model coeffs with robust SEs")
 lapply(fits, print_coeffs)
 
 print("Brier score w/ training data")
-brier <- function(mod) mean(mod$residuals^2)
+brier <- function(mod) mean((mod$fitted.values - train$event_ahead)^2)
 brier_score_train <- lapply(fits, brier)
 brier_score_train
 

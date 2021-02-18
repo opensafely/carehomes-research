@@ -1,0 +1,48 @@
+[1] "Patients with missing HH MSOA:"
+    Mode    FALSE 
+ logical 23449674 
+
+[1] "Patients with missing HH type:"
+    Mode    FALSE 
+ logical 23449674 
+
+[1] "HHs with missing MSOA: n = "
+[1] 0
+
+[1] "HHs with missing type: n = "
+[1] 0
+
+[1] "COVID cases with missing MSOA or HH type: n = "
+[1] 0
+
+[1] "No. households, patients and probable cases per carehome type:"
+  care_home_type    n_hh    n_pat  n_case
+1 PC               10567    55805   14264
+2 PN                7361    47291   13282
+3 PS                 321     2462     780
+4 U              9219468 23344116 1140203
+
+[1] "Probable prisons/institutions (size>15 and not CH)"
+  institution    n_hh    n_pat  n_case
+1 FALSE       9230719 23310956 1159996
+2 TRUE           4443   138718    8533
+
+[1] "Care homes registered under > 1 system:"
+  mixed_household  n_hh n_pat n_case
+1               0  7429 32227   8194
+2               1 10403 73331  20132
+
+[1] "Care homes % TPP coverage:"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   0.00   82.00   95.00   85.67  100.00  100.00 
+
+[1] "Care homes % TPP coverage category:"
+(-0.1,20]   (20,40]   (40,60]   (60,80]  (80,100] 
+      601       624       835      2031     13741 
+
+  percent_tpp_cat  n_hh n_pat n_case
+1 (-0.1,20]         601  6878   1404
+2 (20,40]           624  3600   1090
+3 (40,60]           835  5112   1318
+4 (60,80]          2031 13281   3801
+5 (80,100]        13741 76687  20713

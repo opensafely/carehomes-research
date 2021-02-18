@@ -1,0 +1,27 @@
+[1] "Brier score w/ test data"
+$base
+[1] 0.01151269
+
+$fixed
+[1] 0.01132868
+
+$week_change
+[1] 0.01150586
+
+$roll_avg
+[1] 0.01129619
+
+$roll_avg_lag1
+[1] 0.01144548
+
+$roll_avg_lag2
+[1] 0.01149075
+
+$interaction
+[1] 0.01126289
+
+$interaction_lag1
+[1] 0.01140664
+
+$interaction_lag2
+[1] 0.01149684

@@ -1,5 +1,8 @@
 # Table of contents
 
+* [coverage_log.txt](coverage_log.txt)
+* [data_checks.txt](data_checks.txt)
+* [data_setup_log.txt](data_setup_log.txt)
 * descriptive
   * descriptive/logs
     * [descriptive/logs/log_comm_prev.txt](descriptive/logs/log_comm_prev.txt)
@@ -7,6 +10,9 @@
     * [descriptive/logs/log_descriptive.txt](descriptive/logs/log_descriptive.txt)
   * descriptive/report
     * [descriptive/report/descriptive.pdf](descriptive/report/descriptive.pdf)
+* [log_descriptive.txt](log_descriptive.txt)
+* [output_model_run.txt](output_model_run.txt)
+* [output_model_val.txt](output_model_val.txt)
 * outputs
   * [outputs/age_dist.png](outputs/age_dist.png)
   * [outputs/descriptive.pdf](outputs/descriptive.pdf)
@@ -20,3 +26,4 @@
   * [outputs/tpp_coverage_map.pdf](outputs/tpp_coverage_map.pdf)
   * [outputs/tpp_coverage_map.png](outputs/tpp_coverage_map.png)
   * [outputs/tpp_coverage_msoa.png](outputs/tpp_coverage_msoa.png)
+* [test_pred_figs.pdf](test_pred_figs.pdf)

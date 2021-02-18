@@ -1,0 +1,121 @@
+                                                   
+Care homes included with 90% coverage cutoff:
+  include  n_ch
+1 FALSE    7643
+2 TRUE     1992
+
+[1] "Summary: Care home characteristics"
+  household_id            msoa                           region   
+ Min.   :    346   E02004148:  21   East                    :506  
+ 1st Qu.:5102964   E02003290:  20   East Midlands           :452  
+ Median :8184109   E02004426:  20   South West              :360  
+ Mean   :7083114   E02003545:  19   South East              :225  
+ 3rd Qu.:8992112   E02003588:  18   Yorkshire and The Humber:222  
+ Max.   :9751300   E02006249:  18   North West              :148  
+                   (Other)  :1911   (Other)                 :114  
+
+    n_resid           ch_size       ch_type    rural_urban8       imd       
+ Min.   :  1.000   Min.   :  1.00   PC:1220   3      :1307   Min.   :    0  
+ 1st Qu.:  1.000   1st Qu.:  1.00   PN: 792   5      : 242   1st Qu.:10625  
+ Median :  2.000   Median :  3.00   PS:  15   1      : 164   Median :17450  
+ Mean   :  7.645   Mean   :  9.79   U :   0   2      : 158   Mean   :17313  
+ 3rd Qu.:  9.000   3rd Qu.: 14.00             7      : 119   3rd Qu.:24800  
+ Max.   :102.000   Max.   :106.00             (Other):  20   Max.   :32800  
+                                              NA's   :  17   NA's   :17     
+
+   hh_med_age      hh_p_female     hh_maj_ethn    	hh_p_dem     
+ Min.   : 19.00   Min.   :0.0000   1   :1598   		Min.   :0.0000  
+ 1st Qu.: 82.00   1st Qu.:0.5000   2   :   [REDACTED]   1st Qu.:0.0000  
+ Median : 87.00   Median :0.7872   3   :   [REDACTED]   Median :0.0000  
+ Mean   : 84.42   Mean   :0.6974   4   :   [REDACTED]   Mean   :0.1568  
+ 3rd Qu.: 90.00   3rd Qu.:1.0000   5   :   [REDACTED]   3rd Qu.:0.2000  
+ Max.   :106.00   Max.   :1.0000   NA's: 407   		Max.   :1.0000  
+                                                               
+               imd_quint   hh_dem_gt25     rural_urban 
+ (-32.8,6.56e+03]   :304   Mode :logical   rural: 379  
+ (6.56e+03,1.31e+04]:354   FALSE:1658      urban:1631  
+ (1.31e+04,1.97e+04]:498   TRUE :369       NA's :  17  
+ (1.97e+04,2.62e+04]:468                               
+ (2.62e+04,3.28e+04]:386                               
+ NA's               : 17                               
+                            
+                           
+[1] "Summary: Analysis data"
+        msoa           tpp_pop         msoa_pop          70+        
+ E02004148:  5039   Min.   : 4548   Min.   : 5074   Min.   :  5075  
+ E02004426:  4156   1st Qu.: 6635   1st Qu.: 7463   1st Qu.: 68355  
+ E02003588:  4129   Median : 7738   Median : 8350   Median :109737  
+ E02006249:  3840   Mean   : 7915   Mean   : 8681   Mean   :133590  
+ E02006558:  3840   3rd Qu.: 8968   3rd Qu.: 9813   3rd Qu.:184987  
+ E02003290:  3758   Max.   :14961   Max.   :15455   Max.   :522485  
+ (Other)  :338807                                                   
+
+    tpp_cov           date            probable_cases     probable_cases_rate
+ Min.   :80.00   Min.   :2020-04-15   Min.   :  0.0000   Min.   :   0.000   
+ 1st Qu.:87.50   1st Qu.:2020-06-09   1st Qu.:  0.0000   1st Qu.:   0.000   
+ Median :92.06   Median :2020-08-07   Median :  0.0000   Median :   0.000   
+ Mean   :91.21   Mean   :2020-08-08   Mean   :  0.5406   Mean   :   6.813   
+ 3rd Qu.:95.69   3rd Qu.:2020-10-06   3rd Qu.:  1.0000   3rd Qu.:   7.439   
+ Max.   :99.97   Max.   :2020-12-10   Max.   :183.0000   Max.   :1803.311   
+                                                                            
+  household_id        n_disch                   region          n_resid      
+ Min.   :    346   Min.   :0.000000   East         :     0   Min.   : 1.000  
+ 1st Qu.:3731142   1st Qu.:0.000000   East Midlands:     0   1st Qu.: 1.000  
+ Median :8181842   Median :0.000000   London       :     0   Median : 1.000  
+ Mean   :7040568   Mean   :0.003125   North East   :     0   Mean   : 5.144  
+ 3rd Qu.:8996816   3rd Qu.:0.000000   North West   :     0   3rd Qu.: 5.000  
+ Max.   :9751300   Max.   :2.000000   (Other)      :     0   Max.   :85.000  
+                                      NA's         :363569               
+    
+    ch_size      ch_type      rural_urban8         imd          hh_med_age    
+ Min.   : 1.00   PC:228150   3      :238028   Min.   :    0   Min.   : 19.00  
+ 1st Qu.: 1.00   PN:133151   5      : 47508   1st Qu.:11100   1st Qu.: 81.50  
+ Median : 2.00   PS:  2268   1      : 26319   Median :17400   Median : 87.00  
+ Mean   : 6.65   U :     0   2      : 23379   Mean   :17424   Mean   : 84.31  
+ 3rd Qu.: 7.00               7      : 21227   3rd Qu.:24900   3rd Qu.: 90.50  
+ Max.   :89.00               (Other):  4238   Max.   :32800   Max.   :106.00  
+                             NA's   :  2870   NA's   :2870                
+    
+  hh_p_female     hh_maj_ethn      hh_p_dem                    imd_quint    
+ Min.   :0.0000   1   :276436   Min.   :0.0000   (-32.8,6.56e+03]   :53836  
+ 1st Qu.:0.5000   2   :  1129   1st Qu.:0.0000   (6.56e+03,1.31e+04]:60706  
+ Median :0.8571   3   :  1200   Median :0.0000   (1.31e+04,1.97e+04]:93152  
+ Mean   :0.7023   4   :  1646   Mean   :0.1535   (1.97e+04,2.62e+04]:84022  
+ 3rd Qu.:1.0000   5   :   720   3rd Qu.:0.1667   (2.62e+04,3.28e+04]:68983  
+ Max.   :1.0000   NA's: 82438   Max.   :1.0000   NA's               : 2870  
+                                                                            
+ hh_dem_gt25     rural_urban     first_event         ever_affected  
+ Mode :logical   rural: 72493   Min.   :2020-04-16   Mode :logical  
+ FALSE:298390    urban:288206   1st Qu.:2021-01-09   FALSE:242640   
+ TRUE :65179     NA's :  2870   Median :3000-01-01   TRUE :120929   
+                                Mean   :2674-05-05                  
+                                3rd Qu.:3000-01-01                  
+                                Max.   :3000-01-01                  
+                                                                    
+                  first_event_which                      i.region    
+ primary_care_case_probable:  7985   East                    :92574  
+ first_pos_test_sgss       :110592   East Midlands           :82131  
+ covid_admission_date      :  2112   South West              :70964  
+ ons_covid_death_date      :   240   South East              :45943  
+ NA's                      :242640   Yorkshire and The Humber:34811  
+                                     North West              :21630  
+                                     (Other)                 :15516  
+      day          disch_sum7    probable_roll7    probable_chg7      
+ Min.   :  1.0   Min.   :0.000   Min.   :  0.000   Min.   :-1793.457  
+ 1st Qu.: 56.0   1st Qu.:0.000   1st Qu.:  0.000   1st Qu.:    0.000  
+ Median :115.0   Median :0.000   Median :  1.909   Median :    0.000  
+ Mean   :116.4   Mean   :0.022   Mean   :  6.792   Mean   :    0.274  
+ 3rd Qu.:175.0   3rd Qu.:0.000   3rd Qu.:  7.137   3rd Qu.:    0.000  
+ Max.   :240.0   Max.   :4.000   Max.   :263.247   Max.   :  941.876  
+                 NA's   :10632   NA's   :10632     NA's   :12372   
+   
+ probable_roll7_lag1wk probable_roll7_lag2wk  event_ahead     
+ Min.   :  0.000       Min.   :  0.00        Min.   :0.00000  
+ 1st Qu.:  0.000       1st Qu.:  0.00        1st Qu.:0.00000  
+ Median :  1.833       Median :  1.78        Median :0.00000  
+ Mean   :  6.556       Mean   :  6.28        Mean   :0.01756  
+ 3rd Qu.:  6.572       3rd Qu.:  6.06        3rd Qu.:0.00000  
+ Max.   :263.247       Max.   :263.25        Max.   :1.00000  
+ NA's   :22607         NA's   :34181                          
+
+Time difference of 6.62 mins

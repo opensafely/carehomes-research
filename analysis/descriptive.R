@@ -229,42 +229,42 @@ ch_long %>%
   summarise(affect_prop = mean(as.numeric(ever_affected))) -> affect_bymsoa
 
 # png("./ch_first_event_map.png", height = 1000, width = 1000, res = 150)
-msoa_shp %>%
-  full_join(affect_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
-  ggplot(aes(geometry = geometry, fill = affect_prop)) +
-  geom_sf(lwd = 0) +
-  labs(title = "Proportion of TPP-covered carehomes ever affected during study period",
-       fill = "Proportion") +
-  scale_fill_viridis_c() +
-  theme(legend.position = c(0.2,0.8))
+# msoa_shp %>%
+#   full_join(affect_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
+#   ggplot(aes(geometry = geometry, fill = affect_prop)) +
+#   geom_sf(lwd = 0) +
+#   labs(title = "Proportion of TPP-covered carehomes ever affected during study period",
+#        fill = "Proportion") +
+#   scale_fill_viridis_c() +
+#   theme(legend.position = c(0.2,0.8))
 # dev.off()
 
 
-ch_long %>%
-  filter(ever_affected == TRUE) %>%
-  group_by(msoa, household_id) %>%
-  summarise(first_event = unique(first_event)) %>%
-  group_by(msoa) %>%
-  summarise(average_first_event = median(first_event, na.rm = TRUE),
-            first_event = min(first_event)) -> first_bymsoa
+# ch_long %>%
+#   filter(ever_affected == TRUE) %>%
+#   group_by(msoa, household_id) %>%
+#   summarise(first_event = unique(first_event)) %>%
+#   group_by(msoa) %>%
+#   summarise(average_first_event = median(first_event, na.rm = TRUE),
+#             first_event = min(first_event)) -> first_bymsoa
 
-msoa_shp %>%
-  full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
-  ggplot(aes(geometry = geometry, fill = average_first_event)) +
-  geom_sf(lwd = 0) +
-  labs(title = "Average timing of first care home event per MSOA",
-       fill = "Date of first event") +
-  scale_fill_viridis_c() +
-  theme(legend.position = c(0.2,0.8))
+# msoa_shp %>%
+#   full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
+#   ggplot(aes(geometry = geometry, fill = average_first_event)) +
+#   geom_sf(lwd = 0) +
+#   labs(title = "Average timing of first care home event per MSOA",
+#        fill = "Date of first event") +
+#   scale_fill_viridis_c() +
+#   theme(legend.position = c(0.2,0.8))
 
-msoa_shp %>%
-  full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
-  ggplot(aes(geometry = geometry, fill = first_event)) +
-  geom_sf(lwd = 0) +
-  labs(title = "First care home event per MSOA",
-       fill = "Date of first event") +
-  scale_fill_viridis_c() +
-  theme(legend.position = c(0.2,0.8))
+# msoa_shp %>%
+#   full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
+#   ggplot(aes(geometry = geometry, fill = first_event)) +
+#   geom_sf(lwd = 0) +
+#   labs(title = "First care home event per MSOA",
+#        fill = "Date of first event") +
+#   scale_fill_viridis_c() +
+#   theme(legend.position = c(0.2,0.8))
 
 #------------------------------------------------------------------------------#
 

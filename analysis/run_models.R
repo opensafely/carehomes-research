@@ -163,7 +163,7 @@ brier_score_train
 print("10-fold cross-validation")
 time2 <- Sys.time()
 cv_err <- lapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10))
-write(paste0("Time running cross-validation: ",round(time2-Sys.time(),2)), file=paste0("log_model_run_",cutoff,".txt"), append = TRUE)
+write(paste0("Time running cross-validation: ",round(time2-Sys.time(),2)), file="log_model_run.txt", append = TRUE)
 
 print("Cross-validated estimate of prediction error [raw / adj for k-fold rather than LOO]:")
 err <- lapply(cv_err, function(cv) cv$delta[2])
@@ -200,7 +200,7 @@ dev.off()
 
 ################################################################################
 
-saveRDS(fits, paste0("./fits_",cutoff,".rds"))
+saveRDS(fits, "./fits.rds")
 
 ################################################################################
 

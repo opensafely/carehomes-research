@@ -97,7 +97,7 @@ input <- input_raw %>%
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
          # replace any dates outside study period as na
          across(all_of(dates), ymd),
-         across(all_of(dates), replace_old_dates)
+         across(all_of(dates), replace_dates)
          ) %>% 
   inner_join(tpp_cov, by = "msoa") %>%
   mutate(across(where(is.character), as.factor))

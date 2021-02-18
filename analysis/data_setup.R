@@ -34,7 +34,7 @@ getmode <- function(v) {
 }
 
 # Set study period 
-study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-10"), by = "days")
+study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-07"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")

@@ -95,7 +95,7 @@ actions:
       moderately_sensitive:
         output: output_model_run.txt
         log: log_model_run.txt
-        figure: model_resids_map.pdf
+       # figure: model_resids_map.pdf
       highly_sensitive:
         fit: fits.rds
         data: testdata.rds

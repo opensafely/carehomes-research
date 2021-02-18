@@ -99,11 +99,19 @@ input <- input_raw %>%
          across(all_of(dates), replace_old_dates)
          ) %>% 
   inner_join(tpp_cov, by = "msoa") %>%
-  # Filter to MSOAs with > X% TPP coverage
-  filter(tpp_cov > msoa_cov_cutoff) %>%
   mutate(across(where(is.character), as.factor))
 
-# mutate(dat, dist = ifelse(speed == 4, dist * 100, dist)
+# ---------------------------------------------------------------------------- #
+
+# Filter MSOAs by TPP coverage
+input_covcutoff <- input %>%
+  filter(tpp_cov > msoa_cov_cutoff)
+
+print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(input$msoa)-n_distinct(input_covcutoff$msoa)))
+
+input <- input_covcutoff
+
+# ---------------------------------------------------------------------------- #
 
 print("Summary: Cleaned input")
 summary(input)
@@ -118,7 +126,7 @@ input %>%
 # ---------------------------------------------------------------------------- #
 
 # Remove care homes with low TPP coverage
-
+print(paste0("Care homes included with ",ch_cov_cutoff,"% cut off:"))
 ch %>%
   mutate(include = (percent_tpp > ch_cov_cutoff)) %>%
   group_by(include) %>%
@@ -147,9 +155,10 @@ ch_chars <- ch %>%
             hh_med_age = median(age, na.rm = T),  # average age of registered residents
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
+            hh_prop_min = mean(ethnicity != 1, na.rm = T),
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
-  mutate(imd_quint = cut(imd, 5),
+  mutate(imd_quint = cut(imd, 5, labels = F),
          hh_dem_gt25 = (hh_p_dem > 0.25),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                  rural_urban8 %in% 5:8 ~ "rural")))
@@ -176,16 +185,16 @@ ch_first_event <- ch %>%
          first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))]))
 ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
-print("Summary: First care home events")
-ch_first_event %>%
-  filter(ever_affected) %>%
-  summary()
-
 # Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%
   full_join(ch_first_event) %>%
   mutate(date = first_event) %>%
   select(-first_primary_care_case_probable:-first_ons_covid_death_date) 
+
+print("Summary: Characteristics of affected care homes")
+ch_wevent %>%
+  filter(ever_affected) %>%
+  summary()
 
 # Expand rows in data.table for speed:
 start <- Sys.time()
@@ -196,8 +205,8 @@ ch_wevent <- as.data.table(ch_wevent)
 all_dates <- ch_wevent[,.(date=study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
-setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
+setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
+setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
 ch_wevent <- ch_wevent[all_dates,roll=TRUE]
 # ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
 

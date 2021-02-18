@@ -39,7 +39,7 @@ summary(dat)
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
-  filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_med_age, hh_p_female, hh_dem_gt25, hh_maj_ethn), all_vars(!is.na(.)))
+  filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_med_age, hh_p_female, hh_dem_gt25, hh_prop_min), all_vars(!is.na(.)))
 
 write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file="log_model_run.txt", append = T)
 dat <- dat_na_rm
@@ -64,25 +64,25 @@ saveRDS(test,"./testdata.rds")
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk
-f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn 
+f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min 
 
 # Time-varying (1): current day cases
-f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_cases_rate
+f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_cases_rate
 
 # Time-varying (2): 7-day change
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_chg7
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_chg7
 
 # Time-varying (3): 7-day rolling average
-f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7
+f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7
 
 # Time varying (4): Lagged
-f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag2wk
+f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag1wk
+f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag2wk
 
 # Time interaction (5)
-f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7*day
-f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag1wk*day
-f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_maj_ethn + probable_roll7_lag2wk*day
+f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7*day
+f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag1wk*day
+f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag2wk*day
 
 
 formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, 
@@ -194,9 +194,9 @@ train %>%
 
 }
 
-pdf("model_resids_map.pdf", height = 10, width = 8)
-lapply(fits, map_resids)
-dev.off()
+# pdf("model_resids_map.pdf", height = 10, width = 8)
+# lapply(fits, map_resids)
+# dev.off()
 
 ################################################################################
 

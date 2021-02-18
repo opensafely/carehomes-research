@@ -36,6 +36,8 @@ dat <- readRDS("./analysisdata.rds")
 
 # Total care homes in analysis dataset
 N_ch_tot <- n_distinct(dplyr::select(dat, household_id, msoa))
+
+print("Total included care homes:")
 N_ch_tot
 
 # Number of carehomes per MSOA
@@ -61,7 +63,7 @@ per_msoa %>%
 # number of patients registered under that household ID, but actual capacity may 
 # be larger. 
 chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban",
-           "imd","hh_med_age","hh_p_female","hh_maj_ethn","hh_p_dem",
+           "imd","hh_med_age","hh_p_female","hh_prop_min","hh_p_dem",
            "first_event", "ever_affected")
 
 ch_chars <- ch_long %>%
@@ -148,13 +150,16 @@ ch_resid_all %>%
             q_age = paste(round(quantile(age, 
                                          probs = c(0.25, 0.75), 
                                          na.rm = T)), collapse = ", "),
+            n_minor = sum(ethnicity == 1, na.rm = T),
+            prop_minor = mean(ethnicity != 1, na.rm = T),
             n_dem = sum(dementia, na.rm = T)
   ) %>% 
   mutate(`age med[IQR]` = paste0(med_age, " [",q_age,"]"),
+         `minority ethnicity n(%)` = paste0(n_minor, " (",round(n_minor/`No. TPP residents`,2),")"),
          `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. TPP residents`,2),")")) %>%
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
-  dplyr::select(`No. TPP residents`, `age med[IQR]`, `dementia n(%)` ) -> tab_age
+  dplyr::select(`No. TPP residents`, `age med[IQR]`, `minority ethnicity n(%)`, `dementia n(%)` ) -> tab_age
 
 ch_resid_all %>%
   group_by(ever_affected, ethnicity) %>%
@@ -206,11 +211,11 @@ ch_long %>%
   group_by(date, ch_type) %>%
   filter(first_event > date & ch_type != "PS") %>%
   summarise(n = n_distinct(household_id)) %>%
-  ggplot(aes(date, n)) +
+  ggplot(aes(date, n, col = ch_type)) +
   geom_line() +
-  facet_wrap(~ch_type, scales = "free_y") +
-  labs(title = "Survival of care homes from COVID-19 introduction - by type",
-       x = "", y = "No. without event")
+  # facet_wrap(~ch_type, scales = "free_y") +
+  labs(title = "Survival of care homes from COVID-19 introduction",
+       x = "", y = "No. without event", col = "Type")
 
 # Type of first event
 # png("./ch_first_event_type.png", height = 800, width = 1000)

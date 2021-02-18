@@ -73,8 +73,9 @@ ch_cov_cutoff <- args[4]
 # drop rows with missing msoa or carehome flag, set up variable formats and join
 # msoa populations
 
-replace_old_dates <- function(x) {
-  x[x < '2020-01-01'] <- NA
+replace_dates <- function(x) {
+  x[x < study_per[1]] <- NA
+  x[x > study_per[2]] <- NA
   return(as_date(x))
 }
 
@@ -94,7 +95,7 @@ input <- input_raw %>%
          rural_urban = as.factor(rural_urban),
          # redefine -1 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         # replace any dates < 2020 as na
+         # replace any dates outside study period as na
          across(all_of(dates), ymd),
          across(all_of(dates), replace_old_dates)
          ) %>% 

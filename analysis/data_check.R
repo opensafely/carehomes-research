@@ -48,9 +48,13 @@ cutoff <- args[4]
 
 options(datatable.old.fread.datetime.character=TRUE)
 
-input <- fread(args[1], data.table = TRUE, na.strings = "") %>%
+input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # Filter just to records from England
   filter(grepl("E",msoa)) %>%
+  # Redefine household_id to ensure unique across MSOAs
+  group_by(msoa, household_id) %>%
+  mutate(HHID = row_number()) %>% 
+  ungroup() %>%
   inner_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
@@ -72,7 +76,7 @@ print(paste0("MSOAs excluded with ",cutoff,"% coverage cut off: n = ",n_distinct
 input <- input_covcutoff
 
 print("Total Patients")
-nrow(input)
+n_distinct(input$patient_id)
 
 print("Patients with missing HH MSOA:")
 summary(is.na(input$msoa))
@@ -83,13 +87,13 @@ summary(is.na(input$care_home_type))
 print("HHs with missing MSOA: n = ")
 input %>%
   filter(is.na(msoa)) %>%
-  pull(household_id) %>%
+  pull(HHID) %>%
   n_distinct()
 
 print("HHs with missing type: n = ")
 input %>%
   filter(is.na(care_home_type)) %>%
-  pull(household_id) %>%
+  pull(HHID) %>%
   n_distinct()
 
 print("COVID cases with missing MSOA or HH type: n = ")
@@ -104,14 +108,14 @@ input %>%
 print("No. households, patients and probable cases per carehome type:")
 input %>%
   group_by(care_home_type) %>%
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n(),
+  summarise(n_hh = n_distinct(HHID),
+            n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
 # Distribution of household size, 
 png("./hh_size_dist.png", height = 800, width = 1500)
 input %>%
-  group_by(care_home_type, household_id) %>%
+  group_by(care_home_type, HHID) %>%
   summarise(household_size = median(household_size, na.rm = T)) %>%
   ggplot(aes(household_size)) +
   geom_histogram() +
@@ -123,8 +127,8 @@ print("Probable prisons/institutions (size>15 and not CH)")
 input %>%
   mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
   group_by(institution) %>%
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n(),
+  summarise(n_hh = n_distinct(HHID),
+            n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
 # Age distribution in carehomes/community
@@ -153,15 +157,23 @@ input %>%
   filter(care_home_type != "U") %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
   group_by(mixed_household) %>% 
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n(),
+  summarise(n_hh = n_distinct(HHID),
+            n_pat = n_distinct(patient_id),
+            n_case = sum(case, na.rm = TRUE)) 
+
+print("Care homes with < 100% coverage:")
+input %>%
+  filter(care_home_type != "U") %>%
+  group_by(percent_tpp < 100) %>% 
+  summarise(n_hh = n_distinct(HHID),
+            n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
 print("Care homes % TPP coverage:")
 summary(
   input %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(household_id, percent_tpp) %>%
+  dplyr::select(msoa, HHID, percent_tpp) %>%
   unique() %>% 
   pull(percent_tpp)
 )
@@ -170,9 +182,11 @@ print("Care homes % TPP coverage category:")
 summary(
   input %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(household_id, percent_tpp) %>%
+  dplyr::select(msoa, HHID, percent_tpp) %>%
   unique() %>% 
-  mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
+  mutate(percent_tpp_cat = cut(percent_tpp, 
+                               breaks = c(min(percent_tpp),50,60,70,80,90,max(percent_tpp)),
+                               include.lowest = TRUE)) %>%
   pull(percent_tpp_cat)
 )
 
@@ -180,15 +194,15 @@ input %>%
   filter(care_home_type != "U") %>%
   mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
   group_by(percent_tpp_cat) %>%
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n(),
+  summarise(n_hh = n_distinct(HHID),
+            n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE))
 
 
 png("./tpp_coverage_carehomes.png", height = 800, width = 800)
 input %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(household_id, percent_tpp) %>%
+  dplyr::select(HHID, percent_tpp) %>%
   unique() %>% 
   ggplot(aes(percent_tpp)) +
   geom_histogram(bins = 30, fill = "steelblue") +

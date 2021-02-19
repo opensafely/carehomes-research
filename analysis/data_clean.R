@@ -65,11 +65,21 @@ dates <- c(event_dates,"discharge_date")
 # ---------------------------------------------------------------------------- #
 
 #----------------------#
-#      CLEANING        #
+#  PRELIMINARY CHECKS  #
 #----------------------#
 
 print("Patients with missing household_id:")
-nrow(input_raw[input_raw$household_id == 0])
+nrow(input_raw[input_raw$household_id == 0,])
+
+input_raw %>%
+  group_by(mixed_household, perc_tpp_lt100) %>%
+  tally()
+
+# ---------------------------------------------------------------------------- #
+
+#----------------------#
+#      CLEANING        #
+#----------------------#
 
 input <- input_raw %>%
   # Filter just to records from England

@@ -47,7 +47,7 @@ msoa_shp <- readRDS(args[2])
 # Distribution of household size, 
 png("./hh_size_dist.png", height = 800, width = 1500)
 input %>%
-  group_by(care_home_type, HHID) %>%
+  group_by(care_home_type, household_id) %>%
   summarise(household_size = median(household_size, na.rm = T)) %>%
   ggplot(aes(household_size)) +
   geom_histogram() +
@@ -79,7 +79,7 @@ dev.off()
 png("./tpp_coverage_carehomes.png", height = 800, width = 800)
 input %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(HHID, percent_tpp) %>%
+  dplyr::select(household_id, percent_tpp) %>%
   unique() %>% 
   ggplot(aes(percent_tpp)) +
   geom_histogram(bins = 30, fill = "steelblue") +

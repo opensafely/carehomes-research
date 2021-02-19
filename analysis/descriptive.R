@@ -1,6 +1,8 @@
 ################################################################################
 # Description: Preliminary data summaries
 # 
+# Generate summary tables and descriptive plots
+# 
 # Depends on data_setup.R and get_community_prevalence.R
 #
 # Author: Emily S Nightingale
@@ -14,6 +16,10 @@ time_desc <- Sys.time()
 
 ################################################################################
 
+#----------------------#
+#  SETUP ENVIRONMENT   #
+#----------------------#
+
 library(tidyverse)
 library(lubridate)
 library(data.table)
@@ -21,23 +27,36 @@ library(sf)
 
 theme_set(theme_bw())
 
-## Load shapefiles
-msoa_shp <- readRDS("data/msoa_shp.rds")
+# ---------------------------------------------------------------------------- #
 
+#----------------------#
+#      LOAD DATA       #
+#----------------------#
+
+# Shapefiles
+msoa_shp <- readRDS("./data/msoa_shp.rds")
+
+# Individual data - all
 input <- readRDS("./input_clean.rds")
+
+# Community prevalence
 comm_prev <- readRDS("./community_prevalence.rds")
+
+# Individual data - care home residents
 ch <- readRDS("./ch_linelist.rds")
+
+# Aggregated data - daily care home events
 ch_long <- readRDS("./ch_agg_long.rds")
+
+# Analysis
 dat <- readRDS("./analysisdata.rds")
 
 study_per <- range(dat$date)
 
-################################################################################
-
-## Care home characteristics: summary tables
+# ---------------------------------------------------------------------------- #
 
 # Total care homes in analysis dataset
-N_ch_tot <- n_distinct(dplyr::select(dat, household_id, msoa))
+N_ch_tot <- n_distinct(dat$household_id)
 
 print("Total included care homes:")
 N_ch_tot
@@ -46,7 +65,7 @@ N_ch_tot
 ch %>% 
   group_by(msoa) %>% 
   summarise(
-    n_resid = n(),
+    n_resid = n_distinct(patient_id),
     n_ch = n_distinct(household_id),
     n_gp = n_distinct(practice_id)) %>%
   ungroup() -> per_msoa
@@ -60,10 +79,13 @@ per_msoa %>%
 
 #------------------------------------------------------------------------------#
 
+## Summary tables: care home characteristics ##
+
 # Summarise characteristics overall, and by whether or not care home had any 
 # covid-event recorded in data (ever-affected). Size of each home estimated as 
 # number of patients registered under that household ID, but actual capacity may 
 # be larger. 
+
 chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban",
            "imd","hh_med_age","hh_p_female","hh_prop_min","hh_p_dem",
            "first_event", "ever_affected")
@@ -152,13 +174,13 @@ ch_resid_all %>%
             q_age = paste(round(quantile(age, 
                                          probs = c(0.25, 0.75), 
                                          na.rm = T)), collapse = ", "),
-            n_minor = sum(ethnicity == 1, na.rm = T),
+            n_minor = sum(ethnicity != 1, na.rm = T),
             prop_minor = mean(ethnicity != 1, na.rm = T),
             n_dem = sum(dementia, na.rm = T)
   ) %>% 
   mutate(`age med[IQR]` = paste0(med_age, " [",q_age,"]"),
-         `minority ethnicity n(%)` = paste0(n_minor, " (",round(n_minor/`No. TPP residents`,2),")"),
-         `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. TPP residents`,2),")")) %>%
+         `minority ethnicity n(%)` = paste0(n_minor, " (",round(n_minor/`No. TPP residents`,4),")"),
+         `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. TPP residents`,4),")")) %>%
   ungroup() %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(`No. TPP residents`, `age med[IQR]`, `minority ethnicity n(%)`, `dementia n(%)` ) -> tab_age
@@ -173,7 +195,7 @@ ch_resid_all %>%
   mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
   ungroup() %>%
   mutate_at(vars(-n_resid, -ever_affected), 
-            function(x) paste0(x, " (", round(x/.$n_resid,2), ")")) %>%
+            function(x) paste0(x, " (", round(x/.$n_resid,4), ")")) %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(-n_resid) -> tab_ethn
 

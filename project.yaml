@@ -42,7 +42,6 @@ actions:
   data_check_figs:
     needs: [data_clean]
     run: r:latest analysis/data_check_figs.R input_clean.rds data/msoa_shp.rds
-
     outputs:
       moderately_sensitive:
         figure1: tpp_coverage_msoa.png
@@ -65,8 +64,8 @@ actions:
         ch_agg_long: ch_agg_long.rds
 
   descriptive:
-    needs: [data_setup]
-    run: r:latest analysis/descriptive.R input_clean.rds ch_linelist.rds ch_agg_long.rds community_prevalence.rds
+    needs: [data_clean, data_setup]
+    run: r:latest analysis/descriptive.R 
     outputs:
       moderately_sensitive:
         report: descriptive.pdf

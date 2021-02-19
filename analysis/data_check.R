@@ -52,8 +52,7 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # Filter just to records from England
   filter(grepl("E",msoa)) %>%
   # Redefine household_id to ensure unique across MSOAs
-  group_by(msoa, household_id) %>%
-  mutate(HHID = row_number()) %>% 
+  mutate(HHID = group_indices(., msoa, household_id)) %>% 
   ungroup() %>%
   inner_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%

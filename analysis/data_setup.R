@@ -1,16 +1,14 @@
 ################################################################################
-# Description: Script to set up analysis data for "Spatiotemporal risk of
-# infection of care homes during the first wave of the COVID-19 pandemic in the
-# UK"
+# Description: Set up analysis data of care home daily survival, including care 
+# home characteristics, covid introduction events, hospital discharges and 
+# community prevalence of probable infections.
 #
-# input: individual patient GP record data extracted from OpenSAFELY according
-# to "./analyis/study_definition.py".
-# output: aggregated dataset for landmark analysis of 14-day care home
+# input: Cleaned input data from data_clean.R
+# output: Aggregated dataset for landmark analysis of 14-day care home
 # infection risk.
 #
 # Author: Emily S Nightingale
 # Date: 06/08/2020
-# 
 #
 ################################################################################
 
@@ -18,20 +16,42 @@ time_total <- Sys.time()
 
 ################################################################################
 
+#----------------------#
+#  SETUP ENVIRONMENT   #
+#----------------------#
+
 library(tidyverse)
 library(lubridate)
 library(data.table)
 library(dtplyr)
 library(zoo)
 
+# write("Data setup log",file="data_setup_log.txt")
+sink("data_setup_log.txt", type = "output")
 
-options(datatable.old.fread.datetime.character=TRUE)
-
-# Function to calculate mode value
+# Function: alculate mode value
 getmode <- function(v) {
   uniqv <- unique(v)
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
+
+# ---------------------------------------------------------------------------- #
+
+#----------------------#
+#      LOAD DATA       #
+#----------------------#
+
+# * input.csv 
+#   - individual health records for identification of covid events
+# * community_prevalence.csv 
+#   - derived dataset of daily probable case counts per MSOA plus population estimates
+
+# args <- c("input_clean.rds", "community_prevalence.rds", 90)
+args = commandArgs(trailingOnly=TRUE)
+
+input <- readRDS(args[1]) 
+comm_prev <- readRDS(args[2])
+ch_cov_cutoff <- args[3]
 
 # Set study period 
 study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-07"), by = "days")
@@ -43,85 +63,7 @@ dates <- c(event_dates,"discharge_date")
 # Time horizon for prediction
 ahead <- 14
 
-# write("Data setup log",file="data_setup_log.txt")
-sink("data_setup_log.txt", type = "output")
-
 # ---------------------------------------------------------------------------- #
-
-#----------------------#
-#  LOAD DATA  #
-#----------------------#
-
-# * input.csv 
-#   - individual health records for identification of covid events
-# * community_prevalence.csv 
-#   - derived dataset of daily probable case counts per MSOA plus population estimates
-
-# args <- c("./input.csv","tpp_msoa_coverage.rds", 2, 80)
-args = commandArgs(trailingOnly=TRUE)
-
-input_raw <- fread(args[1], data.table = FALSE, na.strings = "") 
-tpp_cov <- readRDS(args[2])
-msoa_cov_cutoff <- args[3]
-ch_cov_cutoff <- args[4]
-
-# ---------------------------------------------------------------------------- #
-#----------------------#
-#  TIDY DATA   #
-#----------------------#
-
-# drop rows with missing msoa or carehome flag, set up variable formats and join
-# msoa populations
-
-
-# Replace dates outside specified range with NAs (default outside 2020)
-na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
-  x[x < min] <- NA
-  x[x > max] <- NA
-  return(as_date(x))
-}
-
-
-print("Summary: Raw input")
-summary(input_raw)
-
-input <- input_raw %>%
-  # Filter just to records from England
-  filter(grepl("E",msoa)) %>%
-  # drop missing MSOA and care home type
-  filter(!is.na(msoa) & !is.na(care_home_type)) %>%
-  # identify potential prisons/institutions
-  mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
-  # set up var formats
-  mutate(dementia = replace_na(dementia,0),
-         ethnicity = as.factor(ethnicity),
-         rural_urban = as.factor(rural_urban),
-         # redefine -1 values as na
-         across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         across(all_of(dates), ymd),
-         # replace dates pre 2020 and post end of study as na
-         across(all_of(dates), na_replace_dates, max = max(study_per))
-         ) %>% 
-  inner_join(tpp_cov, by = "msoa") %>%
-  mutate(across(where(is.character), as.factor))
-
-# ---------------------------------------------------------------------------- #
-
-# Filter MSOAs by TPP coverage
-input_covcutoff <- input %>%
-  filter(tpp_cov > msoa_cov_cutoff)
-
-print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(input$msoa)-n_distinct(input_covcutoff$msoa)))
-
-input <- input_covcutoff
-
-# ---------------------------------------------------------------------------- #
-
-print("Summary: Cleaned input")
-summary(input)
-
-# Run script to aggregate non-carehome cases by MSOA
-source("./analysis/get_community_prevalence.R")
 
 # Split out carehome residents
 input %>%
@@ -137,7 +79,11 @@ ch %>%
   summarise(n_ch = n_distinct(household_id))
 
 ch %>%
-  filter(percent_tpp > ch_cov_cutoff) -> ch
+  filter(percent_tpp > ch_cov_cutoff) -> ch_cutoff
+
+print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",n_distinct(ch$household_id)-n_distinct(ch_cutoff$household_id)))
+
+ch <- ch_cutoff
 
 #-----------------------------#
 #  Care home characteristics  #
@@ -162,7 +108,7 @@ ch_chars <- ch %>%
             hh_prop_min = mean(ethnicity != 1, na.rm = T),
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
-  mutate(imd_quint = cut(imd, 5, ordered_result = T),
+  mutate(imd_quint = as.factor(cut(imd, 5, ordered_result = T)),
          hh_dem_gt25 = (hh_p_dem > 0.25),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                  rural_urban8 %in% 5:8 ~ "rural")))
@@ -187,8 +133,15 @@ ch_first_event <- ch %>%
   rowwise() %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
          ever_affected = (first_event < ymd("3000-01-01")),
-         first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))]))
+         first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))])) %>%
+  group_by(msoa, household_id) %>%
+  mutate(first_event_in_per = (first_event >= ymd("2020-04-15"))) 
 ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
+
+print("Care homes with first event prior to study period (excluded from analysis):")
+ch_first_event %>%
+  group_by(first_event_in_per) %>%
+  tally()
 
 # Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%
@@ -196,9 +149,9 @@ ch_wevent <- ch_chars %>%
   mutate(date = first_event) %>%
   select(-first_primary_care_case_probable:-first_ons_covid_death_date) 
 
-print("Summary: Characteristics of affected care homes")
+print("Summary: Characteristics of care homes affected during study period")
 ch_wevent %>%
-  filter(ever_affected) %>%
+  filter(ever_affected & first_event_in_per) %>%
   summary()
 
 # Expand rows in data.table for speed:
@@ -294,19 +247,14 @@ dat %>%
 # ---------------------------------------------------------------------------- #
 # Save analysis data
 
-saveRDS(input, file = "./input_clean.rds")
 saveRDS(ch, file = "./ch_linelist.rds")
 saveRDS(ch_long, file = "./ch_agg_long.rds")
 saveRDS(dat, file = "./analysisdata.rds")
 
-################################################################################
+# ---------------------------------------------------------------------------- #
 
 # Total time running data_setup:
 round(Sys.time() - time_total,2)
-
-# write(paste0("Total time running data_setup: ",
-#              round(time_total,2)), 
-#       file="data_setup_log.txt", append = TRUE)
 
 sink()
 

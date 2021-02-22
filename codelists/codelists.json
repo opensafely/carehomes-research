@@ -1,10 +1,10 @@
 {
   "files": {
-    "opensafely-dementia.csv": {
-      "id": "opensafely/dementia/2020-04-22",
-      "url": "https://codelists.opensafely.org/codelist/opensafely/dementia/2020-04-22/",
-      "downloaded_at": "2021-02-10 11:56:45.710172Z",
-      "sha": "9d40ff3a5c2428af4651c765f2c418de3a3ad4b4"
+    "opensafely-dementia-complete.csv": {
+      "id": "opensafely/dementia-complete/48c76cf8",
+      "url": "https://codelists.opensafely.org/codelist/opensafely/dementia-complete/48c76cf8/",
+      "downloaded_at": "2021-02-22 09:02:04.747383Z",
+      "sha": "b73c9363f19a9ee9f4407e34e95e11d3eeb615f4"
     },
     "opensafely-ethnicity.csv": {
       "id": "opensafely/ethnicity/2020-04-27",

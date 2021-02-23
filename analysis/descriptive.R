@@ -90,9 +90,12 @@ chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban",
            "imd","hh_med_age","hh_p_female","hh_prop_min","hh_p_dem",
            "first_event", "ever_affected")
 
+included <- unique(dat$household_id)
+
 ch_chars <- ch_long %>%
   dplyr::select(all_of(chars)) %>%
-  distinct()
+  unique() %>%
+  filter(household_id %in% included)
 
 print("Missingness in care home characteristics:")
 print(

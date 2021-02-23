@@ -37,7 +37,6 @@ actions:
         log: data_clean_log.txt
       highly_sensitive:
         input_clean: input_clean.rds
-        comm_prev: community_prevalence.rds
         
   data_check_figs:
     needs: [data_clean]
@@ -54,11 +53,12 @@ actions:
   data_setup:
     needs: [data_clean]
     # last argument relates to carehome TPP coverage >= X%
-    run: r:latest analysis/data_setup.R input_clean.rds community_prevalence.rds 90
+    run: r:latest analysis/data_setup.R input_clean.rds 90
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt
       highly_sensitive:
+        comm_prev: community_prevalence.rds
         analysisdata: analysisdata.rds
         ch_linelist: ch_linelist.rds
         ch_agg_long: ch_agg_long.rds

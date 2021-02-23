@@ -150,6 +150,7 @@ ch_first_event %>%
 # Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%
   full_join(ch_first_event) %>%
+  filter(first_event_in_per) %>%
   mutate(date = first_event) %>%
   select(-first_primary_care_case_probable:-first_ons_covid_death_date) 
 

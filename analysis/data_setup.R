@@ -46,12 +46,11 @@ getmode <- function(v) {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("input_clean.rds", "community_prevalence.rds", 90)
+# args <- c("./input_clean.rds", 90)
 args = commandArgs(trailingOnly=TRUE)
 
 input <- readRDS(args[1]) 
-comm_prev <- readRDS(args[2])
-ch_cov_cutoff <- args[3]
+ch_cov_cutoff <- args[2]
 
 # Set study period 
 study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-07"), by = "days")
@@ -62,6 +61,11 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 
 # Time horizon for prediction
 ahead <- 14
+
+# ---------------------------------------------------------------------------- #
+
+# Run script to aggregate non-carehome cases by MSOA
+source("./analysis/get_community_prevalence.R")
 
 # ---------------------------------------------------------------------------- #
 
@@ -177,18 +181,18 @@ ch_wevent %>%
 
 # Expand rows in data.table for speed:
 start <- Sys.time()
-vars <- names(select(ch_wevent, household_id:rural_urban,first_event:first_event_which))
+vars <- names(select(ch_wevent, household_id:rural_urban,first_event:first_event_which, ever_affected))
 ch_wevent <- as.data.table(ch_wevent)
 
 # Replicate per region (by vars are all values I want to copy down per date):
 all_dates <- ch_wevent[,.(date=study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, 
+setkey(ch_wevent, household_id, msoa, region, n_resid, ch_size, ch_type, rural_urban8, 
        imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, 
        imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, 
        first_event_which, date)
-setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, 
+setkey(all_dates, household_id, msoa, region, n_resid, ch_size, ch_type, rural_urban8, 
        imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, 
        imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, 
        first_event_which, date)
@@ -233,9 +237,6 @@ round(Sys.time() - start,2)
 # For each date, define event_ahead = 1 if that care home's first event occurs
 # in next <ahead> days
 
-which(!unique(ch_wevent$msoa,ch_wevent$date) %in% unique(comm_prev$msoa,comm_prev$date)) 
-which(!unique(comm_prev$msoa,comm_prev$date) %in% unique(ch_wevent$msoa,ch_wevent$date)) 
-
 ch_long <- comm_prev %>%
   right_join(ch_wevent, by = c("msoa","date")) %>% #View()
   group_by(household_id) %>%
@@ -278,9 +279,10 @@ n_distinct(dat$msoa, dat$household_id)
 
 print("Homes in ch_wevent but not analysis data:")
 ch_wevent %>%
+  as_tibble() %>%
   filter(!household_id %in% dat$household_id) %>%
-  pull(msoa, household_id) %>%
-  unique()
+  pull(household_id) %>%
+  unique() 
 
 dat %>%
   group_by(day, event_ahead) %>%
@@ -290,6 +292,7 @@ dat %>%
 # ---------------------------------------------------------------------------- #
 # Save analysis data
 
+saveRDS(comm_prev, "./community_prevalence.rds")
 saveRDS(ch, file = "./ch_linelist.rds")
 saveRDS(ch_long, file = "./ch_agg_long.rds")
 saveRDS(dat, file = "./analysisdata.rds")

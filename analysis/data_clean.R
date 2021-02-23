@@ -85,6 +85,7 @@ input <- input_raw %>%
   # Filter just to records from England
   filter(grepl("E",msoa) & household_id != 0) %>%
   # Join with MSOA coverage data
+  # 110 rows in real data for which MSOA code not in tpp_cov (missing code?)
   left_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
   # Identify individuals with any covid event
@@ -93,7 +94,7 @@ input <- input_raw %>%
   # Set up var formats
   mutate(# Redefine -1 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         household_id = na_if(household_id, 0),
+         # household_id = na_if(household_id, 0),
          # Variable formatting
          dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),
@@ -127,11 +128,6 @@ exclude_msoa <- input %>%
 print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa)))
 
 input <- filter(input, !msoa %in% exclude_msoa)
-
-# ---------------------------------------------------------------------------- #
-
-# Run script to aggregate non-carehome cases by MSOA
-source("./analysis/get_community_prevalence.R")
 
 # ---------------------------------------------------------------------------- #
 
@@ -244,8 +240,6 @@ input <- input %>%
   filter(!is.na(msoa) & !is.na(care_home_type))
 
 saveRDS(input, "./input_clean.rds")
-
-saveRDS(comm_prev, "./community_prevalence.rds")
 
 # ---------------------------------------------------------------------------- #
 

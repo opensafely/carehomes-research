@@ -36,7 +36,7 @@ input %>%
   filter(care_home_type == "U" & !institution) %>%
   summarise(n = n(), msoa = n_distinct(msoa)) -> comm_tally
 
-write(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"),file="data_setup_log.txt", append = TRUE)
+print(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"))
 
 input %>%
   # split out non-carehome residents who had probable diagnosis 

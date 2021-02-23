@@ -136,32 +136,43 @@ ch_first_event <- ch %>%
   rename_at(-1:-2, function(x) paste0("first_",x)) %>% 
   rowwise() %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
-         ever_affected = (first_event < ymd("3000-01-01")),
          first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))])) %>%
   group_by(msoa, household_id) %>%
-  mutate(first_event_in_per = (first_event >= ymd("2020-04-15"))) 
+  mutate(first_event_pre_per = (first_event < ymd("2020-04-15")),
+         first_event_post_per = (first_event > ymd("2020-12-07") & first_event < ymd("3000-01-01")),
+         ever_affected = between(first_event, ymd("2020-04-15"), ymd("2020-12-07"))) 
 ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
 print("Care homes with first event prior to study period (excluded from analysis):")
 ch_first_event %>%
-  group_by(first_event_in_per) %>%
+  group_by(first_event_pre_per) %>%
+  tally()
+
+print("Care homes with first event posterior to study period (excluded from analysis):")
+ch_first_event %>%
+  group_by(first_event_post_per) %>%
   tally()
 
 # Join care home characteristics with first event dates 
 ch_wevent <- ch_chars %>%
   full_join(ch_first_event) %>%
-  filter(first_event_in_per) %>%
+  # Exclude care homes with first event prior to study period
+  filter(!first_event_pre_per) %>%
   mutate(date = first_event) %>%
   select(-first_primary_care_case_probable:-first_ons_covid_death_date) 
+
+print("Summary: First events")
+summary(ch_wevent)
 
 print("Care homes affected during study period:")
 ch_wevent %>%
   group_by(ever_affected) %>%
   tally()
 
+
 print("Summary: Characteristics of care homes affected during study period")
 ch_wevent %>%
-  filter(ever_affected & first_event_in_per) %>%
+  filter(ever_affected) %>%
   summary()
 
 # Expand rows in data.table for speed:
@@ -222,6 +233,9 @@ round(Sys.time() - start,2)
 # For each date, define event_ahead = 1 if that care home's first event occurs
 # in next <ahead> days
 
+which(!unique(ch_wevent$msoa,ch_wevent$date) %in% unique(comm_prev$msoa,comm_prev$date)) 
+which(!unique(comm_prev$msoa,comm_prev$date) %in% unique(ch_wevent$msoa,ch_wevent$date)) 
+
 ch_long <- comm_prev %>%
   right_join(ch_wevent, by = c("msoa","date")) %>% #View()
   group_by(household_id) %>%
@@ -239,7 +253,7 @@ ch_long <- comm_prev %>%
 print("Homes in ch_long data:")
 ch_long %>%
   group_by(ever_affected) %>%
-  summarise(N = n_distinct(household_id))
+  summarise(N = n_distinct(msoa, household_id))
 
 # ---------------------------------------------------------------------------- #
 
@@ -260,12 +274,12 @@ print("Summary: Analysis data")
 summary(dat)
 
 print("Homes in analysis data:")
-n_distinct(dat$household_id)
+n_distinct(dat$msoa, dat$household_id)
 
 print("Homes in ch_wevent but not analysis data:")
 ch_wevent %>%
   filter(!household_id %in% dat$household_id) %>%
-  pull(household_id) %>%
+  pull(msoa, household_id) %>%
   unique()
 
 dat %>%

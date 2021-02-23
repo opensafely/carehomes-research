@@ -58,7 +58,7 @@ study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-07"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
-dates <- c(event_dates,"discharge_date")
+# dates <- c(event_dates,"discharge_date")
 
 # Time horizon for prediction
 ahead <- 14
@@ -76,12 +76,12 @@ print(paste0("Care homes included with ",ch_cov_cutoff,"% cut off:"))
 ch %>%
   mutate(include = (percent_tpp > ch_cov_cutoff)) %>%
   group_by(include) %>%
-  summarise(n_ch = n_distinct(household_id))
+  summarise(n_ch = n_distinct(msoa, household_id))
 
 ch %>%
   filter(percent_tpp > ch_cov_cutoff) -> ch_cutoff
 
-print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",n_distinct(ch$household_id)-n_distinct(ch_cutoff$household_id)))
+print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",n_distinct(ch$msoa, ch$household_id)-n_distinct(ch_cutoff$msoa, ch_cutoff$household_id)))
 
 ch <- ch_cutoff
 
@@ -96,7 +96,7 @@ ch <- ch_cutoff
 
 ch_chars <- ch %>%
   group_by(household_id, msoa) %>%
-  summarise(region = unique(region),
+  summarise(region = unique(region)[1],
             n_resid = n(),                        # number of individuals registered under CHID
             ch_size = median(household_size),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = unique(care_home_type)[1],  # Care, nursing, other
@@ -116,6 +116,10 @@ ch_chars <- ch %>%
 print("Summary: Care home characteristics")
 summary(ch_chars)
 
+print("No. unique homes:")
+nrow(ch_chars)
+n_distinct(ch_chars$msoa,ch_chars$household_id)
+
 #-----------------------------#
 #    Care home first event    #
 #-----------------------------#
@@ -126,7 +130,7 @@ summary(ch_chars)
 
 ch_first_event <- ch %>%
   mutate_at(vars(all_of(event_dates)), function(x) replace_na(ymd(x),ymd("3000-01-01"))) %>%
-  group_by(household_id, msoa) %>%
+  group_by(msoa, household_id) %>%
   summarise_at(vars(all_of(event_dates)),min) %>%
   ungroup() %>%
   rename_at(-1:-2, function(x) paste0("first_",x)) %>% 
@@ -149,6 +153,11 @@ ch_wevent <- ch_chars %>%
   mutate(date = first_event) %>%
   select(-first_primary_care_case_probable:-first_ons_covid_death_date) 
 
+print("Care homes affected during study period:")
+ch_wevent %>%
+  group_by(ever_affected) %>%
+  tally()
+
 print("Summary: Characteristics of care homes affected during study period")
 ch_wevent %>%
   filter(ever_affected & first_event_in_per) %>%
@@ -163,8 +172,14 @@ ch_wevent <- as.data.table(ch_wevent)
 all_dates <- ch_wevent[,.(date=study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
-setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, first_event_which, date)
+setkey(ch_wevent, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, 
+       imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, 
+       imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, 
+       first_event_which, date)
+setkey(all_dates, household_id, msoa, n_resid, ch_size, ch_type, rural_urban8, 
+       imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, 
+       imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, 
+       first_event_which, date)
 ch_wevent <- ch_wevent[all_dates,roll=TRUE]
 # ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
 
@@ -182,20 +197,20 @@ round(Sys.time() - start,2)
 
 # Number of hospital discharges back to care home per day (assuming resident is
 # discharged back to home)
-ch %>%
-  filter(!is.na(discharge_date)) %>%
-  group_by(discharge_date, household_id, msoa) %>%
-  count(name = "n_disch") %>%
-  ungroup() %>%
-  rename(date = discharge_date) -> disch
-
-# Join with discharges: keep only those which occurred within study period
-ch_wdisch <- ch_wevent %>%
-  lazy_dt() %>%
-  group_by_at(vars(household_id:rural_urban,first_event, ever_affected)) %>%
-  left_join(disch) %>%
-  mutate(n_disch = replace_na(n_disch, 0)) %>%
-  as.data.frame()
+# ch %>%
+#   filter(!is.na(discharge_date)) %>%
+#   group_by(discharge_date, household_id, msoa) %>%
+#   count(name = "n_disch") %>%
+#   ungroup() %>%
+#   rename(date = discharge_date) -> disch
+# 
+# # Join with discharges: keep only those which occurred within study period
+# ch_wdisch <- ch_wevent %>%
+#   lazy_dt() %>%
+#   group_by_at(vars(household_id:rural_urban,first_event, ever_affected)) %>%
+#   left_join(disch) %>%
+#   mutate(n_disch = replace_na(n_disch, 0)) %>%
+#   as.data.frame()
 
 #-----------------------------#
 #       Analysis dataset      #
@@ -207,10 +222,10 @@ ch_wdisch <- ch_wevent %>%
 # in next <ahead> days
 
 ch_long <- comm_prev %>%
-  right_join(ch_wdisch) %>% #View()
+  right_join(ch_wevent, by = c("msoa","date")) %>% #View()
   group_by(household_id) %>%
   mutate(day = 1:n(),
-         disch_sum7 = rollsum(n_disch, 7, fill = NA, align = "right"),
+         # disch_sum7 = rollsum(n_disch, 7, fill = NA, align = "right"),
          probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
          probable_roll7_lag1wk = lag(probable_roll7, 7),
@@ -245,6 +260,12 @@ summary(dat)
 
 print("Homes in analysis data:")
 n_distinct(dat$household_id)
+
+print("Homes in ch_wevent but not analysis data:")
+ch_wevent %>%
+  filter(!household_id %in% dat$household_id) %>%
+  pull(household_id) %>%
+  unique()
 
 dat %>%
   group_by(day, event_ahead) %>%

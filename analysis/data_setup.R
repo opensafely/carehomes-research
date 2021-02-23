@@ -220,6 +220,10 @@ ch_long <- comm_prev %>%
            ),0)) %>%
   ungroup()
 
+print("Homes in ch_long data:")
+ch_long %>%
+  group_by(ever_affected) %>%
+  summarise(N = n_distinct(household_id))
 
 # ---------------------------------------------------------------------------- #
 
@@ -238,6 +242,9 @@ dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 
 print("Summary: Analysis data")
 summary(dat)
+
+print("Homes in analysis data:")
+n_distinct(dat$household_id)
 
 dat %>%
   group_by(day, event_ahead) %>%

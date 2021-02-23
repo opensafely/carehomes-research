@@ -146,8 +146,9 @@ chars_waffect %>%
          # `N (%)` = paste0(N, " (",N_perc,")"),
          `size mean(sd)` = paste0(ch_size_mean, " (",ch_size_sd,")"),
          `IMD mean(sd)` = paste0(imd_mean, " (",imd_sd,")")) %>% 
-  ungroup() %>%
-  column_to_rownames("ever_affected") %>%
+  ungroup() %>% 
+  remove_rownames() %>%
+  column_to_rownames(var = "ever_affected") %>%
   dplyr::select(N, `IMD mean(sd)`, `size mean(sd)`, `No. TPP residents`) %>% #`% rural`,
   cbind(tab_type) -> tab1
 
@@ -164,7 +165,8 @@ ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
 ch %>%
-  full_join(dplyr::select(ch_chars, household_id, msoa, ever_affected)) %>%
+  filter(household_id %in% included) %>%
+  full_join(dplyr::select(ch_chars, household_id, msoa, ever_affected)) %>% 
   mutate(ever_affected = ifelse(ever_affected,"Affected","Unaffected")) %>%
   bind_rows(ch_resid_all) %>% 
   mutate(ever_affected = factor(ever_affected, 
@@ -185,6 +187,7 @@ ch_resid_all %>%
          `minority ethnicity n(%)` = paste0(n_minor, " (",round(n_minor/`No. TPP residents`,4),")"),
          `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. TPP residents`,4),")")) %>%
   ungroup() %>%
+  remove_rownames() %>% 
   column_to_rownames("ever_affected") %>%
   dplyr::select(`No. TPP residents`, `age med[IQR]`, `minority ethnicity n(%)`, `dementia n(%)` ) -> tab_age
 

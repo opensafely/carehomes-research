@@ -165,8 +165,7 @@ ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
 ch %>%
-  filter(household_id %in% included) %>%
-  full_join(dplyr::select(ch_chars, household_id, msoa, ever_affected)) %>% 
+  right_join(dplyr::select(ch_chars, household_id, msoa, ever_affected)) %>% 
   mutate(ever_affected = ifelse(ever_affected,"Affected","Unaffected")) %>%
   bind_rows(ch_resid_all) %>% 
   mutate(ever_affected = factor(ever_affected, 

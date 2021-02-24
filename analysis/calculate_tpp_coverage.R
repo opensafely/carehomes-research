@@ -22,9 +22,6 @@ sink("./coverage_log.txt", type = "output")
 
 options(datatable.old.fread.datetime.character=TRUE)
 
-# shp <- sf::st_read(dsn = "./data/Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC",  
-#                    layer = "Middle_Layer_Super_Output_Areas__December_2011__Boundaries_EW_BGC")
-
 # ---------------------------------------------------------------------------- #
 
 #----------------------#
@@ -41,11 +38,12 @@ options(datatable.old.fread.datetime.character=TRUE)
 args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
-  dplyr::select(-patient_id) %>%
-  filter(!is.na(msoa)) %>%
+  # Remove missing MSOA/HHID/HH size
+  filter(!is.na(msoa) & household_id != 0 & household_size!=0) %>%
   mutate(msoa = as.factor(msoa)) %>%
-  group_by(household_id) %>%
   #keep one row per household to sum sizes
+  dplyr::select(-patient_id) %>%
+  group_by(household_id) %>%
   slice_sample(n = 1) 
 
 print("No. unique MSOAs with patients registered in TPP:")

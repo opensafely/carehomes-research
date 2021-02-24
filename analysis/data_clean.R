@@ -72,14 +72,28 @@ print("Patients with missing household_id:")
 nrow(input_raw[input_raw$household_id == 0,])
 
 input_raw %>%
+  filter(household_id != 0) %>%
   group_by(mixed_household, perc_tpp_lt100) %>%
   tally()
+
+input_raw %>%
+  # Filter just to records from England
+  filter(grepl("E",msoa) & household_id != 0) %>%
+  # Join with MSOA coverage data
+  # 110 rows in real data for which MSOA code not in tpp_cov (missing code?)
+  anti_join(tpp_cov, by = "msoa") -> nonmatch_msoa
+
+unique(nonmatch_msoa$msoa)
+
+nrow(nonmatch_msoa)
+summary(nonmatch_msoa) 
 
 # ---------------------------------------------------------------------------- #
 
 #----------------------#
 #      CLEANING        #
 #----------------------#
+
 
 input <- input_raw %>%
   # Filter just to records from England

@@ -61,10 +61,10 @@ input <- input_raw %>%
 #----------------------#
 
 print("Patients with missing household_id: N = ")
-nrow(input[input$household_id == 0,])
+nrow(input[input$household_id <= 0,])
 
 input <- input %>%
-  filter(household_id != 0)
+  filter(household_id > 0)
 
 # Check consistency of mixed_household and percent_TPP vars
 input %>%
@@ -132,8 +132,10 @@ print("HHs with missing size: n = ")
 input %>%
   dplyr::select(household_id, household_size) %>%
   group_by(household_id) %>%
-  slice_sample(n = 1) %>%
-  filter(household_size == 0) %>%
+  # Select largest size among all residents
+  slice_max(household_size, n = 1) %>%
+  # HHs for which no resident has non-zero HH size
+  filter(household_size <= 0) %>%
   pull(household_id) %>%
   n_distinct()
 

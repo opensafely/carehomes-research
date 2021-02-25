@@ -34,8 +34,8 @@ options(datatable.old.fread.datetime.character=TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 
-args <- c("./input_coverage.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
-# args = commandArgs(trailingOnly=TRUE)
+# args <- c("./input_coverage.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
+args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # Remove individuals w missing MSOA/HHID/HH size

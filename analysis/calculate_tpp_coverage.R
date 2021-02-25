@@ -34,7 +34,7 @@ options(datatable.old.fread.datetime.character=TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 
-# args <- c("./input_coverage.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
+# args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
 args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
@@ -64,12 +64,6 @@ input %>%
   tally() %>%
   pull(n) %>%
   summary()
-
-# ---------------------------------------------------------------------------- #
-
-# Remove households with missing size
-input <- input %>%
-  filter(household_size > 0)
 
 # ---------------------------------------------------------------------------- #
 

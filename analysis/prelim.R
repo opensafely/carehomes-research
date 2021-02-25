@@ -60,11 +60,20 @@ input <- input_raw %>%
 #  PRELIMINARY CHECKS  #
 #----------------------#
 
+print("No. unique MSOAs with patients registered in TPP:")
+n_distinct(input$msoa)
+
+print("Patients with missing MSOA:")
+sum(is.na(input$msoa))
+
 print("Patients with missing household_id: N = ")
 nrow(input[input$household_id <= 0,])
 
 input <- input %>%
-  filter(household_id > 0)
+  filter(!is.na(msoa) & household_id > 0)
+
+print("No. unique MSOAs after filter missing MSOA/ID:")
+n_distinct(input$msoa)
 
 # Check consistency of mixed_household and percent_TPP vars
 input %>%

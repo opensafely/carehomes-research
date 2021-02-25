@@ -10,15 +10,15 @@ actions:
       highly_sensitive:
         cohort: input.csv
 
-  generate_coverage_population:
-    run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage
-    outputs:
-      highly_sensitive:
-        cohort: input_coverage.csv
+#  generate_coverage_population:
+#    run: cohortextractor:latest generate_cohort --study-definition study_definition_coverage
+#    outputs:
+#      highly_sensitive:
+#        cohort: input_coverage.csv
 
   calc_coverage:
-    needs: [generate_coverage_population]
-    run: r:latest analysis/calculate_tpp_coverage.R input_coverage.csv data/SAPE22DT15_mid_2019_msoa.csv
+    needs: [generate_study_population]
+    run: r:latest analysis/calculate_tpp_coverage.R input.csv data/SAPE22DT15_mid_2019_msoa.csv
     outputs:
       moderately_sensitive:
         log: coverage_log.txt

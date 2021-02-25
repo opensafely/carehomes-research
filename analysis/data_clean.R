@@ -81,8 +81,7 @@ input <- input_raw %>%
   # Set up var formats
   mutate(# Redefine -1/0 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         household_size = case_when(household_size <= 0 ~ NA,
-                                    household_size > 0 ~ household_size),
+         household_size = na_if(household_size, 0),
          # Variable formatting
          dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),
@@ -205,13 +204,13 @@ summary(
   pull(percent_tpp_cat)
 )
 
-input %>%
-  filter(care_home_type != "U") %>%
-  mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
-  group_by(percent_tpp_cat) %>%
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n_distinct(patient_id),
-            n_case = sum(case, na.rm = TRUE))
+# input %>%
+#   filter(care_home_type != "U") %>%
+#   mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
+#   group_by(percent_tpp_cat) %>%
+#   summarise(n_hh = n_distinct(household_id),
+#             n_pat = n_distinct(patient_id),
+#             n_case = sum(case, na.rm = TRUE))
 
 
 print("Care home residents test-diagnosis delay")

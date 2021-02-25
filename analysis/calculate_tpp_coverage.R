@@ -28,8 +28,8 @@ options(datatable.old.fread.datetime.character=TRUE)
 #    LOAD/CLEAN DATA   #
 #----------------------#
 
-# * input_coverage.csv 
-#   - household ID, size and MSOA for all TPP-registered patients
+# * input.csv 
+#   - pull household ID, size and MSOA for all TPP-registered patients
 # * msoa_pop.csv 
 #   - total population estimates per MSOA
 #   - population estimates by single year age
@@ -43,7 +43,7 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   mutate(msoa = as.factor(msoa)) %>%
   # Keep one row per household to sum sizes 
   # HH size should only be missing if missing for ALL residents 
-  dplyr::select(-patient_id) %>%
+  dplyr::select(msoa, household_id, household_size) %>%
   group_by(household_id) %>%
   # Select largest size among all residents
   slice_max(household_size, n = 1, with_ties = FALSE) %>%

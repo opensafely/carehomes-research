@@ -98,7 +98,10 @@ summary(nonmatch_msoa)
 
 input <- input %>%
   # Join with MSOA coverage data (only rows with a match)
-  inner_join(tpp_cov, by = "msoa")
+  left_join(tpp_cov, by = "msoa")
+
+print("No. MSOAs not in coverage data:")
+n_distinct(input$msoa[is.na(input$tpp_cov)])
   
 # Filter MSOAs by TPP coverage
 exclude_msoa <- input %>%

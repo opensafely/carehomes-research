@@ -199,7 +199,7 @@ summary(
   dplyr::select(msoa, household_id, percent_tpp) %>%
   unique() %>% 
   mutate(percent_tpp_cat = cut(percent_tpp, 
-                               breaks = c(min(percent_tpp),50,60,70,80,90,max(percent_tpp)),
+                               breaks = 10,
                                include.lowest = TRUE)) %>%
   pull(percent_tpp_cat)
 )

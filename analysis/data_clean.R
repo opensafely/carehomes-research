@@ -65,50 +65,24 @@ dates <- c(event_dates,"discharge_date")
 # ---------------------------------------------------------------------------- #
 
 #----------------------#
-#  PRELIMINARY CHECKS  #
-#----------------------#
-
-print("Patients with missing household_id:")
-nrow(input_raw[input_raw$household_id == 0,])
-
-input_raw %>%
-  filter(household_id != 0) %>%
-  group_by(mixed_household, perc_tpp_lt100) %>%
-  tally()
-
-input_raw %>%
-  # Filter just to records from England
-  filter(grepl("E",msoa) & household_id != 0) %>%
-  # Join with MSOA coverage data
-  # 110 rows in real data for which MSOA code not in tpp_cov (missing code?)
-  anti_join(tpp_cov, by = "msoa") -> nonmatch_msoa
-
-unique(nonmatch_msoa$msoa)
-
-nrow(nonmatch_msoa)
-summary(nonmatch_msoa) 
-
-# ---------------------------------------------------------------------------- #
-
-#----------------------#
 #      CLEANING        #
 #----------------------#
 
 
 input <- input_raw %>%
-  # Filter just to records from England
-  filter(grepl("E",msoa) & household_id != 0) %>%
+  # Filter just to records from England with non-missing household ID
+  filter(grepl("E",msoa) & household_id <= 0) %>%
   # Join with MSOA coverage data
-  # 110 rows in real data for which MSOA code not in tpp_cov (missing code?)
-  left_join(tpp_cov, by = "msoa") %>% 
+  inner_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
   # Identify individuals with any covid event
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
   ungroup() %>%
   # Set up var formats
-  mutate(# Redefine -1 values as na
+  mutate(# Redefine -1/0 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         # household_id = na_if(household_id, 0),
+         household_size = case_when(household_size <= 0 ~ NA,
+                                    household_size > 0 ~ household_size),
          # Variable formatting
          dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),

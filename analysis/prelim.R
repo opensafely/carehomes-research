@@ -69,6 +69,10 @@ sum(is.na(input$msoa))
 print("Patients with missing household_id: N = ")
 nrow(input[input$household_id <= 0,])
 
+input %>%
+  filter(household_id <= 0) %>%
+  summarise(missing_type = sum(is.na(care_home_type)))
+
 input <- input %>%
   filter(!is.na(msoa) & household_id > 0)
 
@@ -101,17 +105,26 @@ input <- input %>%
   left_join(tpp_cov, by = "msoa")
 
 print("No. MSOAs not in coverage data:")
-n_distinct(input$msoa[is.na(input$tpp_cov)])
+n_distinct(input$msoa[is.na(input$tpp_cov_all)])
   
 # Filter MSOAs by TPP coverage
-exclude_msoa <- input %>%
-  filter(tpp_cov < msoa_cov_cutoff) %>%
+# Coverage based on ALL records, counted per MSOA
+exclude_msoa1 <- input %>%
+  filter(tpp_cov_all < msoa_cov_cutoff) %>%
   pull(msoa) %>%
   unique()
 
-print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa)))
+print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa1)))
 
-input <- filter(input, !msoa %in% exclude_msoa)
+# Coverage based on summing household size for records with household ID
+exclude_msoa2 <- input %>%
+  filter(tpp_cov_wHHID < msoa_cov_cutoff) %>%
+  pull(msoa) %>%
+  unique()
+
+print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa2)))
+
+input <- filter(input, !msoa %in% exclude_msoa2)
 
 # ---------------------------------------------------------------------------- #
 

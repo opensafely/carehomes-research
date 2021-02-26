@@ -37,35 +37,43 @@ options(datatable.old.fread.datetime.character=TRUE)
 # args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
 args = commandArgs(trailingOnly=TRUE)
 
-input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
-  # Remove individuals w missing/non-England MSOA or missing HHID
-  filter(grepl("E",msoa) & !is.na(msoa) & household_id > 0) %>%
-  # Keep one row per household to sum sizes 
-  # HH size should only be missing if missing for ALL residents 
-  dplyr::select(msoa, household_id, household_size) %>%
-  group_by(msoa, household_id) %>%
-  # Select largest size among all residents
-  slice_max(household_size, n = 1, with_ties = FALSE) %>%
+## National MSOA population estimates (ONS mid-2019):
+msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
+  mutate(msoa = as.factor(`MSOA Code`),
+         msoa_pop = `All Ages`) %>%
+  # Filter to England
+  filter(grepl("E", msoa)) %>%
+  # Sum older populations
+  rowwise() %>%
+  mutate(`70+` = sum(`70-74`:`90+`)) %>%
+  dplyr::select(msoa, msoa_pop, `70+`) %>%
   ungroup()
 
-print("No. records with missing MSOA")
-nrow(input[input$msoa == 0])
+print("No. MSOAs in England:")
+n_distinct(msoa_pop$msoa)
+
+## TPP-registered patient records (from study definition)
+## Include ALL patients with non-missing MSOA in calculation of TPP populations
+input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+  # Remove individuals w missing/non-England MSOA
+  filter(grepl("E",msoa) & !is.na(msoa))
+
+print("No. TPP-registered patients with non-missing MSOA:")
+nrow(input)
 
 print("No. unique MSOAs with patients registered in TPP:")
 n_distinct(input$msoa)
 
-print("No. unique households with missing size (size missing for all residents):")
-n_distinct(input$household_id[input$household_size <= 0])
+print("No. TPP-registered patients with non-missing MSOA and non-missing HHID:")
+nrow(input[input$household_id > 0,])
 
-print("MSOAs of households with missing size:")
-unique(input$msoa[input$household_size <= 0])
+print("No. unique MSOAs with patients registered in TPP and non-missing HHID:")
+n_distinct(input$msoa[input$household_id > 0])
 
-print("No. rows per household ID:")
-input %>% 
-  group_by(household_id) %>%
-  tally() %>%
-  pull(n) %>%
-  summary()
+print("Count probable cases with/without HHID:")
+input %>%
+  group_by((household_id > 0)) %>%
+  summarise(n_probable = sum(!is.na(primary_care_case_probable)))
 
 # ---------------------------------------------------------------------------- #
 
@@ -74,25 +82,26 @@ input %>%
 #------------------------------------------#
 
 input %>%
+  # Count records per MSOA
   group_by(msoa) %>%
-  summarise(tpp_pop = sum(household_size, na.rm = TRUE)) -> tpp_pop
+  tally(name =  "tpp_pop_all") %>%
+  ungroup() -> tpp_pop_all
 
-msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
-  mutate(msoa = as.factor(`MSOA Code`),
-         msoa_pop = `All Ages`) %>%
-  rowwise() %>%
-  mutate(`70+` = sum(`70-74`:`90+`)) %>%
-  dplyr::select(msoa, msoa_pop, `70+`) %>%
-  ungroup()
+input %>%
+  filter(household_id > 0) %>%
+  # Count records per MSOA
+  group_by(msoa) %>%
+  tally(name =  "tpp_pop_wHHID") %>%
+  ungroup() -> tpp_pop_wHHID
 
-print("No. MSOAs in England & Wales:")
-n_distinct(msoa_pop$msoa)
-
-tpp_pop %>%
+tpp_pop_all %>%
+  full_join(tpp_pop_wHHID) %>%
   # Merge MSOAs in OS with total population estimates
   left_join(msoa_pop) %>%
-  mutate(tpp_cov = tpp_pop*100/msoa_pop,
-         cov_gt_100 = as.factor(ifelse(tpp_cov > 100, "Yes", "No"))) -> tpp_cov
+  mutate(msoa = as.factor(msoa),
+         tpp_cov_all = tpp_pop_all*100/msoa_pop,
+         tpp_cov_wHHID = tpp_pop_wHHID*100/msoa_pop,
+         cov_gt_100 = as.factor(ifelse(tpp_cov_all > 100, "Yes", "No"))) -> tpp_cov
 
 summary(tpp_cov)
 
@@ -101,8 +110,11 @@ write.csv(over100, "./msoa_gt_100_cov.csv", row.names = FALSE)
 
 png("./total_vs_tpp_pop.png", height = 800, width = 800)
 tpp_cov %>%
-  ggplot(aes(tpp_cov)) +
+  pivot_longer(c("tpp_cov_all","tpp_cov_wHHID")) %>%
+  ggplot(aes(value)) +
   geom_histogram(bins = 30, fill = "steelblue") +
+  facet_wrap(~name) +
+  labs(x = "TPP coverage per MSOA") +
   theme_minimal()
 dev.off() 
 

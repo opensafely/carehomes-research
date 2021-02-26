@@ -71,9 +71,9 @@ dates <- c(event_dates,"discharge_date")
 
 input <- input_raw %>%
   # Filter just to records from England with non-missing household ID
-  filter(grepl("E",msoa) & household_id > 0) %>%
+  filter(grepl("E",msoa) & !is.na(MSOA) & household_id > 0) %>%
   # Join with MSOA coverage data
-  inner_join(tpp_cov, by = "msoa") %>% 
+  left_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
   # Identify individuals with any covid event
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%

@@ -33,21 +33,23 @@ options(datatable.old.fread.datetime.character=TRUE)
 # * msoa_pop.csv 
 #   - total population estimates per MSOA
 #   - population estimates by single year age
-
+# 
 # args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
 args = commandArgs(trailingOnly=TRUE)
 
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
-  # Remove individuals w missing MSOA/HHID/HH size
-  filter(!is.na(msoa) & household_id > 0) %>%
-  mutate(msoa = as.factor(msoa)) %>%
+  # Remove individuals w missing/non-England MSOA or missing HHID
+  filter(grepl("E",msoa) & !is.na(msoa) & household_id > 0) %>%
   # Keep one row per household to sum sizes 
   # HH size should only be missing if missing for ALL residents 
   dplyr::select(msoa, household_id, household_size) %>%
-  group_by(household_id) %>%
+  group_by(msoa, household_id) %>%
   # Select largest size among all residents
   slice_max(household_size, n = 1, with_ties = FALSE) %>%
   ungroup()
+
+print("No. records with missing MSOA")
+nrow(input[input$msoa == 0])
 
 print("No. unique MSOAs with patients registered in TPP:")
 n_distinct(input$msoa)

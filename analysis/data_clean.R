@@ -71,7 +71,7 @@ dates <- c(event_dates,"discharge_date")
 
 input <- input_raw %>%
   # Filter just to records from England with non-missing household ID
-  filter(grepl("E",msoa) & !is.na(MSOA) & household_id > 0) %>%
+  filter(grepl("E",msoa) & !is.na(msoa) & household_id > 0) %>%
   # Join with MSOA coverage data
   left_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
@@ -108,7 +108,7 @@ summary(input)
 
 # Filter MSOAs by TPP coverage
 exclude_msoa <- input %>%
-  filter(tpp_cov < msoa_cov_cutoff) %>%
+  filter(tpp_cov_wHHID < msoa_cov_cutoff) %>%
   pull(msoa) %>%
   unique()
 

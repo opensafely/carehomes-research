@@ -41,7 +41,9 @@ print(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$ms
 input %>%
   # split out non-carehome residents who had probable diagnosis 
   filter(care_home_type == "U" & !is.na(primary_care_case_probable)) %>%
-  rename(date = primary_care_case_probable) %>%
+  rename(date = primary_care_case_probable,
+         tpp_cov = tpp_cov_wHHID,
+         tpp_pop = tpp_pop_wHHID) %>%
   # exclude any cases pre-2020 
   filter(date > ymd("2020-01-01")) %>%
   # count probable diagnoses per day and per msoa

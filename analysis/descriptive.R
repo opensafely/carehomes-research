@@ -92,10 +92,9 @@ chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban",
 
 included <- unique(dat$household_id)
 
-ch_chars <- ch_long %>%
+dat %>%
   dplyr::select(all_of(chars)) %>%
-  unique() %>%
-  filter(household_id %in% included)
+  unique() -> ch_chars
 
 print("Missingness in care home characteristics:")
 print(
@@ -304,20 +303,19 @@ ch_long %>%
 
 ## Community burden
 # Average daily incidence
-comm_prev %>%
-  filter(msoa %in% dat$msoa) %>%
+dat %>%
   group_by(date) %>%
-  summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T)) %>%
+  summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
   ungroup() -> comm_prev_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
-comm_prev %>%
-  filter(msoa %in% dat$msoa) %>%
-  ggplot(aes(date, probable_cases_rate)) +
+dat %>%
+  ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
+       subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
   scale_x_date(limits = study_per)
 # dev.off()

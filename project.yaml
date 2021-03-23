@@ -83,7 +83,7 @@ actions:
   run_models:
     needs: [data_setup]
     # 
-    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds data/msoa_shp.rds 0.1
+    run: r:latest analysis/run_models.R analysisdata.rds community_prevalence.rds data/msoa_shp.rds 0.4
     outputs:
       moderately_sensitive:
         output: output_model_run.txt

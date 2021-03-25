@@ -247,7 +247,7 @@ ch_long <- comm_prev %>%
   right_join(ch_wevent, by = c("msoa","date")) %>% #View()
   group_by(household_id) %>%
   mutate(day = 1:n(),
-         wave = as.factor(date >= ymd("2020-08-01")),
+         wave = factor(date >= ymd("2020-08-01"), labels = c("first","second")),
          # disch_sum7 = rollsum(n_disch, 7, fill = NA, align = "right"),
          probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
@@ -280,6 +280,12 @@ dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 
 print("Summary: Analysis data")
 summary(dat)
+
+print("Summary: community prevalence by occurrence of a care home event:")
+dat %>% 
+  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  group_by(event_ahead, name) %>%
+  summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 
 print("Homes in analysis data:")
 n_distinct(dat$msoa, dat$household_id)

@@ -108,10 +108,13 @@ ch_chars <- ch %>%
             ch_size = median(household_size),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = unique(care_home_type)[1],  # Care, nursing, other
             rural_urban8 = unique(rural_urban)[1], # Rural/urban location classification 
+            rural_urban8_miss = sum(is.na(rural_urban)), 
             imd = unique(imd)[1],                 # Average IMD of MSOA/specific CH location? 
+            imd_miss = sum(is.na(rural_urban)), 
             hh_med_age = median(age, na.rm = T),  # average age of registered residents
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
+            ethn_miss = sum(is.na(ethnicity)), 
             hh_prop_min = mean(ethnicity != 1, na.rm = T),
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%

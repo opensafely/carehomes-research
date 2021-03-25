@@ -317,6 +317,7 @@ dat %>%
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
+  scale_y_continuous(trans = "log10") +
   scale_x_date(limits = study_per)
 # dev.off()
 
@@ -331,10 +332,27 @@ dat %>%
   geom_boxplot() +
   coord_flip() +
   facet_grid(rows = "name", scales = "free") +
+  scale_y_continuous(trans = "log2") +
   labs(title = "Community incidence versus 14-day-ahead introduction",
        y = "Daily probable cases in community, per 100,000",
        x = "Introduction in next 14 days")
 # dev.off()
+
+# dat %>%
+# mutate(event_ahead = as.factor(event_ahead)) %>%
+#   pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+#   ggplot(aes(value, event_ahead, col = name)) +
+#   geom_point(alpha = 0.2) +
+#   geom_smooth() +
+#   labs(title = "Community incidence versus 14-day-ahead introduction",
+#        x = "Daily probable cases in community, per 100,000",
+#        y = "Introduction in next 14 days")
+# dev.off()
+
+dat %>% 
+  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  group_by(event_ahead, name) %>%
+  summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 
 #------------------------------------------------------------------------------#
 

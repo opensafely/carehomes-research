@@ -61,7 +61,7 @@ train %>%
 
 print("No. care homes in testing data:")
 test %>% 
-  group_by(ever_affected) %>%
+  group_by(ever_affected, wave) %>%
   summarise(n_ch = n_distinct(household_id))
 
 ## ----------------------------- Model Formulae -------------------------------##
@@ -79,7 +79,7 @@ f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + h
 f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log(probable_roll7,2)
 
 # Time varying (4): Lagged
-f4 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log(probable_roll7,2) + log(probable_roll7_lag1wk,2) +log(probable_roll7_lag2wk,2)
+f4 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log(probable_roll7,2) + log(probable_roll7_lag1wk,2) + log(probable_roll7_lag2wk,2)
 # f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log(probable_roll7_lag2wk,2)
 
 # # Time interaction (5)
@@ -91,7 +91,7 @@ f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + 
 
 # formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, 
 #                  interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
-formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag = f4,interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c) 
+formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c) 
 
 # f00 <- event_ahead ~ 1
 # f0 <- event_ahead ~ ch_size

@@ -118,7 +118,7 @@ ch_chars <- ch %>%
             hh_prop_min = mean(ethnicity != 1, na.rm = T),
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
-  mutate(imd_quint = as.factor(cut(imd, 5, ordered_result = T)),
+  mutate(imd_quint = cut(imd, 5, ordered_result = T),
          hh_dem_gt25 = (hh_p_dem > 0.25),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                  rural_urban8 %in% 5:8 ~ "rural")))
@@ -247,6 +247,7 @@ ch_long <- comm_prev %>%
   right_join(ch_wevent, by = c("msoa","date")) %>% #View()
   group_by(household_id) %>%
   mutate(day = 1:n(),
+         wave = as.factor(date >= ymd("2020-08-01")),
          # disch_sum7 = rollsum(n_disch, 7, fill = NA, align = "right"),
          probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),

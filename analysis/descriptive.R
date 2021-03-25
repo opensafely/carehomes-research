@@ -311,7 +311,6 @@ ch_long %>%
 ## Community burden
 # Average daily incidence
 dat %>%
-  filter(probable_roll7 >= 0) %>%
   group_by(date) %>%
   summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
   ungroup() -> comm_prev_avg
@@ -319,14 +318,12 @@ dat %>%
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 dat %>%
-  filter(probable_roll7 >= 0) %>%
   ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
-  scale_y_continuous(trans = "log10") +
   scale_x_date(limits = study_per)
 # dev.off()
 
@@ -337,7 +334,6 @@ dat %>%
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
   pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
-  filter(value >= 0) %>%
   ggplot(aes(event_ahead, value)) +
   geom_boxplot() +
   coord_flip() +

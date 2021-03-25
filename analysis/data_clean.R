@@ -228,6 +228,9 @@ input <- input %>%
 
 saveRDS(input, "./input_clean.rds")
 
+write_csv(input, "./input_clean.csv")
+
+
 # ---------------------------------------------------------------------------- #
 
 sink()

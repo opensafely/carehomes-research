@@ -55,34 +55,43 @@ test <- filter(dat, !household_id %in% samp)
 saveRDS(test,"./testdata.rds")
 
 print("No. care homes in training data:")
-n_distinct(train$household_id)
+train %>% 
+  group_by(ever_affected) %>%
+  summarise(n_ch = n_distinct(household_id))
+
+print("No. care homes in testing data:")
+test %>% 
+  group_by(ever_affected) %>%
+  summarise(n_ch = n_distinct(household_id))
 
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk
-f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min 
+f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave
 
 # Time-varying (1): current day cases
-f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_cases_rate
+f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log(probable_cases_rate,2)
 
 # Time-varying (2): 7-day change
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_chg7
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log(probable_chg7,2)
 
 # Time-varying (3): 7-day rolling average
-f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7
+f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log(probable_roll7,2)
 
 # Time varying (4): Lagged
-f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag2wk
+f4 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log(probable_roll7,2) + log(probable_roll7_lag1wk,2) +log(probable_roll7_lag2wk,2)
+# f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log(probable_roll7_lag2wk,2)
 
-# Time interaction (5)
-f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7*day
-f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag1wk*day
-f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + probable_roll7_lag2wk*day
+# # Time interaction (5)
+# f5 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log(probable_roll7,2)*wave
+# 
+f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log(probable_roll7,2)*wave
+f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log(probable_roll7_lag1wk,2)*wave
+f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log(probable_roll7_lag2wk,2)*wave
 
-
-formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, 
-                 interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
+# formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, 
+#                  interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
+formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag = f4,interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c) 
 
 # f00 <- event_ahead ~ 1
 # f0 <- event_ahead ~ ch_size
@@ -169,25 +178,25 @@ print(err)
 
 ## MAP RESIDUALS ##
 
-map_resids <- function(fit){
-
-train %>%
-  mutate(res = residuals(fit, type = "pearson")) %>%
-  group_by(msoa) %>%
-  summarise(mean_res = mean(res, na.rm = TRUE)) -> msoa_resids
-  
-  try(
-    msoa_shp %>% 
-      full_join(msoa_resids, by = c("MSOA11CD" = "msoa")) %>%
-      ggplot(aes(geometry = geometry, fill = mean_res)) +
-      geom_sf(lwd = 0) +
-      scale_fill_viridis_c() +
-      theme_minimal() -> map, silent = TRUE)
-  
-  return(map)
-
-
-}
+# map_resids <- function(fit){
+# 
+# train %>%
+#   mutate(res = residuals(fit, type = "pearson")) %>%
+#   group_by(msoa) %>%
+#   summarise(mean_res = mean(res, na.rm = TRUE)) -> msoa_resids
+#   
+#   try(
+#     msoa_shp %>% 
+#       full_join(msoa_resids, by = c("MSOA11CD" = "msoa")) %>%
+#       ggplot(aes(geometry = geometry, fill = mean_res)) +
+#       geom_sf(lwd = 0) +
+#       scale_fill_viridis_c() +
+#       theme_minimal() -> map, silent = TRUE)
+#   
+#   return(map)
+# 
+# 
+# }
 
 # pdf("model_resids_map.pdf", height = 10, width = 8)
 # lapply(fits, map_resids)

@@ -89,6 +89,9 @@ print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = 
 
 ch <- ch_cutoff
 
+print("Summary: care home residents")
+summary(ch)
+
 #-----------------------------#
 #  Care home characteristics  #
 #-----------------------------#

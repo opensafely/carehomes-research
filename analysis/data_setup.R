@@ -118,7 +118,7 @@ ch_chars <- ch %>%
             hh_prop_min = mean(ethnicity != 1, na.rm = T),
             hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
-  mutate(imd_quint = cut(imd, 5, ordered_result = T),
+  mutate(imd_quint = as.factor(cut(imd, 5)),
          hh_dem_gt25 = (hh_p_dem > 0.25),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                  rural_urban8 %in% 5:8 ~ "rural")))

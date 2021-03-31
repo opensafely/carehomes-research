@@ -84,14 +84,16 @@ f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + h
 
 # Time varying (4): Lagged
 f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag2wk
+f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag2wk
+f4c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
 
 # # Time interaction (5)
 f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7*wave
 f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag1wk*wave
 f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag2wk*wave
 
-formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, roll_avg_lag1 = f4a, roll_avg_lag2 = f4b,
+formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, 
+                 roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, both_lags = f4c,
                  interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
 
 # f00 <- event_ahead ~ 1
@@ -149,8 +151,8 @@ print_coeffs <- function(fit){
   confints <- coefci(fit, df = Inf, vcov = vcovCL, cluster = train$household_id)
   testcoeffs <- lmtest::coeftest(fit, vcov = vcovCL, cluster = train$household_id)
   
-  out <- as.data.frame(round(cbind(exp(cbind(testcoeffs[,1],confints,testcoeffs[,2])),testcoeffs[,3:4]),4))
-  names(out) <- c("Estimate","2.5%","97.5%","Std. Err.","z","Pr(>|z|)")
+  out <- as.data.frame(round(cbind(exp(cbind(testcoeffs[,1],confints)),testcoeffs[,4]),4))
+  names(out) <- c("Estimate","2.5%","97.5%","Pr(>|z|)")
   
   # print(fit$formula)
   return(out)
@@ -159,11 +161,19 @@ print_coeffs <- function(fit){
 print("Summary: Model coeffs with robust SEs")
 lapply(fits, print_coeffs)
 
-print("Brier score w/ training data")
-brier <- function(mod) mean((mod$fitted.values - train$event_ahead)^2)
-brier_score_train <- lapply(fits, brier)
-brier_score_train
+print("Brier scores and 10-fold CV on training data")
 
+brier_train <- function(fit) mean((fit$fitted.values - train$event_ahead)^2)
+
+data.frame(Brier = sapply(fits, brier_train),
+           cv_err = sapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10)$delta[2])) %>% 
+  rownames_to_column(var = "Model") %>%
+  mutate(diffBrier = Brier - min(Brier),
+         diffCV = cv_err - min(cv_err)) %>%
+  arrange(diffCV) %>%
+  mutate(across(-Model, function(x) round(x,6))) -> model_comp
+
+model_comp
 
 print("10-fold cross-validation")
 time2 <- Sys.time()

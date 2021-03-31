@@ -26,12 +26,10 @@ n_distinct(test$household_id)
 
 ## ------------------------------- Functions -------------------------------- ##
 
-brier_testdata <- function(fit){
-  
+brier_test <- function(fit){
   test$pred <- predict(fit, newdata = test, type = "response")
-  
   test %>%
-    summarise(score = mean((pred - event_ahead)^2)) %>% #View()
+    summarise(score = mean((pred - event_ahead)^2)) %>%
     pull(score)
 }
 
@@ -49,9 +47,14 @@ computeAUC <- function(pos.scores, neg.scores, n_sample=100000) {
 
 ## ------------------------------ Prediction -------------------------------- ##
 
-print("Brier score w/ test data")
+data.frame(score = sapply(fits, brier_test)) %>% 
+  rownames_to_column(var = "Model") %>%
+  mutate(diff = score - min(score)) %>%
+  arrange(diff) %>%
+  mutate(across(-Model, function(x) round(x,6))) -> brier_comp
 
-lapply(fits, brier_testdata)
+print("Brier scores on test data:")
+brier_comp
 
 # Plot distribution of predicted risk for event/no event
 pdf(file = "./test_pred_figs.pdf", height = 7, width = 10)
@@ -64,7 +67,7 @@ for (f in seq_along(fits)){
   print(
   ggplot(test, aes(x = as.factor(event_ahead), y = pred, fill = as.factor(event_ahead))) +
     geom_boxplot() +
-    labs(title = "Model-predicted risk versus observed outcome", y = "Predicted risk",x = "14-day event",
+    labs(title = paste0(names(fits)[f], ": Model-predicted risk versus observed outcome"), y = "Predicted risk",x = "14-day event",
          subtitle = paste0("Median predictions: ",round(median(test$pred[test$event_ahead == 1]),4), " for event = 1 and ",round(median(test$pred[test$event_ahead == 0]),4), " for event = 0.")) +
     theme(legend.position = "none") +
     coord_flip()
@@ -80,7 +83,7 @@ for (f in seq_along(fits)){
   ggplot(roc, aes(FPR, TPR)) +
     geom_line(lty = "dashed", col = "blue") +
     geom_abline() +
-    labs(title = paste0("AUC = ",round(auc,2)))
+    labs(title = paste0(names(fits)[f],": AUC = ",round(auc,2)))
   )
 }
 

@@ -334,11 +334,12 @@ dat %>%
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
   pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  mutate(value = value + 1) %>%
   ggplot(aes(event_ahead, value)) +
   geom_boxplot() +
   coord_flip() +
   facet_grid(rows = "name", scales = "free") +
-  scale_y_continuous(trans = "sqrt") +
+  scale_y_continuous(trans = "log2") +
   labs(title = "Community incidence versus 14-day-ahead introduction",
        y = "Daily probable cases in community, per 100,000",
        x = "Introduction in next 14 days")

@@ -142,6 +142,7 @@ write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file="log_model
 print("Summary: Model fits")
 lapply(fits, summary)
 
+
 # ypred<-predict(fits[[7]], newdata = train, type = "response")
 # plot(train$day,train$event_ahead)
 # points(train$day,ypred,col="blue")
@@ -161,31 +162,21 @@ print_coeffs <- function(fit){
 print("Summary: Model coeffs with robust SEs")
 lapply(fits, print_coeffs)
 
-print("Brier scores and 10-fold CV on training data")
+print("Model comparison on training data:")
 
 brier_train <- function(fit) mean((fit$fitted.values - train$event_ahead)^2)
 
-data.frame(Brier = sapply(fits, brier_train),
+data.frame(AIC = sapply(fits, AIC),
+           Brier = sapply(fits, brier_train),
            cv_err = sapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10)$delta[2])) %>% 
   rownames_to_column(var = "Model") %>%
-  mutate(diffBrier = Brier - min(Brier),
+  mutate(diffAIC = AIC - mean(AIC),
+         diffBrier = Brier - min(Brier),
          diffCV = cv_err - min(cv_err)) %>%
-  arrange(diffCV) %>%
+  arrange(diffAIC) %>%
   mutate(across(-Model, function(x) round(x,6))) -> model_comp
 
 model_comp
-
-print("10-fold cross-validation")
-time2 <- Sys.time()
-cv_err <- lapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10))
-write(paste0("Time running cross-validation: ",round(time2-Sys.time(),2)), file="log_model_run.txt", append = TRUE)
-
-print("Cross-validated estimate of prediction error [raw / adj for k-fold rather than LOO]:")
-err <- lapply(cv_err, function(cv) cv$delta[2])
-print(err)
-
-# fit_opt_brier <- fits[[which.min(brier_score_train)]]
-# fit_opt_cv <- fits[[which.min(err)]]
 
 ## MAP RESIDUALS ##
 

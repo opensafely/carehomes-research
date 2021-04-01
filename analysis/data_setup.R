@@ -27,7 +27,7 @@ library(dtplyr)
 library(zoo)
 
 # write("Data setup log",file="data_setup_log.txt")
-sink("data_setup_log.txt", type = "output")
+sink("data_setup_log.txt")
 
 # Function: alculate mode value
 getmode <- function(v) {
@@ -66,6 +66,9 @@ ahead <- 14
 
 # Run script to aggregate non-carehome cases by MSOA
 source("./analysis/get_community_prevalence.R")
+
+print("Summary: Daily community prevalence")
+print(summary(comm_prev))
 
 # ---------------------------------------------------------------------------- #
 
@@ -253,6 +256,7 @@ ch_long <- comm_prev %>%
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
          probable_roll7_lag1wk = lag(probable_roll7, 7),
          probable_roll7_lag2wk = lag(probable_roll7, 14),
+         probable_roll7_nb = rollmean(probable_cases_rate_nb, 7, fill = NA, align = "right"),
          event_ahead = replace_na(as.numeric(
            first_event %within% interval(date,date+ahead)
            ),0)) %>%
@@ -283,7 +287,7 @@ summary(dat)
 
 print("Summary: community prevalence by occurrence of a care home event:")
 dat %>% 
-  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk","probable_cases_rate_nb")) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 

@@ -10,7 +10,7 @@
 #
 ################################################################################
 
-sink("./log_descriptive.txt", type = "output")
+sink("./log_descriptive.txt")
 
 time_desc <- Sys.time()
 
@@ -52,6 +52,14 @@ ch_long <- readRDS("./ch_agg_long.rds")
 dat <- readRDS("./analysisdata.rds")
 
 study_per <- range(dat$date)
+
+# ---------------------------------------------------------------------------- #
+
+# Compare single and neighbourhood MSOA community prevalence
+print(summary(comm_prev$probable_cases_rate))
+print(summary(comm_prev$probable_cases_rate_nb))
+
+summary(comm_prev)
 
 # ---------------------------------------------------------------------------- #
 
@@ -320,12 +328,30 @@ dat %>%
 dat %>%
   ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
+  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
   scale_x_date(limits = study_per)
 # dev.off()
+
+comm_prev %>%
+  group_by(date) %>%
+  summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T),
+            probable_cases_rate_nb = mean(probable_cases_rate_nb, na.rm = T),) %>%
+  ungroup() %>%
+  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) -> comm_prev_avg
+
+comm_prev %>%
+  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) %>%
+  ggplot(aes(date, value)) +
+  geom_line(aes(group = msoa), alpha = 0.1) +
+  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) +
+  labs(title = "Probable cases per 100,000, by MSOA",
+       subtitle = "Rolling seven day mean",
+       x = "", y = "Rate") +
+  scale_x_date(limits = study_per) +
+  facet_grid(rows = vars(name), scales = "free")
 
 #------------------------------------------------------------------------------#
 
@@ -333,7 +359,7 @@ dat %>%
 # png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
-  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk", "probable_cases_rate_nb")) %>%
   mutate(value = value + 1) %>%
   ggplot(aes(event_ahead, value)) +
   geom_boxplot() +

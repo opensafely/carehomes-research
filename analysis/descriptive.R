@@ -320,38 +320,42 @@ ch_long %>%
 # Average daily incidence
 dat %>%
   group_by(date) %>%
-  summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
-  ungroup() -> comm_prev_avg
+  summarise(probable_roll7 = mean(probable_roll7, na.rm = T),
+            probable_roll7_nb = mean(probable_roll7_nb, na.rm = T)) %>%
+  ungroup() %>%
+  pivot_longer(c("probable_roll7", "probable_roll7_nb")) -> comm_prev_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 dat %>%
-  ggplot(aes(date, probable_roll7)) +
+  pivot_longer(c("probable_roll7", "probable_roll7_nb")) %>% 
+  ggplot(aes(date, value)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
-  scale_x_date(limits = study_per)
-# dev.off()
-
-comm_prev %>%
-  group_by(date) %>%
-  summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T),
-            probable_cases_rate_nb = mean(probable_cases_rate_nb, na.rm = T),) %>%
-  ungroup() %>%
-  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) -> comm_prev_avg
-
-comm_prev %>%
-  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) %>%
-  ggplot(aes(date, value)) +
-  geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) +
-  labs(title = "Probable cases per 100,000, by MSOA",
-       subtitle = "Rolling seven day mean",
-       x = "", y = "Rate") +
   scale_x_date(limits = study_per) +
   facet_grid(rows = vars(name), scales = "free")
+# dev.off()
+
+# comm_prev %>%
+#   group_by(date) %>%
+#   summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T),
+#             probable_cases_rate_nb = mean(probable_cases_rate_nb, na.rm = T),) %>%
+#   ungroup() %>%
+#   pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) -> comm_prev_avg
+# 
+# comm_prev %>%
+#   pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) %>%
+#   ggplot(aes(date, value)) +
+#   geom_line(aes(group = msoa), alpha = 0.1) +
+#   geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) +
+#   labs(title = "Probable cases per 100,000, by MSOA",
+#        subtitle = "Rolling seven day mean",
+#        x = "", y = "Rate") +
+#   scale_x_date(limits = study_per) +
+#   facet_grid(rows = vars(name), scales = "free")
 
 #------------------------------------------------------------------------------#
 
@@ -359,7 +363,8 @@ comm_prev %>%
 # png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
-  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk", "probable_cases_rate_nb")) %>%
+  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk", "probable_roll7_nb",
+                 "probable_roll7_nb_lag1wk","probable_roll7_nb_lag2wk")) %>%
   mutate(value = value + 1) %>%
   ggplot(aes(event_ahead, value)) +
   geom_boxplot() +

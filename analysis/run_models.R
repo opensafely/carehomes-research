@@ -37,7 +37,7 @@ dat <- dat_na_rm
 
 # Subset time to account for 7-day time lag
 dat <- dat %>%
-  filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
+  filter_at(vars(probable_cases_rate,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
 
 print("Summary: NA filtered data")
 summary(dat)
@@ -47,7 +47,7 @@ n_distinct(dat$household_id)
 
 # Add 1 to probable cases to use log transform
 dat %>%
-  mutate(across(c(probable_cases_rate, probable_roll7,probable_roll7_lag1wk,probable_roll7_lag2wk), function(x) log((x+1),base = 2), .names = "log2_{.col}")) -> dat
+  mutate(across(c(probable_cases_rate, probable_roll7:probable_roll7_nb_lag2wk), function(x) log((x+1),base = 2), .names = "log2_{.col}")) -> dat
 
 # ------------------------ Split data into training and test------------------ #
 
@@ -74,40 +74,25 @@ test %>%
 f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave
 
 # Time-varying (1): current day cases
-f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate
+f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate
+f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate_nb
 
-# Time-varying (2): 7-day change
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + probable_chg7
+# Time-varying (2): 7-day rolling average
+f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7
+f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_nb
 
-# Time-varying (3): 7-day rolling average
-f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7
+# Time varying (3): Lagged
+f3a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
+f3b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_nb_lag1wk + log2_probable_roll7_nb_lag2wk
 
-# Time varying (4): Lagged
-f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag2wk
-f4c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
+# # Time interaction (4)
+f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7*wave
+f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_nb*wave
 
-# # Time interaction (5)
-f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7*wave
-f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag1wk*wave
-f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag2wk*wave
+formulae <- list(base = f0, fixed = f1a, fixed_nb = f1b, roll_avg = f2a, roll_avg_nb = f2b, 
+                 lagged = f3a, lagged_nb = f3b,
+                 interaction = f4a, interaction_nb = f4b)
 
-formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, 
-                 roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, both_lags = f4c,
-                 interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
-
-# f00 <- event_ahead ~ 1
-# f0 <- event_ahead ~ ch_size
-# f1 <- event_ahead ~ ch_type
-# f2 <- event_ahead ~ hh_med_age
-# f3 <- event_ahead ~ hh_p_female
-# f4 <- event_ahead ~ hh_p_dem
-# f5 <- event_ahead ~ probable_cases_rate
-# f6 <- event_ahead ~ probable_roll7
-# f7 <- event_ahead ~ probable_roll7_lag1wk
-# f8 <- event_ahead ~ probable_roll7_lag2wk
-# 
-# formulae_test <- list(f00,f0,f1,f2,f3,f4,f5,f6,f7,f8)
 
 ## ------------------------- Check variable levels ---------------------------##
 

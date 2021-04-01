@@ -96,7 +96,4 @@ comm_probable_expand %>%
          probable_cases_rate_nb = probable_cases_nb*1e5/tpp_pop) %>%
   as.data.frame() -> comm_prev
 
-print("Summary: Daily community prevalence")
-summary(comm_prev)
-
 ################################################################################

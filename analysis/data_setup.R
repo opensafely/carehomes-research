@@ -67,6 +67,9 @@ ahead <- 14
 # Run script to aggregate non-carehome cases by MSOA
 source("./analysis/get_community_prevalence.R")
 
+print("Summary: Daily community prevalence")
+print(summary(comm_prev))
+
 # ---------------------------------------------------------------------------- #
 
 # Split out carehome residents

@@ -10,7 +10,7 @@
 #
 ################################################################################
 
-sink("./log_descriptive.txt", type = "output")
+sink("./log_descriptive.txt")
 
 time_desc <- Sys.time()
 
@@ -56,8 +56,10 @@ study_per <- range(dat$date)
 # ---------------------------------------------------------------------------- #
 
 # Compare single and neighbourhood MSOA community prevalence
-summary(comm_prev$probable_cases_rate)
-summary(comm_prev$probable_cases_rate_nb)
+print(summary(comm_prev$probable_cases_rate))
+print(summary(comm_prev$probable_cases_rate_nb))
+
+summary(comm_prev)
 
 # ---------------------------------------------------------------------------- #
 
@@ -326,7 +328,7 @@ dat %>%
 dat %>%
   ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
+  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
@@ -344,7 +346,7 @@ comm_prev %>%
   pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) %>%
   ggplot(aes(date, value)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
+  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) +
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +

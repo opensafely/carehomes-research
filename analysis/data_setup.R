@@ -27,7 +27,7 @@ library(dtplyr)
 library(zoo)
 
 # write("Data setup log",file="data_setup_log.txt")
-sink("data_setup_log.txt", type = "output")
+sink("data_setup_log.txt")
 
 # Function: alculate mode value
 getmode <- function(v) {

@@ -281,7 +281,8 @@ make_data_t <- function(t, ahead = 14){
 }
 
 # apply function for each date in range and bind
-dat <- bind_rows(lapply(1:length(study_per), make_data_t))
+dat <- bind_rows(lapply(1:length(study_per), make_data_t)) %>%
+  ungroup()
 
 print("Summary: Analysis data")
 summary(dat)

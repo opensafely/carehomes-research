@@ -331,7 +331,7 @@ dat %>%
   pivot_longer(c("probable_roll7", "probable_roll7_nb")) %>% 
   ggplot(aes(date, value)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) + 
+  geom_line(data = comm_prev_avg, col = "white", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +

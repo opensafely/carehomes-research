@@ -47,7 +47,7 @@ n_distinct(dat$household_id)
 
 # Add 1 to probable cases to use log transform
 dat %>%
-  mutate(across(c(probable_cases_rate, probable_roll7:probable_roll7_nb_lag2wk), function(x) log((x+1),base = 2), .names = "log2_{.col}")) -> dat
+  mutate(across(c(probable_cases_rate, probable_cases_rate_nb, probable_roll7:probable_roll7_nb_lag2wk), function(x) log((x+1),base = 2), .names = "log2_{.col}")) -> dat
 
 # ------------------------ Split data into training and test------------------ #
 

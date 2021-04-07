@@ -24,12 +24,15 @@ sink("./output_model_val.txt", type = "output")
 print("No. care homes in testing data:")
 n_distinct(test$household_id)
 
+print("Summary: Testing data")
+summary(test)
+
 ## ------------------------------- Functions -------------------------------- ##
 
 brier_test <- function(fit){
   test$pred <- predict(fit, newdata = test, type = "response")
   test %>%
-    summarise(score = mean((pred - event_ahead)^2)) %>%
+    summarise(score = mean((pred - event_ahead)^2), na.rm = T) %>%
     pull(score)
 }
 
@@ -49,7 +52,7 @@ computeAUC <- function(pos.scores, neg.scores, n_sample=100000) {
 
 data.frame(score = sapply(fits, brier_test)) %>% 
   rownames_to_column(var = "Model") %>%
-  mutate(diff = score - min(score)) %>%
+  mutate(diff = score - min(score, na.rm = T)) %>%
   arrange(diff) %>%
   mutate(across(-Model, function(x) round(x,6))) -> brier_comp
 
@@ -68,7 +71,7 @@ for (f in seq_along(fits)){
   ggplot(test, aes(x = as.factor(event_ahead), y = pred, fill = as.factor(event_ahead))) +
     geom_boxplot() +
     labs(title = paste0(names(fits)[f], ": Model-predicted risk versus observed outcome"), y = "Predicted risk",x = "14-day event",
-         subtitle = paste0("Median predictions: ",round(median(test$pred[test$event_ahead == 1]),4), " for event = 1 and ",round(median(test$pred[test$event_ahead == 0]),4), " for event = 0.")) +
+         subtitle = paste0("Median predictions: ",round(median(test$pred[test$event_ahead == 1], na.rm = T),4), " for event = 1 and ",round(median(test$pred[test$event_ahead == 0], na.rm = T),4), " for event = 0.")) +
     theme(legend.position = "none") +
     coord_flip()
   )

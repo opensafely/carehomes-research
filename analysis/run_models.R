@@ -75,19 +75,19 @@ f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + h
 
 # Time-varying (1): current day cases
 f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate
-f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate_nb
+f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate + log2_probable_cases_rate_nb
 
 # Time-varying (2): 7-day rolling average
 f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7
-f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_nb
+f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7 + log2_probable_roll7_nb
 
 # Time varying (3): Lagged
 f3a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
-f3b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_nb_lag1wk + log2_probable_roll7_nb_lag2wk
+f3b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk + log2_probable_roll7_nb_lag1wk + log2_probable_roll7_nb_lag2wk
 
 # # Time interaction (4)
 f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7*wave
-f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_nb*wave
+f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7*wave + log2_probable_roll7_nb*wave
 
 formulae <- list(base = f0, fixed = f1a, fixed_nb = f1b, roll_avg = f2a, roll_avg_nb = f2b, 
                  lagged = f3a, lagged_nb = f3b,
@@ -149,15 +149,15 @@ lapply(fits, print_coeffs)
 
 print("Model comparison on training data:")
 
-brier_train <- function(fit) mean((fit$fitted.values - train$event_ahead)^2)
+brier_train <- function(fit) mean((fit$fitted.values - train$event_ahead)^2, na.rm = T)
 
 data.frame(AIC = sapply(fits, AIC),
            Brier = sapply(fits, brier_train),
            cv_err = sapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10)$delta[2])) %>% 
   rownames_to_column(var = "Model") %>%
-  mutate(diffAIC = AIC - min(AIC),
-         diffBrier = Brier - min(Brier),
-         diffCV = cv_err - min(cv_err)) %>%
+  mutate(diffAIC = AIC - min(AIC, na.rm = T),
+         diffBrier = Brier - min(Brier, na.rm = T),
+         diffCV = cv_err - min(cv_err, na.rm = T)) %>%
   arrange(diffAIC) %>%
   mutate(across(-Model, function(x) round(x,6))) -> model_comp
 

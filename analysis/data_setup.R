@@ -46,8 +46,8 @@ getmode <- function(v) {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
-# args = commandArgs(trailingOnly=TRUE)
+# args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
+args = commandArgs(trailingOnly=TRUE)
 
 input <- readRDS(args[1]) 
 case_eng <- read.csv(args[2])

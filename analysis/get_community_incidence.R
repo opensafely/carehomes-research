@@ -24,8 +24,6 @@ write("Running get_community_incidence...",file="data_setup_log.txt", append = T
 
 # ---------------------------------------------------------------------------- #
 
-msoa_nb <- read_csv("./data/msoa_neighbours_full.csv")
-
 #----------------------------#
 #    Public case incidence   #
 #----------------------------#

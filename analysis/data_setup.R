@@ -46,8 +46,8 @@ getmode <- function(v) {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
-args = commandArgs(trailingOnly=TRUE)
+args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
+# args = commandArgs(trailingOnly=TRUE)
 
 input <- readRDS(args[1]) 
 case_eng <- read.csv(args[2])
@@ -68,8 +68,8 @@ ahead <- 14
 # Run script to aggregate non-carehome cases by MSOA
 source("./analysis/get_community_incidence.R")
 
-print("Summary: Daily community prevalence")
-print(summary(comm_prev))
+print("Summary: Daily community incidence")
+print(summary(comm_inc))
 
 # ---------------------------------------------------------------------------- #
 
@@ -230,7 +230,6 @@ ch_long <- comm_inc %>%
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
          probable_roll7_lag1wk = lag(probable_roll7, 7),
          probable_roll7_lag2wk = lag(probable_roll7, 14),
-         probable_roll7_nb = rollmean(probable_cases_rate_nb, 7, fill = NA, align = "right"),
          event_ahead = replace_na(as.numeric(
            first_event %within% interval(date,date+ahead)
            ),0)) %>%
@@ -262,7 +261,6 @@ summary(dat)
 print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
   pivot_longer(c("inc_rolling_eng", "probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
-  # pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk","probable_cases_rate_nb")) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 

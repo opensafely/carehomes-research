@@ -56,10 +56,10 @@ study_per <- range(dat$date)
 # ---------------------------------------------------------------------------- #
 
 # Compare single and neighbourhood MSOA community prevalence
-print(summary(comm_prev$probable_cases_rate))
-print(summary(comm_prev$probable_cases_rate_nb))
+print(summary(comm_inc$probable_cases_rate))
+print(summary(comm_inc$probable_cases_rate_nb))
 
-summary(comm_prev)
+summary(comm_inc)
 
 # ---------------------------------------------------------------------------- #
 
@@ -321,37 +321,19 @@ ch_long %>%
 dat %>%
   group_by(date) %>%
   summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
-  ungroup() -> comm_prev_avg
+  ungroup() -> comm_inc_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 dat %>%
   ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) + 
+  geom_line(data = comm_inc_avg, col = "black", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
   scale_x_date(limits = study_per)
 # dev.off()
-
-comm_prev %>%
-  group_by(date) %>%
-  summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T),
-            probable_cases_rate_nb = mean(probable_cases_rate_nb, na.rm = T),) %>%
-  ungroup() %>%
-  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) -> comm_prev_avg
-
-comm_prev %>%
-  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) %>%
-  ggplot(aes(date, value)) +
-  geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) +
-  labs(title = "Probable cases per 100,000, by MSOA",
-       subtitle = "Rolling seven day mean",
-       x = "", y = "Rate") +
-  scale_x_date(limits = study_per) +
-  facet_grid(rows = vars(name), scales = "free")
 
 #------------------------------------------------------------------------------#
 

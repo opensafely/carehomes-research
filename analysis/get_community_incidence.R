@@ -24,6 +24,8 @@ write("Running get_community_incidence...",file="data_setup_log.txt", append = T
 
 # ---------------------------------------------------------------------------- #
 
+msoa_nb <- read_csv("./data/msoa_neighbours_full.csv")
+
 #----------------------------#
 #    Public case incidence   #
 #----------------------------#
@@ -88,6 +90,16 @@ comm_probable_expand <- comm_probable_expand[is.na(probable_cases), probable_cas
 time <- Sys.time() - start
 print(paste0("Finished expanding community dates (time = ",round(time,2),")"))
 
+# Calculate total probable cases over neighbours of each MSOA
+comm_probable_expand %>%
+  left_join(msoa_nb, by = c("msoa" = "neighbour_code")) %>%
+  group_by(target_name, target_code, date) %>%
+  summarise(probable_cases_nb = sum(probable_cases, na.rm = T)) %>%
+  ungroup() %>%
+  rename(msoa = target_code) %>%
+  dplyr::select(msoa, date, probable_cases_nb) %>%
+  as.data.frame() -> nb_prev
+
 comm_probable_expand %>%
   lazy_dt() %>%
   mutate(probable_cases_rate = probable_cases*1e5/tpp_pop) %>%
@@ -97,5 +109,10 @@ comm_probable_expand %>%
 
 print("Summary: Daily community incidence")
 summary(comm_inc)
+
+  # left_join(nb_prev, by = c("msoa", "date")) %>%
+  # mutate(probable_cases_rate = probable_cases*1e5/tpp_pop,
+  #        probable_cases_rate_nb = probable_cases_nb*1e5/tpp_pop) %>%
+  # as.data.frame() -> comm_prev
 
 ################################################################################

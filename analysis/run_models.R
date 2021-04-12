@@ -170,7 +170,7 @@ data.frame(AIC = sapply(fits, AIC),
            Brier = sapply(fits, brier_train),
            cv_err = sapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10)$delta[2])) %>% 
   rownames_to_column(var = "Model") %>%
-  mutate(diffAIC = AIC - mean(AIC),
+  mutate(diffAIC = AIC - min(AIC),
          diffBrier = Brier - min(Brier),
          diffCV = cv_err - min(cv_err)) %>%
   arrange(diffAIC) %>%

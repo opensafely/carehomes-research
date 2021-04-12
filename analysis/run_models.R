@@ -37,7 +37,7 @@ dat <- dat_na_rm
 
 # Subset time to account for 7-day time lag
 dat <- dat %>%
-  filter_at(vars(probable_cases_rate,probable_chg7,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
+  filter_at(vars(probable_cases_rate,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
 
 print("Summary: NA filtered data")
 summary(dat)
@@ -45,9 +45,9 @@ summary(dat)
 print("No. care homes in final analysis data:")
 n_distinct(dat$household_id)
 
-# Add 1 to probable cases to use log transform
+# Add 1% of mean to probable cases in order to use log transform
 dat %>%
-  mutate(across(c(probable_cases_rate, probable_roll7,probable_roll7_lag1wk,probable_roll7_lag2wk), function(x) log((x+1),base = 2), .names = "log2_{.col}")) -> dat
+  mutate(across(c(inc_rolling_eng, probable_cases_rate, probable_roll7,probable_roll7_lag1wk,probable_roll7_lag2wk), function(x) log((x+mean(x)/100),base = 2), .names = "log2_{.col}")) -> dat
 
 # ------------------------ Split data into training and test------------------ #
 
@@ -73,26 +73,26 @@ test %>%
 # Baseline: static risk factors, no time-varying community risk
 f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave
 
-# Time-varying (1): current day cases
+# Current day cases
 f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate
 
-# Time-varying (2): 7-day change
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + probable_chg7
+# 7-day rolling average - per MSOA
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7
 
-# Time-varying (3): 7-day rolling average
-f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7
+# 7-day rolling average - national total
+f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_inc_rolling_eng
 
-# Time varying (4): Lagged
+# Lagged
 f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk
 f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag2wk
 f4c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
 
-# # Time interaction (5)
+# Time interaction
 f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7*wave
 f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag1wk*wave
 f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag2wk*wave
 
-formulae <- list(base = f0, fixed = f1, week_change = f2, roll_avg = f3, 
+formulae <- list(base = f0, fixed = f1, roll_avg = f2, nat_roll_avg = f3, 
                  roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, both_lags = f4c,
                  interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
 

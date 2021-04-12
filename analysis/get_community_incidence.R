@@ -20,9 +20,20 @@
 
 ################################################################################
 
-write("Running get_community_prevalence...",file="data_setup_log.txt", append = TRUE)
+write("Running get_community_incidence...",file="data_setup_log.txt", append = TRUE)
 
 # ---------------------------------------------------------------------------- #
+
+#----------------------------#
+#    Public case incidence   #
+#----------------------------#
+
+# Import national new case incidence (by specimen date) from public dashboard 
+
+case_eng <- read.csv("./data/cases_rolling_nation.csv") %>%
+  filter(areaName == "England") %>%
+  rename(inc_rolling_eng = newCasesBySpecimenDateRollingRate) %>%
+  mutate(date = lubridate::dmy(date))
 
 #----------------------------#
 #  Create community dataset  #
@@ -45,7 +56,7 @@ input %>%
          tpp_cov = tpp_cov_wHHID,
          tpp_pop = tpp_pop_wHHID) %>%
   # exclude any cases pre-2020 
-  filter(date > ymd("2020-01-01")) %>%
+  filter(date > lubridate::ymd("2020-01-01")) %>%
   # count probable diagnoses per day and per msoa
   group_by(msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date) %>%
   summarise(probable_cases = n()) %>%
@@ -79,14 +90,12 @@ print(paste0("Finished expanding community dates (time = ",round(time,2),")"))
 
 comm_probable_expand %>%
   lazy_dt() %>%
-  # full_join(tpp_cov) %>%
   mutate(probable_cases_rate = probable_cases*1e5/tpp_pop) %>%
-  # group_by(msoa) %>%
-  # mutate(probable_cases_rate_total = sum(probable_cases)/unique(msoa_pop)) %>%
-  # ungroup() %>%
-  as.data.frame() -> comm_prev
+  left_join(dplyr::select(case_eng, date, inc_rolling_eng)) %>%
+  mutate(inc_rolling_eng = replace_na(inc_rolling_eng, 0)) %>%
+  as.data.frame() -> comm_inc
 
-print("Summary: Daily community prevalence")
-summary(comm_prev)
+print("Summary: Daily community incidence")
+summary(comm_inc)
 
 ################################################################################

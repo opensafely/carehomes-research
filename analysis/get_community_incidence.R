@@ -30,10 +30,10 @@ write("Running get_community_incidence...",file="data_setup_log.txt", append = T
 
 # Import national new case incidence (by specimen date) from public dashboard 
 
-case_eng <- read.csv("./data/cases_rolling_nation.csv") %>%
+case_eng %>%
   filter(areaName == "England") %>%
   rename(inc_rolling_eng = newCasesBySpecimenDateRollingRate) %>%
-  mutate(date = lubridate::dmy(date))
+  mutate(date = lubridate::dmy(date)) -> case_eng
 
 #----------------------------#
 #  Create community dataset  #

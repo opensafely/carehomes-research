@@ -46,11 +46,12 @@ getmode <- function(v) {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input_clean.rds", 90)
-args = commandArgs(trailingOnly=TRUE)
+args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
+# args = commandArgs(trailingOnly=TRUE)
 
 input <- readRDS(args[1]) 
-ch_cov_cutoff <- args[2]
+case_eng <- read.csv(args[2])
+ch_cov_cutoff <- args[3]
 
 # Set study period 
 study_per <- seq(as.Date("2020-04-13"),as.Date("2020-11-30"), by = "weeks")
@@ -278,7 +279,7 @@ dat %>%
 # ---------------------------------------------------------------------------- #
 # Save analysis data
 
-saveRDS(comm_prev, "./community_incidence.rds")
+saveRDS(comm_inc, "./community_incidence.rds")
 saveRDS(ch, file = "./ch_linelist.rds")
 saveRDS(ch_long, file = "./ch_agg_long.rds")
 saveRDS(dat, file = "./analysisdata.rds")

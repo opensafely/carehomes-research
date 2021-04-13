@@ -46,11 +46,12 @@ getmode <- function(v) {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input_clean.rds", 90)
-args = commandArgs(trailingOnly=TRUE)
+args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
+# args = commandArgs(trailingOnly=TRUE)
 
 input <- readRDS(args[1]) 
-ch_cov_cutoff <- args[2]
+case_eng <- read.csv(args[2])
+ch_cov_cutoff <- args[3]
 
 # Set study period 
 study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-07"), by = "days")
@@ -65,10 +66,10 @@ ahead <- 14
 # ---------------------------------------------------------------------------- #
 
 # Run script to aggregate non-carehome cases by MSOA
-source("./analysis/get_community_prevalence.R")
+source("./analysis/get_community_incidence.R")
 
-print("Summary: Daily community prevalence")
-print(summary(comm_prev))
+print("Summary: Daily community incidence")
+print(summary(comm_inc))
 
 # ---------------------------------------------------------------------------- #
 
@@ -211,32 +212,6 @@ ch_wevent <- ch_wevent[all_dates,roll=TRUE]
 # Finished expanding carehome dates: time = 
 round(Sys.time() - start,2)
 
-# write(paste0("Finished expanding carehome dates (time = ",
-#              round(time,2),
-#              ")"), 
-#       file="data_setup_log.txt", append = TRUE)
-
-#-----------------------------#
-#   Discharges to care home   #
-#-----------------------------#
-
-# Number of hospital discharges back to care home per day (assuming resident is
-# discharged back to home)
-# ch %>%
-#   filter(!is.na(discharge_date)) %>%
-#   group_by(discharge_date, household_id, msoa) %>%
-#   count(name = "n_disch") %>%
-#   ungroup() %>%
-#   rename(date = discharge_date) -> disch
-# 
-# # Join with discharges: keep only those which occurred within study period
-# ch_wdisch <- ch_wevent %>%
-#   lazy_dt() %>%
-#   group_by_at(vars(household_id:rural_urban,first_event, ever_affected)) %>%
-#   left_join(disch) %>%
-#   mutate(n_disch = replace_na(n_disch, 0)) %>%
-#   as.data.frame()
-
 #-----------------------------#
 #       Analysis dataset      #
 #-----------------------------#
@@ -246,17 +221,15 @@ round(Sys.time() - start,2)
 # For each date, define event_ahead = 1 if that care home's first event occurs
 # in next <ahead> days
 
-ch_long <- comm_prev %>%
+ch_long <- comm_inc %>%
   right_join(ch_wevent, by = c("msoa","date")) %>% #View()
   group_by(household_id) %>%
   mutate(day = 1:n(),
          wave = factor(date >= ymd("2020-08-01"), labels = c("first","second")),
-         # disch_sum7 = rollsum(n_disch, 7, fill = NA, align = "right"),
          probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
          probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
          probable_roll7_lag1wk = lag(probable_roll7, 7),
          probable_roll7_lag2wk = lag(probable_roll7, 14),
-         probable_roll7_nb = rollmean(probable_cases_rate_nb, 7, fill = NA, align = "right"),
          event_ahead = replace_na(as.numeric(
            first_event %within% interval(date,date+ahead)
            ),0)) %>%
@@ -285,9 +258,9 @@ dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 print("Summary: Analysis data")
 summary(dat)
 
-print("Summary: community prevalence by occurrence of a care home event:")
+print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
-  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk","probable_cases_rate_nb")) %>%
+  pivot_longer(c("inc_rolling_eng", "probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 
@@ -309,7 +282,7 @@ dat %>%
 # ---------------------------------------------------------------------------- #
 # Save analysis data
 
-saveRDS(comm_prev, "./community_prevalence.rds")
+saveRDS(comm_inc, "./community_incidence.rds")
 saveRDS(ch, file = "./ch_linelist.rds")
 saveRDS(ch_long, file = "./ch_agg_long.rds")
 saveRDS(dat, file = "./analysisdata.rds")

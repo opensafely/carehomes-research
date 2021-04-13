@@ -20,11 +20,20 @@
 
 ################################################################################
 
-write("Running get_community_prevalence...",file="data_setup_log.txt", append = TRUE)
+write("Running get_community_incidence...",file="data_setup_log.txt", append = TRUE)
 
 # ---------------------------------------------------------------------------- #
 
-msoa_nb <- read_csv("./data/msoa_neighbours_full.csv")
+#----------------------------#
+#    Public case incidence   #
+#----------------------------#
+
+# Import national new case incidence (by specimen date) from public dashboard 
+
+case_eng %>%
+  filter(areaName == "England") %>%
+  rename(inc_rolling_eng = newCasesBySpecimenDateRollingRate) %>%
+  mutate(date = lubridate::dmy(date)) -> case_eng
 
 #----------------------------#
 #  Create community dataset  #
@@ -47,7 +56,7 @@ input %>%
          tpp_cov = tpp_cov_wHHID,
          tpp_pop = tpp_pop_wHHID) %>%
   # exclude any cases pre-2020 
-  filter(date > ymd("2020-01-01")) %>%
+  filter(date > lubridate::ymd("2020-01-01")) %>%
   # count probable diagnoses per day and per msoa
   group_by(msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date) %>%
   summarise(probable_cases = n()) %>%
@@ -79,21 +88,14 @@ comm_probable_expand <- comm_probable_expand[is.na(probable_cases), probable_cas
 time <- Sys.time() - start
 print(paste0("Finished expanding community dates (time = ",round(time,2),")"))
 
-# Calculate total probable cases over neighbours of each MSOA
-comm_probable_expand %>%
-  left_join(msoa_nb, by = c("msoa" = "neighbour_code")) %>%
-  group_by(target_name, target_code, date) %>%
-  summarise(probable_cases_nb = sum(probable_cases, na.rm = T)) %>%
-  ungroup() %>%
-  rename(msoa = target_code) %>%
-  dplyr::select(msoa, date, probable_cases_nb) %>%
-  as.data.frame() -> nb_prev
-
 comm_probable_expand %>%
   lazy_dt() %>%
-  left_join(nb_prev, by = c("msoa", "date")) %>%
-  mutate(probable_cases_rate = probable_cases*1e5/tpp_pop,
-         probable_cases_rate_nb = probable_cases_nb*1e5/tpp_pop) %>%
-  as.data.frame() -> comm_prev
+  mutate(probable_cases_rate = probable_cases*1e5/tpp_pop) %>%
+  left_join(dplyr::select(case_eng, date, inc_rolling_eng)) %>%
+  mutate(inc_rolling_eng = replace_na(inc_rolling_eng, 0)) %>%
+  as.data.frame() -> comm_inc
+
+print("Summary: Daily community incidence")
+summary(comm_inc)
 
 ################################################################################

@@ -40,7 +40,7 @@ msoa_shp <- readRDS("./data/msoa_shp.rds")
 input <- readRDS("./input_clean.rds")
 
 # Community prevalence
-comm_prev <- readRDS("./community_prevalence.rds")
+comm_inc <- readRDS("./community_incidence.rds")
 
 # Individual data - care home residents
 ch <- readRDS("./ch_linelist.rds")
@@ -56,10 +56,10 @@ study_per <- range(dat$date)
 # ---------------------------------------------------------------------------- #
 
 # Compare single and neighbourhood MSOA community prevalence
-print(summary(comm_prev$probable_cases_rate))
-print(summary(comm_prev$probable_cases_rate_nb))
+print(summary(comm_inc$probable_cases_rate))
+print(summary(comm_inc$probable_cases_rate_nb))
 
-summary(comm_prev)
+summary(comm_inc)
 
 # ---------------------------------------------------------------------------- #
 
@@ -216,9 +216,9 @@ tab2 <- cbind(tab_age, tab_ethn)
 print("Summarise resident characteristics by ever affected:")
 tab2
 
-print("Summary: community prevalence by occurrence of a care home event:")
+print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
-  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  pivot_longer(c("inc_rolling_eng","probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
   filter(value >= 0) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
@@ -321,37 +321,19 @@ ch_long %>%
 dat %>%
   group_by(date) %>%
   summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
-  ungroup() -> comm_prev_avg
+  ungroup() -> comm_inc_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 dat %>%
   ggplot(aes(date, probable_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) + 
+  geom_line(data = comm_inc_avg, col = "black", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
   scale_x_date(limits = study_per)
 # dev.off()
-
-comm_prev %>%
-  group_by(date) %>%
-  summarise(probable_cases_rate = mean(probable_cases_rate, na.rm = T),
-            probable_cases_rate_nb = mean(probable_cases_rate_nb, na.rm = T),) %>%
-  ungroup() %>%
-  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) -> comm_prev_avg
-
-comm_prev %>%
-  pivot_longer(c("probable_cases_rate", "probable_cases_rate_nb")) %>%
-  ggplot(aes(date, value)) +
-  geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_prev_avg, col = "black", lty = "dashed", lwd = 1.5) +
-  labs(title = "Probable cases per 100,000, by MSOA",
-       subtitle = "Rolling seven day mean",
-       x = "", y = "Rate") +
-  scale_x_date(limits = study_per) +
-  facet_grid(rows = vars(name), scales = "free")
 
 #------------------------------------------------------------------------------#
 
@@ -359,16 +341,18 @@ comm_prev %>%
 # png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
-  pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk", "probable_cases_rate_nb")) %>%
-  mutate(value = value + 1) %>%
-  ggplot(aes(event_ahead, value)) +
+  pivot_longer(c("inc_rolling_eng","probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  mutate(value = value + mean(value, na.rm = T)/100) %>%
+  ggplot(aes(value, event_ahead)) +
+  # pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk", "probable_cases_rate_nb")) %>%
+  # mutate(value = value + 1) %>%
+  # ggplot(aes(event_ahead, value)) +
   geom_boxplot() +
-  coord_flip() +
-  facet_grid(rows = "name", scales = "free") +
-  scale_y_continuous(trans = "log2") +
   labs(title = "Community incidence versus 14-day-ahead introduction",
-       y = "Daily probable cases in community, per 100,000",
-       x = "Introduction in next 14 days")
+       x = "Daily cases in community, per 100,000",
+       y = "Introduction in next 14 days") +
+  facet_grid(rows = "name", scales = "free") +
+  scale_x_continuous(trans = "log2")
 # dev.off()
 
 # dat %>%
@@ -382,18 +366,6 @@ dat %>%
 #        y = "Introduction in next 14 days")
 # dev.off()
 
-#------------------------------------------------------------------------------#
-
-## Hospital discharges of care home residents
-# png("./discharges.png", height = 500, width = 500)
-# dat %>%
-#   group_by(date) %>%
-#   summarise(n_disch = sum(n_disch, na.rm = T)) %>%
-#   ggplot(aes(date, n_disch)) +
-#   geom_line() + 
-#   labs(title = "Total hospital discharges of care home residents",
-#        x = "", y = "Count")
-# dev.off()
 
 #------------------------------------------------------------------------------#
 

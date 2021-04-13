@@ -55,10 +55,7 @@ study_per <- range(dat$date)
 
 # ---------------------------------------------------------------------------- #
 
-# Compare single and neighbourhood MSOA community prevalence
-print(summary(comm_inc$probable_cases_rate))
-print(summary(comm_inc$probable_cases_rate_nb))
-
+print("Summary: community incidence MSOA/national")
 summary(comm_inc)
 
 # ---------------------------------------------------------------------------- #

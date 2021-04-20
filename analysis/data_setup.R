@@ -69,7 +69,7 @@ ahead <- 14
 source("./analysis/get_community_incidence.R")
 
 print("Summary: Daily community incidence")
-print(summary(comm_inc))
+summary(comm_inc)
 
 # ---------------------------------------------------------------------------- #
 

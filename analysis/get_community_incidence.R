@@ -95,7 +95,4 @@ comm_probable_expand %>%
   mutate(inc_rolling_eng = replace_na(inc_rolling_eng, 0)) %>%
   as.data.frame() -> comm_inc
 
-print("Summary: Daily community incidence")
-summary(comm_inc)
-
 ################################################################################

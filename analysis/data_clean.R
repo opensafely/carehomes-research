@@ -81,7 +81,7 @@ input <- input_raw %>%
   # Set up var formats
   mutate(# Redefine -1/0 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         household_size = na_if(household_size, 0),
+         across(c(imd, household_size), function(x) na_if(x,0)),
          # Variable formatting
          dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),

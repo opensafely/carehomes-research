@@ -137,23 +137,25 @@ chars_waffect %>%
   group_by(ever_affected) %>%
   summarise(N = n(),
             `No. TPP residents` = sum(n_resid, na.rm = T),
-            ch_size_mean = round(mean(ch_size, na.rm = T),2),
-            ch_size_sd = round(sqrt(var(ch_size, na.rm = T)),2),
+            ch_size_med = round(median(ch_size, na.rm = T),2),
+            ch_size_quants = paste(round(quantile(ch_size, 
+                                                  probs = c(0.25, 0.75), 
+                                                  na.rm = T)), collapse = ", "),
             # `% rural` = round(sum(rural_urban == "rural")/N, 2),
-            imd_mean= round(mean(imd, na.rm = T)),
-            imd_sd= round(sqrt(var(imd, na.rm = T))),
+            imd_med= round(median(imd, na.rm = T)),
+            # imd_sd= round(sqrt(var(imd, na.rm = T))),
             imd_quants = paste(round(quantile(imd, 
                                               probs = c(0.25, 0.75), 
                                               na.rm = T)), collapse = ", "),
             ) %>%
   mutate(N_perc = round(N/N_ch_tot,2),
          # `N (%)` = paste0(N, " (",N_perc,")"),
-         `size mean(sd)` = paste0(ch_size_mean, " (",ch_size_sd,")"),
-         `IMD mean(sd)` = paste0(imd_mean, " (",imd_sd,")")) %>% 
+         `size med[IQR]` = paste0(ch_size_med, " [",ch_size_quants,"]"),
+         `IMD med[IQR]` = paste0(imd_med, " [",imd_quants,"]")) %>% 
   ungroup() %>% 
   remove_rownames() %>%
   column_to_rownames(var = "ever_affected") %>%
-  dplyr::select(N, `IMD mean(sd)`, `size mean(sd)`, `No. TPP residents`) %>% #`% rural`,
+  dplyr::select(N, `IMD med[IQR]`, `size med[IQR]`, `No. TPP residents`) %>% #`% rural`,
   cbind(tab_type) -> tab1
 
 print("Summarise carehome characteristics by ever affected:")

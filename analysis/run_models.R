@@ -13,7 +13,7 @@ library(boot)
 library(lmtest)
 library(sf)
 
-# args <- c("analysisdata.rds", "community_prevalence.rds", "data/msoa_shp.rds", 0.1)
+# args <- c("analysisdata.rds", "community_incidence.rds", "data/msoa_shp.rds", 0.1)
 args <- commandArgs(trailingOnly=TRUE)
 
 sink("./output_model_run.txt")
@@ -22,7 +22,7 @@ write("Run models",file="log_model_run.txt")
 ###############################################################################
 
 dat <- readRDS(args[1])
-tpp_cov <- readRDS(args[2])
+comm_inc <- readRDS(args[2])
 msoa_shp <- readRDS(args[3])
 test_sample <- as.numeric(args[4])
 
@@ -30,7 +30,7 @@ test_sample <- as.numeric(args[4])
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
-  filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_med_age, hh_p_female, hh_dem_gt25, hh_prop_min), all_vars(!is.na(.)))
+  filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_med_age, hh_p_female, hh_dem_gt25), all_vars(!is.na(.)))
 
 write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file="log_model_run.txt", append = T)
 dat <- dat_na_rm
@@ -71,26 +71,26 @@ test %>%
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk
-f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave
+f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + wave
 
 # Current day cases
-f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_cases_rate
+f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + wave + log2_probable_cases_rate
 
 # 7-day rolling average - per MSOA
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + wave + log2_probable_roll7
 
 # 7-day rolling average - national total
-f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_inc_rolling_eng
+f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + wave + log2_inc_rolling_eng
 
 # Lagged
-f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag2wk
-f4c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
+f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + wave + log2_probable_roll7_lag1wk
+f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + wave + log2_probable_roll7_lag2wk
+f4c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
 
 # Time interaction
-f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7*wave
-f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag1wk*wave
-f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + hh_prop_min + log2_probable_roll7_lag2wk*wave
+f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + log2_probable_roll7*wave
+f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + log2_probable_roll7_lag1wk*wave
+f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_med_age + hh_p_female + hh_dem_gt25 + log2_probable_roll7_lag2wk*wave
 
 formulae <- list(base = f0, fixed = f1, roll_avg = f2, nat_roll_avg = f3, 
                  roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, both_lags = f4c,

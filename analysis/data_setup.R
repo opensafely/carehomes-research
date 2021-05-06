@@ -31,7 +31,7 @@ sink("data_setup_log.txt")
 
 # Function: alculate mode value
 getmode <- function(v) {
-  uniqv <- unique(v)
+  uniqv <- unique(na.omit(v))
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
@@ -107,15 +107,16 @@ summary(ch)
 
 ch_chars <- ch %>%
   group_by(household_id, msoa) %>%
-  summarise(region = unique(region)[1],
+  summarise(region = getmode(region),
             n_resid = n(),                        # number of individuals registered under CHID
-            ch_size = median(household_size),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
-            ch_type = unique(care_home_type)[1],  # Care, nursing, other
-            rural_urban8 = unique(rural_urban)[1], # Rural/urban location classification 
+            ch_size = getmode(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            ch_type = getmode(care_home_type),    # Care, nursing, other
+            rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
             rural_urban8_miss = sum(is.na(rural_urban)), 
-            imd = unique(imd)[1],                 # Average IMD of MSOA/specific CH location? 
+            imd = getmode(imd),                   # In case missing for some indivs, take mode over HH residents
             imd_miss = sum(is.na(rural_urban)), 
-            hh_med_age = median(age, na.rm = T),  # average age of registered residents
+            hh_med_age = median(age),             # average age of registered residents
+            age_miss = sum(is.na(age)), 
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
             ethn_miss = sum(is.na(ethnicity)), 

@@ -81,7 +81,8 @@ f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 +
 f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_lag2wk
 
 # Time interaction
-f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_roll7*wave
+f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_roll7 + wave
+f1d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_roll7*wave
 
 
 # National total incidence
@@ -92,11 +93,12 @@ f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 +
 f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag2wk
 
 # Time interaction
-f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7*wave
+f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7 + wave
+f2d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7*wave
 
 formulae <- list(base = f0, msoa = f1, nat = f2, 
-                 msoa_lag1 = f1a, msoa_lag2 = f1b, msoa_int = f1c, 
-                 nat_lag1 = f2a, nat_lag2 = f2b, nat_int = f2c)
+                 msoa_lag1 = f1a, msoa_lag2 = f1b, msoa_wave = f1c, msoa_int = f1d, 
+                 nat_lag1 = f2a, nat_lag2 = f2b,  nat_wave = f2c, nat_int = f2d)
 
 ## ------------------------- Check variable levels ---------------------------##
 

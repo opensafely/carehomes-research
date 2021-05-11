@@ -217,7 +217,7 @@ tab2
 
 print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
-  pivot_longer(c("inc_rolling_eng","probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
   filter(value >= 0) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
@@ -340,12 +340,10 @@ dat %>%
 # png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
-  pivot_longer(c("inc_rolling_eng","probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>% 
+  # Avoid zeros for log transform
   mutate(value = value + mean(value, na.rm = T)/100) %>%
   ggplot(aes(value, event_ahead)) +
-  # pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk", "probable_cases_rate_nb")) %>%
-  # mutate(value = value + 1) %>%
-  # ggplot(aes(event_ahead, value)) +
   geom_boxplot() +
   labs(title = "Community incidence versus 14-day-ahead introduction",
        x = "Daily cases in community, per 100,000",

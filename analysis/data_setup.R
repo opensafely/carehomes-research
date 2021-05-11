@@ -227,10 +227,11 @@ ch_long <- comm_inc %>%
   group_by(household_id) %>%
   mutate(day = 1:n(),
          wave = factor(date >= ymd("2020-08-01"), labels = c("first","second")),
-         probable_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
-         probable_chg7 = probable_cases_rate - lag(probable_cases_rate, 7),
-         probable_roll7_lag1wk = lag(probable_roll7, 7),
-         probable_roll7_lag2wk = lag(probable_roll7, 14),
+         # msoa_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
+         # msoa_lag1wk = lag(msoa_roll7, 7),
+         # msoa_lag2wk = lag(msoa_roll7, 14),
+         # eng_lag1wk = lag(eng_roll7, 7),
+         # eng_lag2wk = lag(eng_roll7, 14),
          event_ahead = replace_na(as.numeric(
            first_event %within% interval(date,date+ahead)
            ),0)) %>%
@@ -261,7 +262,7 @@ summary(dat)
 
 print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
-  pivot_longer(c("inc_rolling_eng", "probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
+  pivot_longer(c("msoa_probable_rate","msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 

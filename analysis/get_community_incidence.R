@@ -32,7 +32,7 @@ write("Running get_community_incidence...",file="data_setup_log.txt", append = T
 
 case_eng %>%
   filter(areaName == "England") %>%
-  rename(inc_rolling_eng = newCasesBySpecimenDateRollingRate) %>%
+  rename(eng_roll7 = newCasesBySpecimenDateRollingRate) %>%
   mutate(date = lubridate::dmy(date)) -> case_eng
 
 #----------------------------#
@@ -90,9 +90,14 @@ print(paste0("Finished expanding community dates (time = ",round(time,2),")"))
 
 comm_probable_expand %>%
   lazy_dt() %>%
-  mutate(probable_cases_rate = probable_cases*1e5/tpp_pop) %>%
-  left_join(dplyr::select(case_eng, date, inc_rolling_eng)) %>%
-  mutate(inc_rolling_eng = replace_na(inc_rolling_eng, 0)) %>%
+  mutate(msoa_probable_rate = probable_cases*1e5/tpp_pop) %>%
+  left_join(dplyr::select(case_eng, date, eng_roll7)) %>%
+  mutate(msoa_roll7 = rollmean(msoa_probable_rate, 7, fill = NA, align = "right"),
+         msoa_lag1wk = lag(msoa_roll7, 7),
+         msoa_lag2wk = lag(msoa_roll7, 14),
+         eng_roll7 = replace_na(eng_roll7, 0),
+         eng_lag1wk = lag(eng_roll7, 7),
+         eng_lag2wk = lag(eng_roll7, 14)) %>%
   as.data.frame() -> comm_inc
 
 ################################################################################

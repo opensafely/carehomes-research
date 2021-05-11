@@ -37,7 +37,7 @@ dat <- dat_na_rm
 
 # Subset time to account for 7-day time lag
 dat <- dat %>%
-  filter_at(vars(probable_cases_rate,probable_roll7,probable_roll7_lag2wk), all_vars(!is.na(.)))
+  filter_at(vars(msoa_lag2wk, eng_lag2wk), all_vars(!is.na(.)))
 
 print("Summary: NA filtered data")
 summary(dat)
@@ -47,7 +47,7 @@ n_distinct(dat$household_id)
 
 # Add 1% of mean to probable cases in order to use log transform
 dat %>%
-  mutate(across(c(inc_rolling_eng, probable_cases_rate, probable_roll7,probable_roll7_lag1wk,probable_roll7_lag2wk), function(x) log((x+mean(x)/100),base = 2), .names = "log2_{.col}")) -> dat
+  mutate(across(c(msoa_roll7,msoa_lag1wk,msoa_lag2wk,eng_roll7,eng_lag1wk,eng_lag2wk), function(x) log((x+mean(x)/100),base = 2), .names = "log2_{.col}")) -> dat
 
 # ------------------------ Split data into training and test------------------ #
 
@@ -75,24 +75,24 @@ f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25
 
 # MSOA incidence
 # 7-day rolling average 
-f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7
+f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_roll7
 # Lagged
-f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7_lag1wk
-f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7_lag2wk
+f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_lag1wk
+f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_lag2wk
 
 # Time interaction
-f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7*wave
+f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_roll7*wave
 
 
 # National total incidence
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7
 
 # Lagged
-f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng_lag1wk
-f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng_lag2wk
+f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag1wk
+f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag2wk
 
 # Time interaction
-f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng*wave
+f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7*wave
 
 formulae <- list(base = f0, msoa = f1, nat = f2, 
                  msoa_lag1 = f1a, msoa_lag2 = f1b, msoa_int = f1c, 

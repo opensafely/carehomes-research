@@ -319,13 +319,13 @@ ch_long %>%
 # Average daily incidence
 dat %>%
   group_by(date) %>%
-  summarise(probable_roll7 = mean(probable_roll7, na.rm = T)) %>%
+  summarise(msoa_roll7 = mean(msoa_roll7, na.rm = T)) %>%
   ungroup() -> comm_inc_avg
 
 # Community incidence over time
 # png("./community_inc.png", height = 500, width = 500)
 dat %>%
-  ggplot(aes(date, probable_roll7)) +
+  ggplot(aes(date, msoa_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
   geom_line(data = comm_inc_avg, col = "black", lty = "dashed", lwd = 1.5) + 
   labs(title = "Probable cases per 100,000, by MSOA",

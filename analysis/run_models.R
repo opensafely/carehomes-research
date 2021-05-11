@@ -71,43 +71,32 @@ test %>%
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk
-f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave
+f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25
 
-# Current day cases
-f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave + log2_probable_cases_rate
-
-# 7-day rolling average - per MSOA
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave + log2_probable_roll7
-
-# 7-day rolling average - national total
-f3 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave + log2_inc_rolling_eng
-
+# MSOA incidence
+# 7-day rolling average 
+f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7
 # Lagged
-f4a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave + log2_probable_roll7_lag1wk
-f4b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave + log2_probable_roll7_lag2wk
-f4c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave + log2_probable_roll7_lag1wk + log2_probable_roll7_lag2wk
+f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7_lag1wk
+f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7_lag2wk
 
 # Time interaction
-f5a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7*wave
-f5b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7_lag1wk*wave
-f5c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7_lag2wk*wave
+f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_probable_roll7*wave
 
-formulae <- list(base = f0, fixed = f1, roll_avg = f2, nat_roll_avg = f3, 
-                 roll_avg_lag1 = f4a, roll_avg_lag2 = f4b, both_lags = f4c,
-                 interaction = f5a, interaction_lag1 = f5b, interaction_lag2 = f5c)
 
-# f00 <- event_ahead ~ 1
-# f0 <- event_ahead ~ ch_size
-# f1 <- event_ahead ~ ch_type
-# f2 <- event_ahead ~ hh_med_age
-# f3 <- event_ahead ~ hh_p_female
-# f4 <- event_ahead ~ hh_p_dem
-# f5 <- event_ahead ~ probable_cases_rate
-# f6 <- event_ahead ~ probable_roll7
-# f7 <- event_ahead ~ probable_roll7_lag1wk
-# f8 <- event_ahead ~ probable_roll7_lag2wk
-# 
-# formulae_test <- list(f00,f0,f1,f2,f3,f4,f5,f6,f7,f8)
+# National total incidence
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng
+
+# Lagged
+f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng_lag1wk
+f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng_lag2wk
+
+# Time interaction
+f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_inc_rolling_eng*wave
+
+formulae <- list(base = f0, msoa = f1, nat = f2, 
+                 msoa_lag1 = f1a, msoa_lag2 = f1b, msoa_int = f1c, 
+                 nat_lag1 = f2a, nat_lag2 = f2b, nat_int = f2c)
 
 ## ------------------------- Check variable levels ---------------------------##
 
@@ -139,8 +128,8 @@ time1 <- Sys.time()
 fits <- fit_mods(formulae)
 write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file="log_model_run.txt", append = TRUE)
 
-print("Summary: Model fits")
-lapply(fits, summary)
+# print("Summary: Model fits")
+# lapply(fits, summary)
 
 
 # ypred<-predict(fits[[7]], newdata = train, type = "response")

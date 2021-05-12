@@ -84,6 +84,11 @@ f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 +
 f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_roll7 + wave
 f1d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_roll7*wave
 
+f1e <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_lag1wk + wave
+f1f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_lag1wk*wave
+
+f1g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_lag2wk + wave
+f1h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_msoa_lag2wk*wave
 
 # National total incidence
 f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7
@@ -96,9 +101,21 @@ f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 +
 f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7 + wave
 f2d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_roll7*wave
 
+f2e <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag1wk + wave
+f2f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag1wk*wave
+
+f2g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag2wk + wave
+f2h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag2wk*wave
+
 formulae <- list(base = f0, msoa = f1, nat = f2, 
-                 msoa_lag1 = f1a, msoa_lag2 = f1b, msoa_wave = f1c, msoa_int = f1d, 
-                 nat_lag1 = f2a, nat_lag2 = f2b,  nat_wave = f2c, nat_int = f2d)
+                 msoa_lag1 = f1a, msoa_lag2 = f1b, 
+                 msoa_wave = f1c, msoa_int = f1d,
+                 msoa_lag1_wave = f1e, msoa_lag1_int = f1f, 
+                 msoa_lag2_wave = f1g, msoa_lag2_int = f1h, 
+                 nat_lag1 = f2a, nat_lag2 = f2b,  
+                 nat_wave = f2c, nat_int = f2d,
+                 nat_lag1_wave = f2e, nat_lag1_int = f2f,
+                 nat_lag2_wave = f2g, nat_lag2_int = f2h)
 
 ## ------------------------- Check variable levels ---------------------------##
 

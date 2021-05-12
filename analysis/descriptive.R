@@ -337,7 +337,19 @@ dat %>%
 #------------------------------------------------------------------------------#
 
 ## Community incidence versus care home introduction
+
 # png("./comm_vs_ch.png", height = 800, width = 800)
+dat %>%
+  mutate(event_ahead = as.factor(event_ahead)) %>%
+  pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>% 
+  ggplot(aes(value, event_ahead)) +
+  geom_boxplot() +
+  labs(title = "Community incidence versus 14-day-ahead introduction",
+       x = "Daily cases in community, per 100,000",
+       y = "Introduction in next 14 days") +
+  facet_grid(rows = "name", scales = "free") 
+
+# Log2 scale
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
   pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>% 

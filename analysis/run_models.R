@@ -204,7 +204,7 @@ plot_coeffs <- function(coeffs){
 }
 
 plot_coeffs(coeffs[[1]])
-pdf("./figures/model_coeffs.pdf")
+pdf("./model_coeffs.pdf")
 lapply(coeffs, plot_coeffs)
 dev.off()
 

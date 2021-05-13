@@ -72,6 +72,7 @@ test %>%
 
 # Baseline: static risk factors, no time-varying community risk
 f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25
+f0a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave
 
 # MSOA incidence
 # 7-day rolling average 

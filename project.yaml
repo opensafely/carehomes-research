@@ -73,6 +73,7 @@ actions:
         report: descriptive.pdf
         log: log_descriptive.txt
         data: ch_gp_permsoa.csv
+        table: ch_chars_tab.csv
 
   run_models:
     needs: [data_setup]
@@ -83,17 +84,18 @@ actions:
         output: output_model_run.txt
         log: log_model_run.txt
         figure: model_coeffs.pdf
+        table: model_comp.csv
       highly_sensitive:
         fit: fits.rds
         data: testdata.rds
 
-  validate_models:
-    needs: [run_models]
-    run: r:latest analysis/validate_models.R fits.rds testdata.rds
-    outputs:
-      moderately_sensitive:
-        output: output_model_val.txt
-        report: test_pred_figs.pdf
+#  validate_models:
+#    needs: [run_models]
+#    run: r:latest analysis/validate_models.R fits.rds testdata.rds
+#    outputs:
+#      moderately_sensitive:
+#        output: output_model_val.txt
+#        report: test_pred_figs.pdf
         
   run_all:
     needs: [validate_models, descriptive]

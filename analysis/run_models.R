@@ -108,13 +108,14 @@ f2f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 +
 f2g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag2wk + wave
 f2h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + log2_eng_lag2wk*wave
 
-formulae <- list(base = f0, msoa = f1, nat = f2, 
-                 msoa_lag1 = f1a, msoa_lag2 = f1b, 
+formulae <- list(base = f0, base_wave = f0a,
+                 msoa = f1, nat = f2, 
                  msoa_wave = f1c, msoa_int = f1d,
+                 nat_wave = f2c, nat_int = f2d,
+                 msoa_lag1 = f1a, msoa_lag2 = f1b, 
                  msoa_lag1_wave = f1e, msoa_lag1_int = f1f, 
                  msoa_lag2_wave = f1g, msoa_lag2_int = f1h, 
-                 nat_lag1 = f2a, nat_lag2 = f2b,  
-                 nat_wave = f2c, nat_int = f2d,
+                 nat_lag1 = f2a, nat_lag2 = f2b,
                  nat_lag1_wave = f2e, nat_lag1_int = f2f,
                  nat_lag2_wave = f2g, nat_lag2_int = f2h)
 
@@ -148,32 +149,26 @@ time1 <- Sys.time()
 fits <- fit_mods(formulae)
 write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file="log_model_run.txt", append = TRUE)
 
-# print("Summary: Model fits")
-# lapply(fits, summary)
-
-
-# ypred<-predict(fits[[7]], newdata = train, type = "response")
-# plot(train$day,train$event_ahead)
-# points(train$day,ypred,col="blue")
 
 # Robust SEs for coefficient significance:
 print_coeffs <- function(fit){
   confints <- coefci(fit, df = Inf, vcov = vcovCL, cluster = train$household_id)
   testcoeffs <- lmtest::coeftest(fit, vcov = vcovCL, cluster = train$household_id)
   
-  out <- as.data.frame(round(cbind(exp(cbind(testcoeffs[,1],confints)),testcoeffs[,4]),4))
-  names(out) <- c("Estimate","2.5%","97.5%","Pr(>|z|)")
-  
-  # print(fit$formula)
+  out <- as.data.frame(round(cbind(exp(cbind(testcoeffs[,1],confints)),testcoeffs[,4]),4)) %>%
+    rownames_to_column(var = "Coefficient")
+  names(out)[-1] <- c("Estimate","2.5%","97.5%","Pr(>|z|)")
+
   return(out)
 }
 
+# Output model estimates
 print("Summary: Model coeffs with robust SEs")
 coeffs <- lapply(fits, print_coeffs)
 coeffs 
 
-print("Model comparison on training data:")
-
+# Compare models on AIC/Brier/CV error 
+print("Model comparison:")
 brier_train <- function(fit) mean((fit$fitted.values - train$event_ahead)^2)
 
 data.frame(AIC = sapply(fits, AIC),
@@ -187,27 +182,37 @@ data.frame(AIC = sapply(fits, AIC),
   mutate(across(-Model, function(x) round(x,6))) -> model_comp
 
 model_comp
+
+# Save table
 write.csv(model_comp, "./model_comp.csv", row.names = F)
 
+# Plot coefficients
 plot_coeffs <- function(coeffs){
   
   coeffs %>%
-    rownames_to_column(var = "Coefficient") %>%
     filter(Coefficient != "(Intercept)") %>%
     mutate(Coefficient = factor(Coefficient)) %>%
     ggplot(aes(Estimate, Coefficient, xmin = `2.5%`, xmax = `97.5%`)) +
     geom_vline(xintercept = 1, lty = "dashed", col = "grey") +
     geom_linerange() +
-    geom_point(col = "steelblue") +
+    geom_point(col = "steelblue") 
     theme_minimal() -> p
   
-  print(p)
+  return(p)
 }
 
-plot_coeffs(coeffs[[1]])
+plots <- lapply(coeffs, plot_coeffs)
+
+# Save plots for all models
 pdf("./model_coeffs.pdf")
-lapply(coeffs, plot_coeffs)
+plots
 dev.off()
+
+# for (p in seq_along(plots)){
+#   png(sprintf("coeffs_%s.png",names(plots)[p]), height = 1500, width = 1800, res = 300)
+#   print(plots[[p]])
+#   dev.off()
+# }
 
 ################################################################################
 

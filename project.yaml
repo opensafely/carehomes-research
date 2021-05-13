@@ -98,7 +98,7 @@ actions:
 #        report: test_pred_figs.pdf
         
   run_all:
-    needs: [validate_models, descriptive]
+    needs: [run_models, descriptive]
     # In order to be valid this action needs to define a run commmand and
     # some output. We don't really care what these are but the below seems to
     # do the trick.

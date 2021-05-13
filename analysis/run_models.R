@@ -168,7 +168,8 @@ print_coeffs <- function(fit){
 }
 
 print("Summary: Model coeffs with robust SEs")
-lapply(fits, print_coeffs)
+coeffs <- lapply(fits, print_coeffs)
+coeffs 
 
 print("Model comparison on training data:")
 
@@ -185,32 +186,27 @@ data.frame(AIC = sapply(fits, AIC),
   mutate(across(-Model, function(x) round(x,6))) -> model_comp
 
 model_comp
+write.csv(model_comp, "./model_comp.csv", row.names = F)
 
-## MAP RESIDUALS ##
+plot_coeffs <- function(coeffs){
+  
+  coeffs %>%
+    rownames_to_column(var = "Coefficient") %>%
+    filter(Coefficient != "(Intercept)") %>%
+    mutate(Coefficient = factor(Coefficient)) %>%
+    ggplot(aes(Estimate, Coefficient, xmin = `2.5%`, xmax = `97.5%`)) +
+    geom_vline(xintercept = 0, lty = "dashed", col = "grey") +
+    geom_linerange() +
+    geom_point(col = "steelblue") +
+    theme_minimal() -> p
+  
+  print(p)
+}
 
-# map_resids <- function(fit){
-# 
-# train %>%
-#   mutate(res = residuals(fit, type = "pearson")) %>%
-#   group_by(msoa) %>%
-#   summarise(mean_res = mean(res, na.rm = TRUE)) -> msoa_resids
-#   
-#   try(
-#     msoa_shp %>% 
-#       full_join(msoa_resids, by = c("MSOA11CD" = "msoa")) %>%
-#       ggplot(aes(geometry = geometry, fill = mean_res)) +
-#       geom_sf(lwd = 0) +
-#       scale_fill_viridis_c() +
-#       theme_minimal() -> map, silent = TRUE)
-#   
-#   return(map)
-# 
-# 
-# }
-
-# pdf("model_resids_map.pdf", height = 10, width = 8)
-# lapply(fits, map_resids)
-# dev.off()
+plot_coeffs(coeffs[[1]])
+pdf("./figures/model_coeffs.pdf")
+lapply(coeffs, plot_coeffs)
+dev.off()
 
 ################################################################################
 

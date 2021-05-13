@@ -141,25 +141,36 @@ chars_waffect %>%
             ch_size_quants = paste(round(quantile(ch_size, 
                                                   probs = c(0.25, 0.75), 
                                                   na.rm = T)), collapse = ", "),
-            # `% rural` = round(sum(rural_urban == "rural")/N, 2),
+            `N rural` = sum(rural_urban == "rural"),
+            `% rural` = round(sum(rural_urban == "rural")/N, 2),
             imd_med= round(median(imd, na.rm = T)),
             # imd_sd= round(sqrt(var(imd, na.rm = T))),
             imd_quants = paste(round(quantile(imd, 
                                               probs = c(0.25, 0.75), 
                                               na.rm = T)), collapse = ", "),
+            `N dementia` = sum(hh_p_dem > 25),
+            `% dementia` = round(sum(hh_p_dem > 25)/N, 2)
             ) %>%
   mutate(N_perc = round(N/N_ch_tot,2),
-         # `N (%)` = paste0(N, " (",N_perc,")"),
-         `size med[IQR]` = paste0(ch_size_med, " [",ch_size_quants,"]"),
-         `IMD med[IQR]` = paste0(imd_med, " [",imd_quants,"]")) %>% 
+         `N (%)` = paste0(N, " (",N_perc,")"),
+         `Size, med[IQR]` = paste0(ch_size_med, " [",ch_size_quants,"]"),
+         `IMD, med[IQR]` = paste0(imd_med, " [",imd_quants,"]"),
+         `Rural, N (%)` = paste0(`N rural`, " (",`% rural`,")"),
+         `Dementia > 25%, N (%)` = paste0(`N dementia`, " (",`% dementia`,")"),) %>% 
   ungroup() %>% 
   remove_rownames() %>%
   column_to_rownames(var = "ever_affected") %>%
-  dplyr::select(N, `IMD med[IQR]`, `size med[IQR]`, `No. TPP residents`) %>% #`% rural`,
+  dplyr::select(N, `No. TPP residents`, 
+                `Size, med[IQR]`,
+                `IMD, med[IQR]`, 
+                `Rural, N (%)`,
+                `Dementia > 25%, N (%)`) %>% 
   cbind(tab_type) -> tab1
 
 print("Summarise carehome characteristics by ever affected:")
-tab1
+t(tab1) 
+
+write.csv(tab1, "./ch_chars_tab.csv")
 
 #------------------------------------------------------------------------------#
 

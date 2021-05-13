@@ -196,7 +196,7 @@ plot_coeffs <- function(coeffs){
     filter(Coefficient != "(Intercept)") %>%
     mutate(Coefficient = factor(Coefficient)) %>%
     ggplot(aes(Estimate, Coefficient, xmin = `2.5%`, xmax = `97.5%`)) +
-    geom_vline(xintercept = 0, lty = "dashed", col = "grey") +
+    geom_vline(xintercept = 1, lty = "dashed", col = "grey") +
     geom_linerange() +
     geom_point(col = "steelblue") +
     theme_minimal() -> p

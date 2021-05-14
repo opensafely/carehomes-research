@@ -77,17 +77,27 @@ actions:
 
   run_models:
     needs: [data_setup]
-    # 
-    run: r:latest analysis/run_models.R analysisdata.rds community_incidence.rds data/msoa_shp.rds 0.0
+    run: r:latest analysis/run_models.R analysisdata.rds 0.0
     outputs:
       moderately_sensitive:
         output: output_model_run.txt
         log: log_model_run.txt
+        coeffs: coeffs_all.rds
         figure: model_coeffs.pdf
         table: model_comp.csv
       highly_sensitive:
-        fit: fits.rds
-        data: testdata.rds
+        fit: model_out.rds
+        test: testdata.rds
+        
+#  compare_models:
+#    needs: [run_models]
+#    run: r:latest analysis/compare_models.R model_out.rds
+#    outputs:
+#      moderately_sensitive:
+#        log: output_model_comp.txt
+#        coeffs: coeffs_all.rds
+#        figure: model_coeffs.pdf
+#        table: model_comp.csv
 
 #  validate_models:
 #    needs: [run_models]

@@ -7,13 +7,8 @@
 ################################################################################
 
 library(tidyverse)
-library(data.table)
-library(sandwich)
-library(boot)
-library(lmtest)
-library(sf)
 
-# args <- c("analysisdata.rds", "community_incidence.rds", "data/msoa_shp.rds", 0.1)
+# args <- c("analysisdata.rds", 0.1)
 args <- commandArgs(trailingOnly=TRUE)
 
 sink("./output_model_run.txt")
@@ -22,9 +17,7 @@ write("Run models",file="log_model_run.txt")
 ###############################################################################
 
 dat <- readRDS(args[1])
-comm_inc <- readRDS(args[2])
-msoa_shp <- readRDS(args[3])
-test_sample <- as.numeric(args[4])
+test_sample <- as.numeric(args[2])
 
 # --------------------------------- Subset data ------------------------------ #
 
@@ -119,6 +112,7 @@ formulae <- list(base = f0, base_wave = f0a,
                  nat_lag1_wave = f2e, nat_lag1_int = f2f,
                  nat_lag2_wave = f2g, nat_lag2_int = f2h)
 
+
 ## ------------------------- Check variable levels ---------------------------##
 
 print("Summary: Training data")
@@ -149,16 +143,22 @@ time1 <- Sys.time()
 fits <- fit_mods(formulae)
 write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file="log_model_run.txt", append = TRUE)
 
+################################################################################
+
+model_out <- list(data = train, formulae = formulae, fits = fits)
+saveRDS(model_out, "./model_out.rds")
+
+## --------------------------- Coefficient tables --------------------------- ##
 
 # Robust SEs for coefficient significance:
 print_coeffs <- function(fit){
-  confints <- coefci(fit, df = Inf, vcov = vcovCL, cluster = train$household_id)
-  testcoeffs <- lmtest::coeftest(fit, vcov = vcovCL, cluster = train$household_id)
+  confints <- lmtest::coefci(fit, df = Inf, vcov = sandwich::vcovCL, cluster = train$household_id)
+  testcoeffs <- lmtest::coeftest(fit, vcov = sandwich::vcovCL, cluster = train$household_id)
   
   out <- as.data.frame(round(cbind(exp(cbind(testcoeffs[,1],confints)),testcoeffs[,4]),4)) %>%
     rownames_to_column(var = "Coefficient")
   names(out)[-1] <- c("Estimate","2.5%","97.5%","Pr(>|z|)")
-
+  
   return(out)
 }
 
@@ -167,38 +167,23 @@ print("Summary: Model coeffs with robust SEs")
 coeffs <- lapply(fits, print_coeffs)
 coeffs 
 
-# Compare models on AIC/Brier/CV error 
-print("Model comparison:")
-brier_train <- function(fit) mean((fit$fitted.values - train$event_ahead)^2)
+saveRDS(coeffs, "coeffs_all.rds")
 
-data.frame(AIC = sapply(fits, AIC),
-           Brier = sapply(fits, brier_train),
-           cv_err = sapply(formulae, function(f) boot::cv.glm(data = train, glmfit = stats::glm(f, family = "binomial", data = train), K = 10)$delta[2])) %>% 
-  rownames_to_column(var = "Model") %>%
-  mutate(diffAIC = AIC - min(AIC),
-         diffBrier = Brier - min(Brier),
-         diffCV = cv_err - min(cv_err)) %>%
-  arrange(diffAIC) %>%
-  mutate(across(-Model, function(x) round(x,6))) -> model_comp
-
-model_comp
-
-# Save table
-write.csv(model_comp, "./model_comp.csv", row.names = F)
+## --------------------------- Plot coefficients ---------------------------- ##
 
 # Plot coefficients
 plot_coeffs <- function(coeffs){
   
-  coeffs %>%
-    filter(Coefficient != "(Intercept)") %>%
-    mutate(Coefficient = factor(Coefficient)) %>%
-    ggplot(aes(Estimate, Coefficient, xmin = `2.5%`, xmax = `97.5%`)) +
-    geom_vline(xintercept = 1, lty = "dashed", col = "grey") +
-    geom_linerange() +
-    geom_point(col = "steelblue") 
-    theme_minimal() -> p
-  
-  return(p)
+  print(
+    coeffs %>%
+      filter(Coefficient != "(Intercept)") %>%
+      mutate(Coefficient = factor(Coefficient)) %>%
+      ggplot(aes(Estimate, Coefficient, xmin = `2.5%`, xmax = `97.5%`)) +
+      geom_vline(xintercept = 1, lty = "dashed", col = "grey") +
+      geom_linerange() +
+      geom_point(col = "steelblue") +
+      theme_minimal()
+  )
 }
 
 plots <- lapply(coeffs, plot_coeffs)
@@ -214,9 +199,32 @@ dev.off()
 #   dev.off()
 # }
 
-################################################################################
+## --------------------------- Comparison table ----------------------------- ##
 
-saveRDS(fits, "./fits.rds")
+# Compare models on AIC/Brier/CV error 
+brier <- function(fit) mean((fit$fitted.values - train$event_ahead)^2)
+cv <- function(f) boot::cv.glm(data = train, 
+                               glmfit = stats::glm(f, family = "binomial", data = train), 
+                               K = 10)$delta[2]
+
+data.frame(AIC = sapply(fits, AIC),
+           Brier = sapply(fits, brier),
+           cv_err = sapply(formulae, cv)
+) %>% 
+  rownames_to_column(var = "Model") %>%
+  mutate(diffAIC = AIC - min(AIC),
+         diffBrier = Brier - min(Brier),
+         diffCV = cv_err - min(cv_err)
+  ) %>%
+  arrange(diffAIC) %>%
+  mutate(across(-Model, function(x) round(x,6))) -> model_comp
+
+print("Model comparison:")
+model_comp
+
+# Save table
+write.csv(model_comp, "./model_comp.csv", row.names = F)
+
 
 ################################################################################
 

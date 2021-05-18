@@ -96,7 +96,7 @@ f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 +
 f2d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_roll7*wave
 
 f2e <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag1wk + wave
-f2f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + leng_lag1wk*wave
+f2f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag1wk*wave
 
 f2g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag2wk + wave
 f2h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag2wk*wave

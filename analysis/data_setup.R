@@ -47,16 +47,16 @@ getmode <- function(v) {
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
 # args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
-args = commandArgs(trailingOnly=TRUE)
+args = commandArgs(trailingOnly = TRUE)
 
 input <- readRDS(args[1]) 
 case_eng <- read.csv(args[2])
 ch_cov_cutoff <- args[3]
 
 # Set study period 
-study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-07"), by = "days")
+study_per <- seq(as.Date("2020-03-01"), as.Date("2020-12-07"), by = "days")
 
-# Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
+# Identify vars containing event dates: probable covid identified via primary care, positive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 # dates <- c(event_dates,"discharge_date")
 
@@ -75,7 +75,9 @@ summary(comm_inc)
 
 # Split out carehome residents
 input %>%
-  filter(care_home_type != "U") -> ch
+  filter(care_home_type != "U") %>%
+  # If in care home and age == 0 replace with na
+  mutate(age = na_if(age, 0)) -> ch
 
 # ---------------------------------------------------------------------------- #
 

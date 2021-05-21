@@ -77,7 +77,20 @@ summary(comm_inc)
 input %>%
   filter(care_home_type != "U" & age >= 65) -> ch
 
+print(paste0("Care home residents aged 65 or over: N = ",nrow(ch)))
+
 # ---------------------------------------------------------------------------- #
+
+print("Care homes % TPP coverage category:")
+summary(
+  ch %>%
+    dplyr::select(msoa, household_id, percent_tpp) %>%
+    unique() %>% 
+    mutate(percent_tpp_cat = cut(percent_tpp, 
+                                 breaks = 10,
+                                 include.lowest = TRUE)) %>%
+    pull(percent_tpp_cat)
+)
 
 # Remove care homes with low TPP coverage
 print(paste0("Care homes included with ",ch_cov_cutoff,"% cut off:"))

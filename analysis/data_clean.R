@@ -56,7 +56,7 @@ tpp_cov <- readRDS(args[2])
 msoa_cov_cutoff <- args[3]
 
 # Set study period 
-study_per <- seq(as.Date("2020-04-15"),as.Date("2020-12-07"), by = "days")
+study_per <- seq(as.Date("2020-03-01"),as.Date("2020-12-07"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
@@ -89,7 +89,7 @@ input <- input_raw %>%
          across(all_of(dates), ymd),
          across(where(is.character), as.factor),
          # Identify potential prisons/institutions
-         institution = (care_home_type == "U" & household_size > 15),
+         institution = (care_home_type == "U" & household_size > 20),
          # Define delay vars
          test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
          prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss), 

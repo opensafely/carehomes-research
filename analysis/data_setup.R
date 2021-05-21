@@ -58,7 +58,6 @@ study_per <- seq(as.Date("2020-03-01"), as.Date("2020-12-07"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, positive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
-# dates <- c(event_dates,"discharge_date")
 
 # Time horizon for prediction
 ahead <- 14
@@ -73,11 +72,18 @@ summary(comm_inc)
 
 # ---------------------------------------------------------------------------- #
 
+# Check number of individuals in community and aged 65+ in care homes
+input %>%
+  mutate(age_ge65 = (age >= 65)) %>%
+  group_by(care_home_type, age_ge65) %>%
+  tally()
+
 # Split out carehome residents
 input %>%
-  filter(care_home_type != "U" & age >= 65) -> ch
+  filter(care_home_type != "U") -> ch
 
-print(paste0("Care home residents aged 65 or over: N = ",nrow(ch)))
+print("Summary: age in care home residents")
+summary(ch$age)
 
 # ---------------------------------------------------------------------------- #
 
@@ -240,13 +246,8 @@ ch_long <- comm_inc %>%
   group_by(household_id) %>%
   mutate(day = 1:n(),
          wave = factor(date >= ymd("2020-08-01"), labels = c("first","second")),
-         # msoa_roll7 = rollmean(probable_cases_rate, 7, fill = NA, align = "right"),
-         # msoa_lag1wk = lag(msoa_roll7, 7),
-         # msoa_lag2wk = lag(msoa_roll7, 14),
-         # eng_lag1wk = lag(eng_roll7, 7),
-         # eng_lag2wk = lag(eng_roll7, 14),
          event_ahead = replace_na(as.numeric(
-           first_event %within% interval(date,date+ahead)
+           first_event %within% interval(date,date + ahead)
            ),0)) %>%
   ungroup()
 

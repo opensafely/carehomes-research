@@ -82,9 +82,6 @@ input %>%
 input %>%
   filter(care_home_type != "U") -> ch
 
-print("Summary: age in care home residents")
-summary(ch$age)
-
 # ---------------------------------------------------------------------------- #
 
 print("Summary: all care home residents")
@@ -101,7 +98,7 @@ summary(ch)
 
 ch_chars <- ch %>%
   group_by(household_id, msoa) %>%
-  summarise(percent_tpp = mean(percept_tpp),
+  summarise(percent_tpp = mean(percent_tpp),
             region = getmode(region),
             n_resid = n(),                        # number of individuals registered under CHID
             ch_size = getmode(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
@@ -122,24 +119,6 @@ ch_chars <- ch %>%
          hh_dem_gt25 = (hh_p_dem > 0.25),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                  rural_urban8 %in% 5:8 ~ "rural")))
-
-# # Remove care homes with low TPP coverage
-# print(paste0("Care homes included with ",ch_cov_cutoff,"% cut off:"))
-# ch_chars %>%
-#   mutate(include = (percent_tpp > ch_cov_cutoff)) %>%
-#   group_by(include) %>%
-#   tally()
-# 
-# # Check alternative approach
-# exclude_ch <- ch %>%
-#   filter(percent_tpp < ch_cov_cutoff) %>%
-#   pull(household_id) %>%
-#   unique()
-# 
-# print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",length(exclude_ch)))
-
-# ch_exclude <- filter(ch, !household_id %in% exclude_ch)
-# ch <- ch_exclude
 
 print("% TPP coverage - by resident:")
 summary(

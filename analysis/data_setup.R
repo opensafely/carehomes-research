@@ -75,9 +75,7 @@ summary(comm_inc)
 
 # Split out carehome residents
 input %>%
-  filter(care_home_type != "U") %>%
-  # If in care home and age == 0 replace with na
-  mutate(age = na_if(age, 0)) -> ch
+  filter(care_home_type != "U" & age >= 65) -> ch
 
 # ---------------------------------------------------------------------------- #
 

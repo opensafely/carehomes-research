@@ -110,7 +110,16 @@ ch %>%
 
 print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",n_distinct(ch$msoa, ch$household_id)-n_distinct(ch_cutoff$msoa, ch_cutoff$household_id)))
 
-ch <- ch_cutoff
+# Check alternative approach
+exclude_ch <- ch %>%
+  filter(percent_tpp < ch_cov_cutoff) %>%
+  pull(household_id) %>%
+  unique()
+
+print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",nrow(exclude_ch)))
+
+ch_exclude <- filter(ch, !household_id %in% exclude_ch)
+ch <- ch_exclude
 
 print("Summary: care home residents")
 summary(ch)

@@ -33,12 +33,6 @@ theme_set(theme_bw())
 #      LOAD DATA       #
 #----------------------#
 
-# Shapefiles
-msoa_shp <- readRDS("./data/msoa_shp.rds")
-
-# Individual data - all
-input <- readRDS("./input_clean.rds")
-
 # Community prevalence
 comm_inc <- readRDS("./community_incidence.rds")
 
@@ -84,29 +78,30 @@ per_msoa %>%
 
 #------------------------------------------------------------------------------#
 
-## Summary tables: care home characteristics ##
+#----------------------#
+#        TABLES        #
+#----------------------#
 
-# Summarise characteristics overall, and by whether or not care home had any 
-# covid-event recorded in data (ever-affected). Size of each home estimated as 
-# number of patients registered under that household ID, but actual capacity may 
-# be larger. 
-
+# Characteristics of interest
 chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban",
-           "imd","hh_med_age","hh_p_female","hh_prop_min","hh_p_dem",
+           "imd","hh_med_age","hh_p_female","hh_prop_min","hh_p_dem","hh_maj_dem",
            "first_event", "ever_affected")
 
-included <- unique(dat$household_id)
-
+# One row per home from analysis dataset
 dat %>%
   dplyr::select(all_of(chars)) %>%
   unique() -> ch_chars
 
+# Check missingness
 print("Missingness in care home characteristics:")
 print(
   ch_chars %>%
     summarise_all(function(x) sum(is.na(x))) %>%
     pivot_longer(cols = everything())
 )
+
+#------------------------------------------------------------------------------#
+# Summarise homes by ever affected
 
 ch_overall <- ch_chars %>%
   mutate(ever_affected = "Overall")
@@ -132,7 +127,7 @@ chars_waffect %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(-n_resid) -> tab_type
 
-# Tabulate other variables
+# Summarise other variables
 chars_waffect %>%
   group_by(ever_affected) %>%
   summarise(N = n(),
@@ -144,19 +139,18 @@ chars_waffect %>%
             `N rural` = sum(rural_urban == "rural"),
             `% rural` = round(sum(rural_urban == "rural")/N, 2),
             imd_med= round(median(imd, na.rm = T)),
-            # imd_sd= round(sqrt(var(imd, na.rm = T))),
             imd_quants = paste(round(quantile(imd, 
                                               probs = c(0.25, 0.75), 
                                               na.rm = T)), collapse = ", "),
-            `N dementia` = sum(hh_p_dem > 25),
-            `% dementia` = round(sum(hh_p_dem > 25)/N, 2)
+            `N dementia` = sum(hh_maj_dem),
+            `% dementia` = round(sum(hh_maj_dem)/N, 2)
             ) %>%
   mutate(N_perc = round(N/N_ch_tot,2),
          `N (%)` = paste0(N, " (",N_perc,")"),
          `Size, med[IQR]` = paste0(ch_size_med, " [",ch_size_quants,"]"),
          `IMD, med[IQR]` = paste0(imd_med, " [",imd_quants,"]"),
          `Rural, N (%)` = paste0(`N rural`, " (",`% rural`,")"),
-         `Dementia > 25%, N (%)` = paste0(`N dementia`, " (",`% dementia`,")"),) %>% 
+         `Dementia > 50%, N (%)` = paste0(`N dementia`, " (",`% dementia`,")"),) %>% 
   ungroup() %>% 
   remove_rownames() %>%
   column_to_rownames(var = "ever_affected") %>%
@@ -164,7 +158,7 @@ chars_waffect %>%
                 `Size, med[IQR]`,
                 `IMD, med[IQR]`, 
                 `Rural, N (%)`,
-                `Dementia > 25%, N (%)`) %>% 
+                `Dementia > 50%, N (%)`) %>% 
   cbind(tab_type) -> tab1
 
 print("Summarise carehome characteristics by ever affected:")
@@ -173,6 +167,7 @@ t(tab1)
 write.csv(tab1, "./ch_chars_tab.csv")
 
 #------------------------------------------------------------------------------#
+# Summarise resident characteristics by ever affected
 
 # Age, dementia status and ethnicity of care home residents, stratified by 
 # whether or not their home was affected (percentages out of total residents in 
@@ -233,9 +228,11 @@ dat %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 
-################################################################################
-## FIGURES 
-################################################################################
+#------------------------------------------------------------------------------#
+
+#----------------------#
+#       FIGURES        #
+#----------------------#
 
 pdf(file = "./descriptive.pdf", height = 7, width = 9)
 
@@ -374,18 +371,6 @@ dat %>%
   facet_grid(rows = "name", scales = "free") +
   scale_x_continuous(trans = "log2")
 # dev.off()
-
-# dat %>%
-# mutate(event_ahead = as.factor(event_ahead)) %>%
-#   pivot_longer(c("probable_cases_rate","probable_roll7","probable_roll7_lag1wk","probable_roll7_lag2wk")) %>%
-#   ggplot(aes(value, event_ahead, col = name)) +
-#   geom_point(alpha = 0.2) +
-#   geom_smooth() +
-#   labs(title = "Community incidence versus 14-day-ahead introduction",
-#        x = "Daily probable cases in community, per 100,000",
-#        y = "Introduction in next 14 days")
-# dev.off()
-
 
 #------------------------------------------------------------------------------#
 

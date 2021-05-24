@@ -23,7 +23,7 @@ test_sample <- as.numeric(args[2])
 
 # Remove rows with NA for any covariate of interest
 dat_na_rm <- dat %>%
-  filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_dem_gt25), all_vars(!is.na(.)))
+  filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_maj_dem), all_vars(!is.na(.)))
 
 write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file="log_model_run.txt", append = T)
 dat <- dat_na_rm
@@ -39,8 +39,8 @@ print("No. care homes in final analysis data:")
 n_distinct(dat$household_id)
 
 # Add 1% of mean to probable cases in order to use log transform
-# dat %>%
-#   mutate(across(c(msoa_roll7,msoa_lag1wk,msoa_lag2wk,eng_roll7,eng_lag1wk,eng_lag2wk), function(x) log((x+mean(x)/100),base = 2))) -> dat #, .names = "log2_{.col}"
+dat %>%
+  mutate(across(c(msoa_roll7,msoa_lag1wk,msoa_lag2wk,eng_roll7,eng_lag1wk,eng_lag2wk), function(x) log((x+mean(x)/100),base = 2))) -> dat #, .names = "log2_{.col}"
 
 # ------------------------ Split data into training and test------------------ #
 
@@ -64,42 +64,42 @@ test %>%
 ## ----------------------------- Model Formulae -------------------------------##
 
 # Baseline: static risk factors, no time-varying community risk
-f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25
-f0a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + wave
+f0 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem
+f0a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + wave
 
 # MSOA incidence
 # 7-day rolling average 
-f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_roll7
+f1 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_roll7
 # Lagged
-f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_lag1wk
-f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_lag2wk
+f1a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_lag1wk
+f1b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_lag2wk
 
 # Time interaction
-f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_roll7 + wave
-f1d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_roll7*wave
+f1c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_roll7 + wave
+f1d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_roll7*wave
 
-f1e <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_lag1wk + wave
-f1f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_lag1wk*wave
+f1e <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_lag1wk + wave
+f1f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_lag1wk*wave
 
-f1g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_lag2wk + wave
-f1h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + msoa_lag2wk*wave
+f1g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_lag2wk + wave
+f1h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + msoa_lag2wk*wave
 
 # National total incidence
-f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_roll7
+f2 <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_roll7
 
 # Lagged
-f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag1wk
-f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag2wk
+f2a <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_lag1wk
+f2b <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_lag2wk
 
 # Time interaction
-f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_roll7 + wave
-f2d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_roll7*wave
+f2c <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_roll7 + wave
+f2d <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_roll7*wave
 
-f2e <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag1wk + wave
-f2f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag1wk*wave
+f2e <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_lag1wk + wave
+f2f <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_lag1wk*wave
 
-f2g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag2wk + wave
-f2h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_dem_gt25 + eng_lag2wk*wave
+f2g <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_lag2wk + wave
+f2h <- event_ahead ~ ch_size + ch_type + imd_quint + rural_urban + hh_maj_dem + eng_lag2wk*wave
 
 formulae <- list(base = f0, base_wave = f0a,
                  msoa = f1, nat = f2, 

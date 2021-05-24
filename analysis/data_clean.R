@@ -43,7 +43,7 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
 # args <- c("input.csv","tpp_msoa_coverage.rds", 2)
-args = commandArgs(trailingOnly=TRUE)
+args = commandArgs(trailingOnly = TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # check for mixed HH/perc TPP agreement
@@ -115,6 +115,16 @@ exclude_msoa <- input %>%
 print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa)))
 
 input <- filter(input, !msoa %in% exclude_msoa)
+
+# ---------------------------------------------------------------------------- #
+
+# Drop rows with missing MSOA or care home type
+input <- input %>%
+  filter(!is.na(msoa) & !is.na(care_home_type))
+
+# Save cleaned input data
+saveRDS(input, "./input_clean.rds")
+write_csv(input, "./input_clean.csv")
 
 # ---------------------------------------------------------------------------- #
 
@@ -219,17 +229,6 @@ input %>%
   filter(care_home_type != "U") %>%
   dplyr::select(prob_death_delay, test_death_delay) 
 )
-
-# ---------------------------------------------------------------------------- #
-
-# Drop rows with missing MSOA or care home type
-input <- input %>%
-  filter(!is.na(msoa) & !is.na(care_home_type))
-
-saveRDS(input, "./input_clean.rds")
-
-write_csv(input, "./input_clean.csv")
-
 
 # ---------------------------------------------------------------------------- #
 

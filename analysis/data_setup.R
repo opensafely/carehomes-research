@@ -29,7 +29,7 @@ library(zoo)
 # write("Data setup log",file="data_setup_log.txt")
 sink("data_setup_log.txt")
 
-# Function: alculate mode value
+# Function: calculate mode value
 getmode <- function(v) {
   uniqv <- unique(na.omit(v))
   uniqv[which.max(tabulate(match(v, uniqv)))]
@@ -46,12 +46,12 @@ getmode <- function(v) {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 90)
+# args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 50)
 args = commandArgs(trailingOnly = TRUE)
 
 input <- readRDS(args[1]) 
 case_eng <- read.csv(args[2])
-ch_cov_cutoff <- args[3]
+ch_cov_cutoff <- as.numeric(args[3])
 
 # Set study period 
 study_per <- seq(as.Date("2020-03-01"), as.Date("2020-12-07"), by = "days")
@@ -82,10 +82,10 @@ input %>%
 input %>%
   filter(care_home_type != "U") -> ch
 
-# ---------------------------------------------------------------------------- #
-
 print("Summary: all care home residents")
 summary(ch)
+
+# ---------------------------------------------------------------------------- #
 
 #-----------------------------#
 #  Care home characteristics  #
@@ -97,9 +97,11 @@ summary(ch)
 #       same HH mas have both rural/urban and multiple IMD values in dummy data
 
 ch_chars <- ch %>%
-  group_by(household_id, msoa) %>%
-  summarise(percent_tpp = mean(percent_tpp),
+  group_by(household_id) %>%
+  summarise(percent_tpp = getmode(percent_tpp),
+            include = (percent_tpp >= ch_cov_cutoff),
             region = getmode(region),
+            msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
             ch_size = getmode(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = getmode(care_home_type),    # Care, nursing, other
@@ -113,50 +115,66 @@ ch_chars <- ch %>%
             hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
             ethn_miss = sum(is.na(ethnicity)), 
             hh_prop_min = mean(ethnicity != 1, na.rm = T),
-            hh_p_dem = mean(dementia)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
+            hh_p_dem = mean(dementia, na.rm = T)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
   mutate(imd_quint = as.factor(cut(imd, 5)),
-         hh_dem_gt25 = (hh_p_dem > 0.25),
+         hh_maj_dem = (hh_p_dem >= 50),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
-                                 rural_urban8 %in% 5:8 ~ "rural")))
-
-print("% TPP coverage - by resident:")
-summary(
-  ch %>%
-    dplyr::select(msoa, household_id, percent_tpp) %>%
-    unique() %>% 
-    mutate(percent_tpp_cat = cut(percent_tpp, 
-                                 breaks = 10,
-                                 include.lowest = TRUE)) %>%
-    pull(percent_tpp_cat)
-)
-
-print("% TPP coverage - by home:")
-summary(
-  ch_chars %>%
-    mutate(percent_tpp_cat = cut(percent_tpp, 
-                                 breaks = 10,
-                                 include.lowest = TRUE)) %>%
-    pull(percent_tpp_cat)
-)
-
-# Remove care homes with low TPP coverage
-ch_chars %>%
-  filter(percent_tpp > ch_cov_cutoff) -> ch_filter
-
-print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",nrow(ch_chars) - nrow(ch_filter)))
-
-ch_chars <- ch_filter
-
-# Also remove all residents from excluded homes in the linelist
-ch <- filter(ch, household_id %in% ch_filter$household_id)
+                                           rural_urban8 %in% 5:8 ~ "rural")))
 
 print("Summary: Care home characteristics")
 summary(ch_chars)
 
 print("No. unique homes:")
 nrow(ch_chars)
-n_distinct(ch_chars$msoa,ch_chars$household_id)
+n_distinct(ch_chars$household_id)
+
+# ---------------------------------------------------------------------------- #
+# Exclude care homes on TPP coverage
+
+# Double-check uniqueness by msoa/household_id 
+print("% TPP coverage - by msoa/HH:")
+summary(
+  ch %>%
+    group_by(msoa, household_id) %>%
+    summarise(percent_tpp = getmode(percent_tpp)) %>%
+    ungroup() %>%
+    mutate(percent_tpp_cat = cut(percent_tpp, 
+                                 breaks = 10,
+                                 include.lowest = TRUE)) %>%
+    pull(percent_tpp_cat)
+)
+
+print("% TPP coverage - by HH:")
+summary(
+  ch %>%
+    group_by(household_id) %>%
+    summarise(percent_tpp = getmode(percent_tpp)) %>%
+    ungroup() %>%
+    mutate(percent_tpp_cat = cut(percent_tpp, 
+                                 breaks = 10,
+                                 include.lowest = TRUE)) %>%
+    pull(percent_tpp_cat)
+)
+
+
+ch_bycovg <- split(ch_chars, ch_chars$include) %>%
+  lapply(FUN = function(x) unique(pull(x, household_id)))
+
+include <- ch_bycovg[["TRUE"]]
+exclude <- ch_bycovg[["FALSE"]]
+
+print(paste0("Care homes included with ",ch_cov_cutoff,"% coverage cut off: n = ",length(include)))
+print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",length(exclude)))
+
+# Keep only homes with sufficient coverage
+ch_chars <- ch_chars %>%
+  filter(household_id %in% include)
+
+ch <- ch %>%
+  filter(household_id %in% include)
+
+# ---------------------------------------------------------------------------- #
 
 #-----------------------------#
 #    Care home first event    #
@@ -168,14 +186,14 @@ n_distinct(ch_chars$msoa,ch_chars$household_id)
 
 ch_first_event <- ch %>%
   mutate_at(vars(all_of(event_dates)), function(x) replace_na(ymd(x),ymd("3000-01-01"))) %>%
-  group_by(msoa, household_id) %>%
+  group_by(household_id) %>%
   summarise_at(vars(all_of(event_dates)),min) %>%
   ungroup() %>%
-  rename_at(-1:-2, function(x) paste0("first_",x)) %>% 
+  rename_at(-1, function(x) paste0("first_",x)) %>% 
   rowwise() %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
          first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))])) %>%
-  group_by(msoa, household_id) %>%
+  group_by(household_id) %>%
   mutate(first_event_pre_per = (first_event < ymd("2020-04-15")),
          first_event_post_per = (first_event > ymd("2020-12-07") & first_event < ymd("3000-01-01")),
          ever_affected = between(first_event, ymd("2020-04-15"), ymd("2020-12-07"))) 
@@ -207,37 +225,41 @@ ch_wevent %>%
   group_by(ever_affected) %>%
   tally()
 
-
 print("Summary: Characteristics of care homes affected during study period")
 ch_wevent %>%
   filter(ever_affected) %>%
   summary()
 
+# ---------------------------------------------------------------------------- #
+
+#-----------------------------#
+#         Expand rows         #
+#-----------------------------#
+
 # Expand rows in data.table for speed:
 start <- Sys.time()
-vars <- names(select(ch_wevent, household_id:rural_urban,first_event:first_event_which, ever_affected))
+vars <- names(select(ch_wevent, include, household_id:rural_urban, first_event:first_event_which, ever_affected))
 ch_wevent <- as.data.table(ch_wevent)
 
 # Replicate per region (by vars are all values I want to copy down per date):
-all_dates <- ch_wevent[,.(date=study_per),by = vars]
+all_dates <- ch_wevent[,.(date = study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, household_id, msoa, region, n_resid, ch_size, ch_type, rural_urban8, 
-       imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, 
-       imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, 
-       first_event_which, date)
-setkey(all_dates, household_id, msoa, region, n_resid, ch_size, ch_type, rural_urban8, 
-       imd, hh_med_age, hh_p_female, hh_maj_ethn, hh_prop_min, hh_p_dem, 
-       imd_quint, hh_dem_gt25, rural_urban, first_event, ever_affected, 
-       first_event_which, date)
-ch_wevent <- ch_wevent[all_dates,roll=TRUE]
-# ch_wevent <- ch_wevent[is.na(probable_cases), probable_cases:=0]
+setkey(ch_wevent, include, household_id, msoa, region, n_resid, ch_size, ch_type, 
+       rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
+       hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
+setkey(all_dates, include, household_id, msoa, region, n_resid, ch_size, ch_type, 
+       rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
+       hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
+ch_wevent <- ch_wevent[all_dates,roll = TRUE]
 
 # Finished expanding carehome dates: time = 
 round(Sys.time() - start,2)
 
+# ---------------------------------------------------------------------------- #
+
 #-----------------------------#
-#       Analysis dataset      #
+#    Setup analysis dataset   #
 #-----------------------------#
 
 # Join with community prevalence data and define
@@ -252,15 +274,13 @@ ch_long <- comm_inc %>%
          wave = factor(date >= ymd("2020-08-01"), labels = c("first","second")),
          event_ahead = replace_na(as.numeric(
            first_event %within% interval(date,date + ahead)
-           ),0)) %>%
+         ),0)) %>%
   ungroup()
 
 print("Homes in ch_long data:")
 ch_long %>%
-  group_by(ever_affected) %>%
-  summarise(N = n_distinct(msoa, household_id))
-
-# ---------------------------------------------------------------------------- #
+  group_by(include, ever_affected) %>%
+  summarise(N = n_distinct(household_id))
 
 #To create the dataset for landmarking analysis, need to define a subset for
 #each day of carehomes which have not yet had an event and then bind all subsets
@@ -275,29 +295,20 @@ make_data_t <- function(t, ahead = 14){
 # apply function for each date in range and bind
 dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 
-print("Summary: Analysis data")
-summary(dat)
+print("No. homes in full analysis data:")
+dat %>%
+  group_by(include) %>%
+  summarise(N = n_distinct(household_id))
+n_distinct(dat$household_id)
+
+# ---------------------------------------------------------------------------- #
+# Check distribution of community incidence measures against events
 
 print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
   pivot_longer(c("msoa_probable_rate","msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
-
-print("Homes in analysis data:")
-n_distinct(dat$msoa, dat$household_id)
-
-print("Homes in ch_wevent but not analysis data:")
-ch_wevent %>%
-  as_tibble() %>%
-  filter(!household_id %in% dat$household_id) %>%
-  pull(household_id) %>%
-  unique() 
-
-dat %>%
-  group_by(day, event_ahead) %>%
-  count() %>%
-  head(20)
 
 # ---------------------------------------------------------------------------- #
 # Save analysis data

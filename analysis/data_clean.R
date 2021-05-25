@@ -71,7 +71,7 @@ dates <- c(event_dates,"discharge_date")
 
 input <- input_raw %>%
   # Filter just to records from England with non-missing household ID
-  filter(grepl("E",msoa) & !is.na(msoa) & household_id > 0) %>%
+  filter(grepl("E",msoa) & !is.na(msoa) & household_id > 0 & !is.na(household_id)) %>%
   # Join with MSOA coverage data
   left_join(tpp_cov, by = "msoa") %>% 
   rowwise() %>%
@@ -79,7 +79,9 @@ input <- input_raw %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
   ungroup() %>%
   # Set up var formats
-  mutate(# Redefine -1/0 values as na
+  mutate(# Define unique household identifier
+         HHID = paste(msoa, household_id, sep = ":"),
+         # Redefine -1/0 values as na
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
          across(c(imd, household_size), function(x) na_if(x,0)),
          # Variable formatting
@@ -94,7 +96,8 @@ input <- input_raw %>%
          test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
          prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss), 
          # replace event dates pre 2020 and post end of study as na
-         across(all_of(event_dates), na_replace_dates, max = max(study_per)))
+         across(all_of(event_dates), na_replace_dates, max = max(study_per))) 
+  
 
 # ---------------------------------------------------------------------------- #
 
@@ -144,13 +147,13 @@ summary(is.na(input$care_home_type))
 print("HHs with missing MSOA: n = ")
 input %>%
   filter(is.na(msoa)) %>%
-  pull(household_id) %>%
+  pull(HHID) %>%
   n_distinct()
 
 print("HHs with missing type: n = ")
 input %>%
   filter(is.na(care_home_type)) %>%
-  pull(household_id) %>%
+  pull(HHID) %>%
   n_distinct()
 
 print("COVID cases with missing MSOA or HH type: n = ")
@@ -164,7 +167,7 @@ input %>%
 print("No. households, patients and probable cases per carehome type:")
 input %>%
   group_by(care_home_type) %>%
-  summarise(n_hh = n_distinct(household_id),
+  summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -172,7 +175,7 @@ print("Probable prisons/institutions (size>15 and not CH)")
 input %>%
   mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
   group_by(institution) %>%
-  summarise(n_hh = n_distinct(household_id),
+  summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -181,7 +184,7 @@ input %>%
   filter(care_home_type != "U") %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
   group_by(mixed_household) %>% 
-  summarise(n_hh = n_distinct(household_id),
+  summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -189,7 +192,7 @@ print("Care homes with < 100% coverage:")
 input %>%
   filter(care_home_type != "U") %>%
   group_by(percent_tpp < 100) %>% 
-  summarise(n_hh = n_distinct(household_id),
+  summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -197,7 +200,7 @@ print("Care homes % TPP coverage:")
 summary(
   input %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(msoa, household_id, percent_tpp) %>%
+  dplyr::select(HHID, percent_tpp) %>%
   unique() %>% 
   pull(percent_tpp)
 )
@@ -206,22 +209,13 @@ print("Care homes % TPP coverage category:")
 summary(
   input %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(msoa, household_id, percent_tpp) %>%
+  dplyr::select(HHID, percent_tpp) %>%
   unique() %>% 
   mutate(percent_tpp_cat = cut(percent_tpp, 
                                breaks = 10,
                                include.lowest = TRUE)) %>%
   pull(percent_tpp_cat)
 )
-
-# input %>%
-#   filter(care_home_type != "U") %>%
-#   mutate(percent_tpp_cat = cut(percent_tpp, 5)) %>%
-#   group_by(percent_tpp_cat) %>%
-#   summarise(n_hh = n_distinct(household_id),
-#             n_pat = n_distinct(patient_id),
-#             n_case = sum(case, na.rm = TRUE))
-
 
 print("Care home residents test-diagnosis delay")
 summary(

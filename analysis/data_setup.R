@@ -97,7 +97,7 @@ summary(ch)
 #       same HH mas have both rural/urban and multiple IMD values in dummy data
 
 ch_chars <- ch %>%
-  group_by(household_id) %>%
+  group_by(HHID) %>%
   summarise(percent_tpp = getmode(percent_tpp),
             exclude = (percent_tpp < ch_cov_cutoff),
             region = getmode(region),
@@ -127,28 +127,15 @@ summary(ch_chars)
 
 print("No. unique homes:")
 nrow(ch_chars)
-n_distinct(ch_chars$household_id)
+n_distinct(ch_chars$HHID)
 
 # ---------------------------------------------------------------------------- #
 # Exclude care homes on TPP coverage
 
-# Double-check uniqueness by msoa/household_id 
-print("% TPP coverage - by msoa/HH:")
+print("% TPP coverage - by HHID:")
 summary(
   ch %>%
-    group_by(msoa, household_id) %>%
-    summarise(percent_tpp = getmode(percent_tpp)) %>%
-    ungroup() %>%
-    mutate(percent_tpp_cat = cut(percent_tpp, 
-                                 breaks = 10,
-                                 include.lowest = TRUE)) %>%
-    pull(percent_tpp_cat)
-)
-
-print("% TPP coverage - by HH:")
-summary(
-  ch %>%
-    group_by(household_id) %>%
+    group_by(HHID) %>%
     summarise(percent_tpp = getmode(percent_tpp)) %>%
     ungroup() %>%
     mutate(percent_tpp_cat = cut(percent_tpp, 
@@ -159,7 +146,7 @@ summary(
 
 
 ch_bycovg <- split(ch_chars, ch_chars$exclude) %>%
-  lapply(FUN = function(x) unique(pull(x, household_id)))
+  lapply(FUN = function(x) unique(pull(x, HHID)))
 
 excl <- ch_bycovg[["TRUE"]]
 incl <- ch_bycovg[["FALSE"]]
@@ -169,11 +156,11 @@ print(paste0("Care homes included with ",ch_cov_cutoff,"% coverage cut off: n = 
 
 # Keep only homes with sufficient coverage
 ch_chars <- ch_chars %>%
-  filter(household_id %in% incl)
+  filter(HHID %in% incl)
 
 # Also keep only residents in homes with sufficient coverage
 ch <- ch %>%
-  filter(household_id %in% incl)
+  filter(HHID %in% incl)
 
 # ---------------------------------------------------------------------------- #
 
@@ -187,14 +174,14 @@ ch <- ch %>%
 
 ch_first_event <- ch %>%
   mutate_at(vars(all_of(event_dates)), function(x) replace_na(ymd(x),ymd("3000-01-01"))) %>%
-  group_by(household_id) %>%
+  group_by(HHID) %>%
   summarise_at(vars(all_of(event_dates)),min) %>%
   ungroup() %>%
   rename_at(-1, function(x) paste0("first_",x)) %>% 
   rowwise() %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
          first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))])) %>%
-  group_by(household_id) %>%
+  group_by(HHID) %>%
   mutate(first_event_pre_per = (first_event < ymd("2020-04-15")),
          first_event_post_per = (first_event > ymd("2020-12-07") & first_event < ymd("3000-01-01")),
          ever_affected = between(first_event, ymd("2020-04-15"), ymd("2020-12-07"))) 
@@ -239,17 +226,17 @@ ch_wevent %>%
 
 # Expand rows in data.table for speed:
 start <- Sys.time()
-vars <- names(select(ch_wevent, exclude, household_id:rural_urban, first_event:first_event_which, ever_affected))
+vars <- names(select(ch_wevent, exclude, HHID:rural_urban, first_event:first_event_which, ever_affected))
 ch_wevent <- as.data.table(ch_wevent)
 
 # Replicate per region (by vars are all values I want to copy down per date):
 all_dates <- ch_wevent[,.(date = study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, exclude, household_id, msoa, region, n_resid, ch_size, ch_type, 
+setkey(ch_wevent, exclude, HHID, msoa, region, n_resid, ch_size, ch_type, 
        rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
        hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
-setkey(all_dates, exclude, household_id, msoa, region, n_resid, ch_size, ch_type, 
+setkey(all_dates, exclude, HHID, msoa, region, n_resid, ch_size, ch_type, 
        rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
        hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
 ch_wevent <- ch_wevent[all_dates,roll = TRUE]
@@ -270,7 +257,7 @@ round(Sys.time() - start,2)
 
 ch_long <- comm_inc %>%
   right_join(ch_wevent, by = c("msoa","date")) %>% #View()
-  group_by(household_id) %>%
+  group_by(HHID) %>%
   mutate(day = 1:n(),
          wave = factor(date >= ymd("2020-08-01"), labels = c("first","second")),
          event_ahead = replace_na(as.numeric(
@@ -281,7 +268,7 @@ ch_long <- comm_inc %>%
 print("Homes in ch_long data:")
 ch_long %>%
   group_by(exclude, ever_affected) %>%
-  summarise(N = n_distinct(household_id))
+  summarise(N = n_distinct(HHID))
 
 #To create the dataset for landmarking analysis, need to define a subset for
 #each day of carehomes which have not yet had an event and then bind all subsets
@@ -299,8 +286,8 @@ dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 print("No. homes in full analysis data:")
 dat %>%
   group_by(exclude) %>%
-  summarise(N = n_distinct(household_id))
-n_distinct(dat$household_id)
+  summarise(N = n_distinct(HHID))
+n_distinct(dat$HHID)
 
 # ---------------------------------------------------------------------------- #
 # Check distribution of community incidence measures against events

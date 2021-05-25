@@ -58,7 +58,7 @@ summary(comm_inc)
 # ---------------------------------------------------------------------------- #
 
 # Total care homes in analysis dataset
-N_ch_tot <- n_distinct(dat$household_id)
+N_ch_tot <- n_distinct(dat$HHID)
 
 print("Total included care homes:")
 N_ch_tot
@@ -68,7 +68,7 @@ ch %>%
   group_by(msoa) %>% 
   summarise(
     n_resid = n_distinct(patient_id),
-    n_ch = n_distinct(household_id),
+    n_ch = n_distinct(HHID),
     n_gp = n_distinct(practice_id)) %>%
   ungroup() -> per_msoa
 
@@ -86,7 +86,7 @@ per_msoa %>%
 #----------------------#
 
 # Characteristics of interest
-chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban",
+chars <- c("HHID","msoa","n_resid","ch_size","ch_type","rural_urban",
            "imd","hh_med_age","hh_p_female","hh_prop_min","hh_p_dem","hh_maj_dem",
            "first_event", "ever_affected")
 
@@ -141,7 +141,7 @@ chars_waffect %>%
                                                   na.rm = T)), collapse = ", "),
             `N rural` = sum(rural_urban == "rural"),
             `% rural` = round(sum(rural_urban == "rural")/N, 2),
-            imd_med= round(median(imd, na.rm = T)),
+            imd_med = round(median(imd, na.rm = T)),
             imd_quants = paste(round(quantile(imd, 
                                               probs = c(0.25, 0.75), 
                                               na.rm = T)), collapse = ", "),
@@ -180,7 +180,7 @@ ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
 ch %>%
-  right_join(dplyr::select(ch_chars, household_id, msoa, ever_affected)) %>% 
+  right_join(dplyr::select(ch_chars, HHID, msoa, ever_affected)) %>% 
   mutate(ever_affected = ifelse(ever_affected,"Affected","Unaffected")) %>%
   bind_rows(ch_resid_all) %>% 
   mutate(ever_affected = factor(ever_affected, 
@@ -281,7 +281,7 @@ ch_long %>%
 # dev.off()
 
 ch_long %>%
-  group_by(msoa, household_id) %>%
+  group_by(HHID) %>%
   summarise(ever_affected = unique(ever_affected)) %>%
   group_by(msoa) %>%
   summarise(affect_prop = mean(as.numeric(ever_affected))) -> affect_bymsoa

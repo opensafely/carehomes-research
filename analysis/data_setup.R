@@ -99,7 +99,7 @@ summary(ch)
 ch_chars <- ch %>%
   group_by(household_id) %>%
   summarise(percent_tpp = getmode(percent_tpp),
-            include = (percent_tpp >= ch_cov_cutoff),
+            exclude = (percent_tpp < ch_cov_cutoff),
             region = getmode(region),
             msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
@@ -158,21 +158,22 @@ summary(
 )
 
 
-ch_bycovg <- split(ch_chars, ch_chars$include) %>%
+ch_bycovg <- split(ch_chars, ch_chars$exclude) %>%
   lapply(FUN = function(x) unique(pull(x, household_id)))
 
-include <- ch_bycovg[["TRUE"]]
-exclude <- ch_bycovg[["FALSE"]]
+excl <- ch_bycovg[["TRUE"]]
+incl <- ch_bycovg[["FALSE"]]
 
-print(paste0("Care homes included with ",ch_cov_cutoff,"% coverage cut off: n = ",length(include)))
-print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",length(exclude)))
+print(paste0("Care homes excluded with ",ch_cov_cutoff,"% coverage cut off: n = ",length(excl)))
+print(paste0("Care homes included with ",ch_cov_cutoff,"% coverage cut off: n = ",length(incl)))
 
 # Keep only homes with sufficient coverage
 ch_chars <- ch_chars %>%
-  filter(household_id %in% include)
+  filter(household_id %in% incl)
 
+# Also keep only residents in homes with sufficient coverage
 ch <- ch %>%
-  filter(household_id %in% include)
+  filter(household_id %in% incl)
 
 # ---------------------------------------------------------------------------- #
 
@@ -238,17 +239,17 @@ ch_wevent %>%
 
 # Expand rows in data.table for speed:
 start <- Sys.time()
-vars <- names(select(ch_wevent, include, household_id:rural_urban, first_event:first_event_which, ever_affected))
+vars <- names(select(ch_wevent, exclude, household_id:rural_urban, first_event:first_event_which, ever_affected))
 ch_wevent <- as.data.table(ch_wevent)
 
 # Replicate per region (by vars are all values I want to copy down per date):
 all_dates <- ch_wevent[,.(date = study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, include, household_id, msoa, region, n_resid, ch_size, ch_type, 
+setkey(ch_wevent, exclude, household_id, msoa, region, n_resid, ch_size, ch_type, 
        rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
        hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
-setkey(all_dates, include, household_id, msoa, region, n_resid, ch_size, ch_type, 
+setkey(all_dates, exclude, household_id, msoa, region, n_resid, ch_size, ch_type, 
        rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
        hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
 ch_wevent <- ch_wevent[all_dates,roll = TRUE]
@@ -279,7 +280,7 @@ ch_long <- comm_inc %>%
 
 print("Homes in ch_long data:")
 ch_long %>%
-  group_by(include, ever_affected) %>%
+  group_by(exclude, ever_affected) %>%
   summarise(N = n_distinct(household_id))
 
 #To create the dataset for landmarking analysis, need to define a subset for
@@ -297,7 +298,7 @@ dat <- bind_rows(lapply(1:length(study_per), make_data_t))
 
 print("No. homes in full analysis data:")
 dat %>%
-  group_by(include) %>%
+  group_by(exclude) %>%
   summarise(N = n_distinct(household_id))
 n_distinct(dat$household_id)
 

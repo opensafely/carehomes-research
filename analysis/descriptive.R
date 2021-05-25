@@ -33,6 +33,9 @@ theme_set(theme_bw())
 #      LOAD DATA       #
 #----------------------#
 
+# Cleaned input
+input <- readRDS("./input_clean.rds")
+
 # Community prevalence
 comm_inc <- readRDS("./community_incidence.rds")
 

@@ -25,7 +25,7 @@ test_sample <- as.numeric(args[2])
 dat_na_rm <- dat %>%
   filter_at(vars(ch_size, ch_type, imd_quint, rural_urban, hh_maj_dem), all_vars(!is.na(.)))
 
-write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat)-nrow(dat_na_rm)),file="log_model_run.txt", append = T)
+write(paste0("Rows excluded due to missing covariates: n = ",nrow(dat) - nrow(dat_na_rm)),file = "log_model_run.txt", append = T)
 dat <- dat_na_rm
 
 # Subset time to account for 7-day time lag
@@ -36,17 +36,17 @@ print("Summary: NA filtered data")
 summary(dat)
 
 print("No. care homes in final analysis data:")
-n_distinct(dat$household_id)
+n_distinct(dat$HHID)
 
 # Add 1% of mean to probable cases in order to use log transform
 dat %>%
-  mutate(across(c(msoa_roll7,msoa_lag1wk,msoa_lag2wk,eng_roll7,eng_lag1wk,eng_lag2wk), function(x) log((x+mean(x)/100),base = 2))) -> dat #, .names = "log2_{.col}"
+  mutate(across(c(msoa_roll7,msoa_lag1wk,msoa_lag2wk,eng_roll7,eng_lag1wk,eng_lag2wk), function(x) log((x + mean(x)/100),base = 2))) -> dat #, .names = "log2_{.col}"
 
 # ------------------------ Split data into training and test------------------ #
 
-samp <- sample(unique(dat$household_id),(1-test_sample)*n_distinct(dat$household_id))
-train <- filter(dat, household_id %in% samp)
-test <- filter(dat, !household_id %in% samp)
+samp <- sample(unique(dat$HHID),(1 - test_sample)*n_distinct(dat$HHID))
+train <- filter(dat, HHID %in% samp)
+test <- filter(dat, !HHID %in% samp)
 
 # Save test data for use in model validation
 saveRDS(test,"./testdata.rds")
@@ -54,12 +54,12 @@ saveRDS(test,"./testdata.rds")
 print("No. care homes in training data:")
 train %>% 
   group_by(ever_affected) %>%
-  summarise(n_ch = n_distinct(household_id))
+  summarise(n_ch = n_distinct(HHID))
 
 print("No. care homes in testing data:")
 test %>% 
   group_by(ever_affected, wave) %>%
-  summarise(n_ch = n_distinct(household_id))
+  summarise(n_ch = n_distinct(HHID))
 
 ## ----------------------------- Model Formulae -------------------------------##
 
@@ -129,7 +129,7 @@ fit_mods <- function(formulae){
       lapply(formulae, function(f) stats::glm(f, family = "binomial", data = train))
     },
 
-    error=function(cond) {
+    error = function(cond) {
       message("Error in model fitting")
       message(cond)
       # Choose a return value in case of error
@@ -141,7 +141,7 @@ fit_mods <- function(formulae){
 
 time1 <- Sys.time()
 fits <- fit_mods(formulae)
-write(paste0("Time fitting models: ",round(time1-Sys.time(),2)), file="log_model_run.txt", append = TRUE)
+write(paste0("Time fitting models: ",round(time1 - Sys.time(),2)), file = "log_model_run.txt", append = TRUE)
 
 ################################################################################
 

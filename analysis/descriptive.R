@@ -253,7 +253,7 @@ ggplot(input, aes(age)) +
 ch_long %>%
   group_by(date) %>%
   filter(first_event > date) %>%
-  summarise(n = n_distinct(household_id)) %>%
+  summarise(n = n_distinct(HHID)) %>%
   ggplot(aes(date, n)) +
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
@@ -263,7 +263,7 @@ ch_long %>%
 ch_long %>%
   group_by(date, ch_type) %>%
   filter(first_event > date & ch_type != "PS") %>%
-  summarise(n = n_distinct(household_id)) %>%
+  summarise(n = n_distinct(HHID)) %>%
   ggplot(aes(date, n, col = ch_type)) +
   geom_line() +
   # facet_wrap(~ch_type, scales = "free_y") +

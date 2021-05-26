@@ -22,7 +22,7 @@ library(lubridate)
 
 sink("./data_clean_log.txt", type = "output")
 
-options(datatable.old.fread.datetime.character=TRUE)
+options(datatable.old.fread.datetime.character = TRUE)
 
 # Replace dates outside specified range with NAs (default outside 2020)
 na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
@@ -42,23 +42,23 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("input.csv","tpp_msoa_coverage.rds", 2)
+# args <- c("input.csv","tpp_coverage_included.rds", 2)
 args = commandArgs(trailingOnly = TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # check for mixed HH/perc TPP agreement
   mutate(perc_tpp_lt100 = (percent_tpp < 100))
 
-## Load MSOA TPP coverage
+# Load MSOA TPP coverage
 tpp_cov <- readRDS(args[2])
 
-## MSOA TPP coverage cut off
+# MSOA TPP coverage cut off
 msoa_cov_cutoff <- args[3]
 
 # Set study period 
 study_per <- seq(as.Date("2020-03-01"),as.Date("2020-12-07"), by = "days")
 
-# Identify vars containing event dates: probable covid identified via primary care, postitive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
+# Identify vars containing event dates: probable covid identified via primary care, positive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 dates <- c(event_dates,"discharge_date")
 
@@ -68,6 +68,8 @@ dates <- c(event_dates,"discharge_date")
 #      CLEANING        #
 #----------------------#
 
+print("Summary: Raw input")
+summary(input_raw)
 
 input <- input_raw %>%
   # Filter just to records from England with non-missing household ID
@@ -98,32 +100,32 @@ input <- input_raw %>%
          # replace event dates pre 2020 and post end of study as na
          across(all_of(event_dates), na_replace_dates, max = max(study_per))) 
   
-
-# ---------------------------------------------------------------------------- #
-
-print("Summary: Raw input")
-summary(input_raw)
-
-print("Summary: Cleaned input")
+print("Summary: Cleaned")
 summary(input)
 
 # ---------------------------------------------------------------------------- #
 
-# Filter MSOAs by TPP coverage
-exclude_msoa <- input %>%
-  filter(tpp_cov_wHHID < msoa_cov_cutoff) %>%
-  pull(msoa) %>%
-  unique()
+# Filter MSOAs by TPP coverage (missing value when merged with included MSOAs in tpp_cov)
+exclude <- input %>%
+  filter(is.na(tpp_cov_wHHID)) 
 
-print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa)))
+print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude)))
+print(paste0("MSOAs excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(exclude$msoa)))
 
-input <- filter(input, !msoa %in% exclude_msoa)
+input <- input %>%
+  filter(!is.na(tpp_cov_wHHID))
+
+# Should now have no records with coverage < cutoff
+summary(input$tpp_cov_wHHID)
 
 # ---------------------------------------------------------------------------- #
 
 # Drop rows with missing MSOA or care home type
 input <- input %>%
   filter(!is.na(msoa) & !is.na(care_home_type))
+
+print("Summary: Final")
+summary(input)
 
 # Save cleaned input data
 saveRDS(input, "./input_clean.rds")
@@ -171,7 +173,7 @@ input %>%
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
-print("Probable prisons/institutions (size>15 and not CH)")
+print("Probable prisons/institutions (size>20 and not CH)")
 input %>%
   mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
   group_by(institution) %>%
@@ -228,5 +230,6 @@ input %>%
 
 sink()
 
+################################################################################
 ################################################################################
 

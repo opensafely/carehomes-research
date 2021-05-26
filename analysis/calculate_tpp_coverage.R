@@ -20,7 +20,7 @@ library(dtplyr)
 # write("Calculating TPP coverage",file="coverage_log.txt")
 sink("./coverage_log.txt", type = "output")
 
-options(datatable.old.fread.datetime.character=TRUE)
+options(datatable.old.fread.datetime.character = TRUE)
 
 # ---------------------------------------------------------------------------- #
 
@@ -34,8 +34,14 @@ options(datatable.old.fread.datetime.character=TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 # 
-# args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv")
-args = commandArgs(trailingOnly=TRUE)
+args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv", 2)
+# args = commandArgs(trailingOnly = TRUE)
+
+## TPP-registered patient records (from study definition)
+## Include ALL patients with non-missing MSOA in calculation of TPP populations
+input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+  # Remove individuals w missing/non-England MSOA
+  filter(grepl("E",msoa) & !is.na(msoa))
 
 ## National MSOA population estimates (ONS mid-2019):
 msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
@@ -49,14 +55,13 @@ msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   dplyr::select(msoa, msoa_pop, `70+`) %>%
   ungroup()
 
+## MSOA TPP coverage cut off
+msoa_cov_cutoff <- args[3]
+
+# ---------------------------------------------------------------------------- #
+
 print("No. MSOAs in England:")
 n_distinct(msoa_pop$msoa)
-
-## TPP-registered patient records (from study definition)
-## Include ALL patients with non-missing MSOA in calculation of TPP populations
-input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
-  # Remove individuals w missing/non-England MSOA
-  filter(grepl("E",msoa) & !is.na(msoa))
 
 print("No. TPP-registered patients with non-missing MSOA:")
 nrow(input)
@@ -108,6 +113,10 @@ summary(tpp_cov)
 over100 <- filter(tpp_cov, cov_gt_100 == "Yes")
 write.csv(over100, "./msoa_gt_100_cov.csv", row.names = FALSE)
 
+tpp_msoas <- unique(input$msoa)
+write.csv(tpp_msoas, "./msoas_in_tpp.csv", row.names = FALSE)
+
+# Figure
 png("./total_vs_tpp_pop.png", height = 800, width = 800)
 tpp_cov %>%
   pivot_longer(c("tpp_cov_all","tpp_cov_wHHID")) %>%
@@ -118,10 +127,32 @@ tpp_cov %>%
   theme_minimal()
 dev.off() 
 
-saveRDS(tpp_cov, file = "./tpp_msoa_coverage.rds")
-write.csv(tpp_cov, "./tpp_msoa_coverage.csv", row.names = FALSE)
+# ---------------------------------------------------------------------------- #
 
-tpp_msoas <- unique(input$msoa)
-write.csv(tpp_msoas, "./msoas_in_tpp.csv", row.names = FALSE)
+#------------------------------------------#
+#    Filter on coverage cutoff and save    #
+#------------------------------------------#
+
+# Filter MSOAs by TPP coverage
+exclude_msoa <- tpp_cov %>%
+  filter(tpp_cov_wHHID < msoa_cov_cutoff) %>%
+  pull(msoa) %>%
+  unique()
+
+print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa)))
+
+tpp_cov_incl <- tpp_cov %>%
+  filter(tpp_cov_wHHID >= msoa_cov_cutoff)
+
+print(paste0("MSOAs included with ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(tpp_cov_incl)))
+
+saveRDS(tpp_cov_incl, file = "./tpp_coverage_included.rds")
+saveRDS(tpp_cov, file = "./tpp_coverage_all.rds")
+write.csv(tpp_cov, "./tpp_coverage_all.csv", row.names = FALSE)
+
+################################################################################
 
 sink()
+
+################################################################################
+################################################################################

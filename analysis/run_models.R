@@ -8,11 +8,11 @@
 
 library(tidyverse)
 
-# args <- c("analysisdata.rds", 0.1)
-args <- commandArgs(trailingOnly=TRUE)
+# args <- c("analysisdata.rds", 0.0)
+args <- commandArgs(trailingOnly = TRUE)
 
 sink("./output_model_run.txt")
-write("Run models",file="log_model_run.txt")
+write("Run models",file = "log_model_run.txt")
 
 ###############################################################################
 
@@ -190,14 +190,14 @@ plots <- lapply(coeffs, plot_coeffs)
 
 # Save plots for all models
 pdf("./model_coeffs.pdf")
-plots
+for (p in seq_along(plots)) {print(plots[[p]] + labs(title = names(plots)[p]))}
 dev.off()
 
-# for (p in seq_along(plots)){
-#   png(sprintf("coeffs_%s.png",names(plots)[p]), height = 1500, width = 1800, res = 300)
-#   print(plots[[p]])
-#   dev.off()
-# }
+for (p in seq_along(plots)) {
+  png(sprintf("coeffs_%s.png",names(plots)[p]), height = 1500, width = 1800, res = 300)
+  print(plots[[p]])
+  dev.off()
+}
 
 ## --------------------------- Comparison table ----------------------------- ##
 

@@ -80,7 +80,7 @@ dev.off()
 png("./tpp_coverage_carehomes.png", height = 800, width = 800)
 input %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(household_id, percent_tpp) %>%
+  dplyr::select(HHID, percent_tpp) %>%
   unique() %>% 
   ggplot(aes(percent_tpp)) +
   geom_histogram(bins = 30, fill = "steelblue") +

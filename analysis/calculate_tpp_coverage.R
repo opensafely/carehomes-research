@@ -34,8 +34,8 @@ options(datatable.old.fread.datetime.character = TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 # 
-args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv", 2)
-# args = commandArgs(trailingOnly = TRUE)
+# args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv", 2)
+args = commandArgs(trailingOnly = TRUE)
 
 ## TPP-registered patient records (from study definition)
 ## Include ALL patients with non-missing MSOA in calculation of TPP populations

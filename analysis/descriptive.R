@@ -222,7 +222,7 @@ ch_resid_all %>%
 tab2 <- cbind(tab_age, tab_ethn)
 
 print("Summarise resident characteristics by ever affected:")
-tab2
+t(tab2)
 
 print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
@@ -280,11 +280,11 @@ ch_long %>%
   theme(legend.position = c(0.8,0.8))
 # dev.off()
 
-ch_long %>%
-  group_by(HHID) %>%
-  summarise(ever_affected = unique(ever_affected)) %>%
-  group_by(msoa) %>%
-  summarise(affect_prop = mean(as.numeric(ever_affected))) -> affect_bymsoa
+# ch_long %>%
+#   group_by(msoa, HHID) %>%
+#   summarise(ever_affected = unique(ever_affected)) %>%
+#   group_by(msoa) %>%
+#   summarise(affect_prop = mean(as.numeric(ever_affected))) -> affect_bymsoa
 
 # png("./ch_first_event_map.png", height = 1000, width = 1000, res = 150)
 # msoa_shp %>%

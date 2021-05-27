@@ -250,7 +250,8 @@ dat %>%
 ## Age distribution
 ggplot(input, aes(age)) +
   geom_histogram() +
-  facet_wrap(~ care_home_type, scales = "free_y")
+  facet_wrap(~ care_home_type, scales = "free_y") -> age_hist
+ggsave("./age_dist.png", age_hist, height = 5, width = 6, units = "in")
 
 ## Care home survival
 # Cumulative care home survival
@@ -262,8 +263,8 @@ ch_long %>%
   ggplot(aes(date, n)) +
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
-       x = "", y = "No. without event")
-ggsave("./ch_survival.png", height = 5, width = 6, units = "in")
+       x = "", y = "No. without event") -> surv1
+ggsave("./ch_survival.png", surv1, height = 5, width = 6, units = "in")
 
 ch_long %>%
   group_by(date, ch_type) %>%
@@ -272,17 +273,23 @@ ch_long %>%
   ggplot(aes(date, n, col = ch_type)) +
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
-       x = "", y = "No. without event", col = "Type")
-ggsave("./ch_survival_bytype.png", height = 5, width = 6, units = "in")
+       x = "", y = "No. without event", col = "Type") -> surv2
+ggsave("./ch_survival_bytype.png", surv2, height = 5, width = 6, units = "in")
 
 # Type of first event
 ch_long %>%
-  filter(ever_affected) %>%
+  filter(ever_affected) %>% 
+  mutate(first_event_which = factor(first_event_which, levels = event_dates, 
+                                    labels = c("Primary care probable diagnosis", 
+                                               "Positive test result", 
+                                               "Hospital admission (confirmed/suspected)", 
+                                               "Death (confirmed/suspected"))) %>%
   ggplot(aes(first_event, fill = first_event_which)) +
   geom_histogram() + 
   theme_minimal() +
-  theme(legend.position = c(0.8,0.8), x = "", y = "Frequency", fill = "")
-ggsave("./first_event_type.png", height = 5, width = 7, units = "in")
+  theme(legend.position = c(0.8,0.8)) +
+  labs(x = "Date of first COVID event", y = "Frequency", fill = "") -> first_events
+ggsave("./first_event_type.png", first_events, height = 5, width = 7, units = "in")
 
 #------------------------------------------------------------------------------#
 
@@ -301,8 +308,8 @@ dat %>%
   labs(title = "Probable cases per 100,000, by MSOA",
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
-  scale_x_date(limits = study_per)
-ggsave("./community_inc.png", height = 5, width = 7, units = "in")
+  scale_x_date(limits = study_per) -> comm_inc_time
+ggsave("./community_inc.png", comm_inc_time, height = 5, width = 7, units = "in")
 
 #------------------------------------------------------------------------------#
 
@@ -316,8 +323,8 @@ dat %>%
   labs(title = "Community incidence versus 14-day-ahead introduction",
        x = "Daily cases in community, per 100,000",
        y = "Introduction in next 14 days") +
-  facet_grid(rows = "name", scales = "free") 
-ggsave("./comm_vs_ch_risk.png", height = 8, width = 10, units = "in")
+  facet_grid(rows = "name", scales = "free") -> comm_v_ch
+ggsave("./comm_vs_ch_risk.png", comm_v_ch, height = 8, width = 10, units = "in")
 
 # Log2 scale
 dat %>%
@@ -331,8 +338,8 @@ dat %>%
        x = "Daily cases in community, per 100,000",
        y = "Introduction in next 14 days") +
   facet_grid(rows = "name", scales = "free") +
-  scale_x_continuous(trans = "log2")
-ggsave("./comm_vs_ch_risk_log2.png", height = 8, width = 10, units = "in")
+  scale_x_continuous(trans = "log2") -> comm_v_ch_log2
+ggsave("./comm_vs_ch_risk_log2.png", comm_v_ch_log2, height = 8, width = 10, units = "in")
 
 
 #------------------------------------------------------------------------------#
@@ -354,8 +361,8 @@ input %>%
        col = "Population",
        x = "Date",
        y = "Count") + 
-  theme(legend.position = c(0.2,0.8))
-ggsave("./compare_epidemics.png", height = 5, width = 7, units = "in")
+  theme(legend.position = c(0.2,0.8)) -> comp_epi
+ggsave("./compare_epidemics.png", comp_epi, height = 5, width = 7, units = "in")
 
 # dev.off()
 

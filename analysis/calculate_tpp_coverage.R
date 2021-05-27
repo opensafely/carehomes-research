@@ -145,7 +145,17 @@ tpp_cov_incl <- tpp_cov %>%
   filter(tpp_cov_wHHID >= msoa_cov_cutoff)
 
 print(paste0("MSOAs included with ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(tpp_cov_incl)))
+
 summary(tpp_cov_incl$tpp_cov_wHHID)
+
+# Trying to find where the cov = 9% come from...
+tpp_cov_incl %>%
+  mutate(low_cov = (tpp_cov_wHHID < msoa_cov_cutoff)) %>%
+  group_by(low_cov) %>%
+  tally()
+
+tpp_cov_incl %>%
+  filter(tpp_cov_wHHID < msoa_cov_cutoff)
 
 saveRDS(tpp_cov_incl, file = "./tpp_coverage_included.rds")
 saveRDS(tpp_cov, file = "./tpp_coverage_all.rds")

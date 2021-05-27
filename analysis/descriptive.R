@@ -23,7 +23,6 @@ time_desc <- Sys.time()
 library(tidyverse)
 library(lubridate)
 library(data.table)
-library(sf)
 
 theme_set(theme_bw())
 
@@ -49,6 +48,8 @@ ch_long <- readRDS("./ch_agg_long.rds")
 dat <- readRDS("./analysisdata.rds")
 
 study_per <- range(dat$date)
+
+event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
 
 # ---------------------------------------------------------------------------- #
 
@@ -176,6 +177,13 @@ write.csv(tab1, "./ch_chars_tab.csv")
 # whether or not their home was affected (percentages out of total residents in 
 # that stratum):
 
+print("Residents with any covid event:")
+ch %>%
+  rowwise() %>%
+  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
+  group_by(case) %>%
+  tally()
+  
 ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
@@ -237,19 +245,16 @@ dat %>%
 #       FIGURES        #
 #----------------------#
 
-pdf(file = "./descriptive.pdf", height = 7, width = 9)
+# pdf(file = "./descriptive.pdf", height = 7, width = 9)
 
 ## Age distribution
-# png("./age_histogram.png", height = 600, width = 800)
 ggplot(input, aes(age)) +
   geom_histogram() +
   facet_wrap(~ care_home_type, scales = "free_y")
-# dev.off()
 
 ## Care home survival
 # Cumulative care home survival
 
-# png("./ch_survival.png", height = 500, width = 500)
 ch_long %>%
   group_by(date) %>%
   filter(first_event > date) %>%
@@ -258,7 +263,7 @@ ch_long %>%
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
        x = "", y = "No. without event")
-# dev.off()
+ggsave("./ch_survival.png", height = 5, width = 6, units = "in")
 
 ch_long %>%
   group_by(date, ch_type) %>%
@@ -266,63 +271,18 @@ ch_long %>%
   summarise(n = n_distinct(HHID)) %>%
   ggplot(aes(date, n, col = ch_type)) +
   geom_line() +
-  # facet_wrap(~ch_type, scales = "free_y") +
   labs(title = "Survival of care homes from COVID-19 introduction",
        x = "", y = "No. without event", col = "Type")
+ggsave("./ch_survival_bytype.png", height = 5, width = 6, units = "in")
 
 # Type of first event
-# png("./ch_first_event_type.png", height = 800, width = 1000)
 ch_long %>%
   filter(ever_affected) %>%
   ggplot(aes(first_event, fill = first_event_which)) +
   geom_histogram() + 
   theme_minimal() +
-  theme(legend.position = c(0.8,0.8))
-# dev.off()
-
-# ch_long %>%
-#   group_by(msoa, HHID) %>%
-#   summarise(ever_affected = unique(ever_affected)) %>%
-#   group_by(msoa) %>%
-#   summarise(affect_prop = mean(as.numeric(ever_affected))) -> affect_bymsoa
-
-# png("./ch_first_event_map.png", height = 1000, width = 1000, res = 150)
-# msoa_shp %>%
-#   full_join(affect_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
-#   ggplot(aes(geometry = geometry, fill = affect_prop)) +
-#   geom_sf(lwd = 0) +
-#   labs(title = "Proportion of TPP-covered carehomes ever affected during study period",
-#        fill = "Proportion") +
-#   scale_fill_viridis_c() +
-#   theme(legend.position = c(0.2,0.8))
-# dev.off()
-
-
-# ch_long %>%
-#   filter(ever_affected == TRUE) %>%
-#   group_by(msoa, household_id) %>%
-#   summarise(first_event = unique(first_event)) %>%
-#   group_by(msoa) %>%
-#   summarise(average_first_event = median(first_event, na.rm = TRUE),
-#             first_event = min(first_event)) -> first_bymsoa
-
-# msoa_shp %>%
-#   full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
-#   ggplot(aes(geometry = geometry, fill = average_first_event)) +
-#   geom_sf(lwd = 0) +
-#   labs(title = "Average timing of first care home event per MSOA",
-#        fill = "Date of first event") +
-#   scale_fill_viridis_c() +
-#   theme(legend.position = c(0.2,0.8))
-
-# msoa_shp %>%
-#   full_join(first_bymsoa, by = c("MSOA11CD" = "msoa")) %>%
-#   ggplot(aes(geometry = geometry, fill = first_event)) +
-#   geom_sf(lwd = 0) +
-#   labs(title = "First care home event per MSOA",
-#        fill = "Date of first event") +
-#   scale_fill_viridis_c() +
-#   theme(legend.position = c(0.2,0.8))
+  theme(legend.position = c(0.8,0.8), x = "", y = "Frequency", fill = "")
+ggsave("./first_event_type.png", height = 5, width = 7, units = "in")
 
 #------------------------------------------------------------------------------#
 
@@ -334,7 +294,6 @@ dat %>%
   ungroup() -> comm_inc_avg
 
 # Community incidence over time
-# png("./community_inc.png", height = 500, width = 500)
 dat %>%
   ggplot(aes(date, msoa_roll7)) +
   geom_line(aes(group = msoa), alpha = 0.1) +
@@ -343,13 +302,12 @@ dat %>%
        subtitle = "Rolling seven day mean",
        x = "", y = "Rate") +
   scale_x_date(limits = study_per)
-# dev.off()
+ggsave("./community_inc.png", height = 5, width = 7, units = "in")
 
 #------------------------------------------------------------------------------#
 
 ## Community incidence versus care home introduction
 
-# png("./comm_vs_ch.png", height = 800, width = 800)
 dat %>%
   mutate(event_ahead = as.factor(event_ahead)) %>%
   pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>% 
@@ -359,6 +317,7 @@ dat %>%
        x = "Daily cases in community, per 100,000",
        y = "Introduction in next 14 days") +
   facet_grid(rows = "name", scales = "free") 
+ggsave("./comm_vs_ch_risk.png", height = 8, width = 10, units = "in")
 
 # Log2 scale
 dat %>%
@@ -373,7 +332,8 @@ dat %>%
        y = "Introduction in next 14 days") +
   facet_grid(rows = "name", scales = "free") +
   scale_x_continuous(trans = "log2")
-# dev.off()
+ggsave("./comm_vs_ch_risk_log2.png", height = 8, width = 10, units = "in")
+
 
 #------------------------------------------------------------------------------#
 
@@ -381,7 +341,6 @@ dat %>%
 ## Currently just absolute numbers as don't have denominator of population in 
 ## community and carehome per MSOA
 
-# png("./compare_epidemics.png", height = 500, width = 500)
 input %>%
   filter(!is.na(primary_care_case_probable) & primary_care_case_probable > ymd("2020-01-01")) %>%
   mutate(group = case_when(care_home_type == "U" & age < 70 ~ "Community",
@@ -396,9 +355,9 @@ input %>%
        x = "Date",
        y = "Count") + 
   theme(legend.position = c(0.2,0.8))
-# dev.off()
+ggsave("./compare_epidemics.png", height = 5, width = 7, units = "in")
 
-dev.off()
+# dev.off()
 
 ################################################################################
 

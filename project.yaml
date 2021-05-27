@@ -64,10 +64,17 @@ actions:
     run: r:latest analysis/descriptive.R 
     outputs:
       moderately_sensitive:
-        report: descriptive.pdf
+       # report: descriptive.pdf
         log: log_descriptive.txt
         data: ch_gp_permsoa.csv
         table: ch_chars_tab.csv
+        figure1: ch_survival.png
+        figure2: ch_survival_bytype.png
+        figure3: first_event_type.png
+        figure4: community_inc.png
+        figure5: comm_vs_ch_risk.png
+        figure6: comm_vs_ch_risk_log2.png
+        figure7: compare_epidemics.png
 
   run_models:
     needs: [data_setup]

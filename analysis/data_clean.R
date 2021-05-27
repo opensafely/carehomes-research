@@ -118,6 +118,11 @@ input <- input %>%
 # Should now have no records with coverage < cutoff
 summary(input$tpp_cov_wHHID)
 
+# Double check
+nrow(filter(input, tpp_cov_wHHID < msoa_cov_cutoff))
+input <- input %>%
+  filter(tpp_cov_wHHID >= msoa_cov_cutoff)
+
 # ---------------------------------------------------------------------------- #
 
 # Drop rows with missing MSOA or care home type

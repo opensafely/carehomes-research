@@ -109,7 +109,7 @@ summary(input)
 exclude <- input %>%
   filter(is.na(tpp_cov_wHHID)) 
 
-print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude)))
+print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(exclude)))
 print(paste0("MSOAs excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(exclude$msoa)))
 
 input <- input %>%
@@ -175,7 +175,7 @@ input %>%
 
 print("Probable prisons/institutions (size>20 and not CH)")
 input %>%
-  mutate(institution = (care_home_type == "U" & household_size > 15)) %>%
+  mutate(institution = (care_home_type == "U" & household_size > 20)) %>%
   group_by(institution) %>%
   summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),

@@ -287,7 +287,6 @@ print("No. homes in full analysis data:")
 dat %>%
   group_by(exclude) %>%
   summarise(N = n_distinct(HHID))
-n_distinct(dat$HHID)
 
 # ---------------------------------------------------------------------------- #
 # Check distribution of community incidence measures against events

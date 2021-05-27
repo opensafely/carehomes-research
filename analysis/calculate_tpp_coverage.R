@@ -145,6 +145,7 @@ tpp_cov_incl <- tpp_cov %>%
   filter(tpp_cov_wHHID >= msoa_cov_cutoff)
 
 print(paste0("MSOAs included with ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(tpp_cov_incl)))
+summary(tpp_cov_incl$tpp_cov_wHHID)
 
 saveRDS(tpp_cov_incl, file = "./tpp_coverage_included.rds")
 saveRDS(tpp_cov, file = "./tpp_coverage_all.rds")

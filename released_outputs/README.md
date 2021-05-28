@@ -2,6 +2,7 @@
 
 * [ch_survival.png](ch_survival.png)
 * [ch_survival_bytype.png](ch_survival_bytype.png)
+* [coeffs_table_all.csv](coeffs_table_all.csv)
 * [comm_vs_ch_risk.png](comm_vs_ch_risk.png)
 * [comm_vs_ch_risk_log2.png](comm_vs_ch_risk_log2.png)
 * [community_inc.png](community_inc.png)

@@ -1,5 +1,11 @@
 # Table of contents
 
+* [ch_survival.png](ch_survival.png)
+* [ch_survival_bytype.png](ch_survival_bytype.png)
+* [comm_vs_ch_risk.png](comm_vs_ch_risk.png)
+* [comm_vs_ch_risk_log2.png](comm_vs_ch_risk_log2.png)
+* [community_inc.png](community_inc.png)
+* [compare_epidemics.png](compare_epidemics.png)
 * [coverage_log.txt](coverage_log.txt)
 * [data_checks.txt](data_checks.txt)
 * [data_setup_log.txt](data_setup_log.txt)
@@ -10,7 +16,10 @@
     * [descriptive/logs/log_descriptive.txt](descriptive/logs/log_descriptive.txt)
   * descriptive/report
     * [descriptive/report/descriptive.pdf](descriptive/report/descriptive.pdf)
+* [first_event_type.png](first_event_type.png)
 * [log_descriptive.txt](log_descriptive.txt)
+* [model_coeffs.pdf](model_coeffs.pdf)
+* [model_comp.csv](model_comp.csv)
 * [output_model_run.txt](output_model_run.txt)
 * [output_model_val.txt](output_model_val.txt)
 * outputs

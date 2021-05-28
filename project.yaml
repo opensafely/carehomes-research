@@ -90,6 +90,14 @@ actions:
         fit: model_out.rds
         test: testdata.rds
         
+  make_table:
+    needs: [run_models]
+    run: r:latest analysis/make_coeff_table.R coeffs_all.rds
+    outputs:
+      moderately_sensitive:
+        table1: coeffs_table.csv
+        table2: coeffs_table_all.csv
+        
 #  compare_models:
 #    needs: [run_models]
 #    run: r:latest analysis/compare_models.R model_out.rds

@@ -254,7 +254,7 @@ input %>%
 
 print("Number of records by care home type:")
 input %>%
-  group_by(HHID) %>%
+  group_by(care_home_type, HHID) %>%
   summarise(n_resid = n()) %>%
   group_by(care_home_type) %>%
   summarise(mean = mean(n_resid),

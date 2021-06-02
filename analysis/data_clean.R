@@ -39,8 +39,8 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
 
 # * input.csv 
 #   - individual health records for identification of covid events
-# * community_prevalence.csv 
-#   - derived dataset of daily probable case counts per MSOA plus population estimates
+# * tpp_coverage_included.rds
+#   - Estimated coverage of TPP per MSOA, including only MSOAs with coverage >=80%
 
 # args <- c("input.csv","tpp_coverage_included.rds", 2)
 args = commandArgs(trailingOnly = TRUE)
@@ -72,33 +72,34 @@ print("Summary: Raw input")
 summary(input_raw)
 
 input <- input_raw %>%
-  # Filter just to records from England with non-missing household ID
-  filter(grepl("E",msoa) & !is.na(msoa) & household_id > 0 & !is.na(household_id)) %>%
+  # Filter just to records from England
+  filter(grepl("E",msoa)) %>%
   # Join with MSOA coverage data
   left_join(tpp_cov, by = "msoa") %>% 
-  rowwise() %>%
-  # Identify individuals with any covid event
-  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
-  ungroup() %>%
-  # Set up var formats
-  mutate(# Define unique household identifier
-         HHID = paste(msoa, household_id, sep = ":"),
-         # Redefine -1/0 values as na
+  # Set up variables of interest
+  mutate(HHID = paste(msoa, household_id, sep = ":"), # Redefine unique household identifier
+         # Redefine -1/0 values as NA
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
          across(c(imd, household_size), function(x) na_if(x,0)),
          # Variable formatting
          dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),
          rural_urban = as.factor(rural_urban),
+         # Date formats
          across(all_of(dates), ymd),
+         # Set all character variables as factor
          across(where(is.character), as.factor),
-         # Identify potential prisons/institutions
+         # Identify potential prisons/institutions - still needed?
          institution = (care_home_type == "U" & household_size > 20),
-         # Define delay vars
+         # Define delays
          test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
          prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss), 
-         # replace event dates pre 2020 and post end of study as na
-         across(all_of(event_dates), na_replace_dates, max = max(study_per))) 
+         # Replace event dates pre 2020 and post end of study as NA
+         across(all_of(event_dates), na_replace_dates, max = max(study_per))) %>%
+  # Identify individuals with any covid event
+  rowwise() %>%
+  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
+  ungroup() 
   
 print("Summary: Cleaned")
 summary(input)
@@ -124,23 +125,7 @@ input <- input %>%
   filter(tpp_cov_wHHID >= msoa_cov_cutoff)
 
 # ---------------------------------------------------------------------------- #
-
-# Drop rows with missing MSOA or care home type
-input <- input %>%
-  filter(!is.na(msoa) & !is.na(care_home_type))
-
-print("Summary: Final")
-summary(input)
-
-# Save cleaned input data
-saveRDS(input, "./input_clean.rds")
-write_csv(input, "./input_clean.csv")
-
-# ---------------------------------------------------------------------------- #
-
-#----------------------#
-#    CHECK COUNTS      #
-#----------------------#
+# Check missingness in location/type      
 
 print("Total Patients")
 n_distinct(input$patient_id)
@@ -171,6 +156,35 @@ input %>%
   pull(patient_id) %>%
   n_distinct()
 
+# ---------------------------------------------------------------------------- #
+# Drop rows with missing MSOA, household ID or care home type
+
+input <- input %>%
+  filter(!is.na(msoa) & household_id > 0 & !is.na(household_id) & !is.na(care_home_type))
+
+# ---------------------------------------------------------------------------- #
+# Check uniqueness of household ID
+
+print("No. households, by household_id alone and by household_ID + MSOA")
+input %>%
+  summarise(N_hhID = n_distinct(household_id),
+            N_msoa_hhID = n_distinct(HHID))
+
+print("Uniqueness of household characteristics over residents:")
+input %>%
+  group_by(household_id) %>%
+  summarise(msoa = n_distinct(msoa), 
+            region = n_distinct(region),
+            household_size = n_distinct(household_size),
+            imd = n_distinct(imd),
+            rural_urban = n_distinct(rural_urban)) -> n_distinct_chars
+
+summary(n_distinct_chars)
+
+# ---------------------------------------------------------------------------- #
+# Counts of household, individuals and cases  
+
+# By household type
 print("No. households, patients and probable cases per carehome type:")
 input %>%
   group_by(care_home_type) %>%
@@ -178,6 +192,7 @@ input %>%
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
+# By institution
 print("Probable prisons/institutions (size>20 and not CH)")
 input %>%
   mutate(institution = (care_home_type == "U" & household_size > 20)) %>%
@@ -186,6 +201,7 @@ input %>%
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
+# By TPP coverage
 print("Care homes registered under > 1 system:")
 input %>%
   filter(care_home_type != "U") %>%
@@ -224,12 +240,36 @@ summary(
   pull(percent_tpp_cat)
 )
 
-print("Care home residents test-diagnosis delay")
-summary(
+# ---------------------------------------------------------------------------- #
+# Check household sizes
+
+print("Household size by care home type:")
 input %>%
-  filter(care_home_type != "U") %>%
-  dplyr::select(prob_death_delay, test_death_delay) 
-)
+  filter(!is.na(household_size)) %>%
+  group_by(care_home_type) %>%
+  summarise(mean = mean(household_size),
+            sd = sd(household_size),
+            median = median(household_size),
+            minmax = paste(min(household_size), max(household_size), sep = ", ")) 
+
+print("Number of records by care home type:")
+input %>%
+  group_by(HHID) %>%
+  summarise(n_resid = n()) %>%
+  group_by(care_home_type) %>%
+  summarise(mean = mean(n_resid),
+            sd = sd(n_resid),
+            median = median(n_resid),
+            minmax = paste(min(n_resid), max(n_resid), sep = ", ")) 
+
+# ---------------------------------------------------------------------------- #
+
+print("Summary: Final")
+summary(input)
+
+# Save cleaned input data
+saveRDS(input, "./input_clean.rds")
+write_csv(input, "./input_clean.csv")
 
 # ---------------------------------------------------------------------------- #
 

@@ -1,0 +1,47 @@
+[1] "No. with missing household id"
+    Mode    FALSE     NA's 
+ logical 20710277  2749474 
+    Mode    FALSE     TRUE 
+ logical 20710277  2749474 
+[1] "No. households, by household_id alone and by household_ID + MSOA"
+   N_hhID N_msoa_hhID
+1 9237655     9370483
+[1] "Uniqueness of household characteristics over residents:"
+  household_id          msoa             region      household_size
+ Min.   :      1   Min.   :  1.000   Min.   :1.000   Min.   :1     
+ 1st Qu.:2447422   1st Qu.:  1.000   1st Qu.:1.000   1st Qu.:1     
+ Median :4887397   Median :  1.000   Median :1.000   Median :1     
+ Mean   :4886938   Mean   :  1.014   Mean   :1.001   Mean   :1     
+ 3rd Qu.:7332998   3rd Qu.:  1.000   3rd Qu.:1.000   3rd Qu.:1     
+ Max.   :9756169   Max.   :234.000   Max.   :9.000   Max.   :1     
+      imd           rural_urban   
+ Min.   :  1.000   Min.   :1.000  
+ 1st Qu.:  1.000   1st Qu.:1.000  
+ Median :  1.000   Median :1.000  
+ Mean   :  1.015   Mean   :1.008  
+ 3rd Qu.:  1.000   3rd Qu.:1.000  
+ Max.   :168.000   Max.   :7.000  
+[1] "Household size by care home type:"
+# A tibble: 4 x 5
+  care_home_type  mean    sd median minmax 
+  <chr>          <dbl> <dbl>  <dbl> <chr>  
+1 PC             25.3   54.2     17 1, 554 
+2 PN             26.3   19.9     23 1, 133 
+3 PS             31.1   21.4     25 1, 81  
+4 U               5.45  49.5      3 1, 2589
+[1] "Number of records by care home type (household_id):"
+# A tibble: 4 x 5
+  care_home_type  mean    sd median minmax 
+  <chr>          <dbl> <dbl>  <dbl> <chr>  
+1 PC              5.16  9.49      1 1, 516 
+2 PN              6.25 10.3       2 1, 102 
+3 PS              7.64 12.3       2 1, 66  
+4 U               2.23  2.66      2 1, 2545
+[1] "Number of records by care home type (HHID):"
+# A tibble: 4 x 5
+  care_home_type  mean    sd median minmax 
+  <chr>          <dbl> <dbl>  <dbl> <chr>  
+1 PC              5.10  9.45      1 1, 516 
+2 PN              6.19 10.2       1 1, 102 
+3 PS              7.64 12.3       2 1, 66  
+4 U               2.20  2.58      2 1, 2545

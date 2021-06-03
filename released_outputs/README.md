@@ -1,7 +1,10 @@
 # Table of contents
 
+* [age_dist.png](age_dist.png)
+* [ch_chars_tab.csv](ch_chars_tab.csv)
 * [ch_survival.png](ch_survival.png)
 * [ch_survival_bytype.png](ch_survival_bytype.png)
+* [check_hhid.txt](check_hhid.txt)
 * [coeffs_table_all.csv](coeffs_table_all.csv)
 * [comm_vs_ch_risk.png](comm_vs_ch_risk.png)
 * [comm_vs_ch_risk_log2.png](comm_vs_ch_risk_log2.png)
@@ -9,6 +12,7 @@
 * [compare_epidemics.png](compare_epidemics.png)
 * [coverage_log.txt](coverage_log.txt)
 * [data_checks.txt](data_checks.txt)
+* [data_clean_log.txt](data_clean_log.txt)
 * [data_setup_log.txt](data_setup_log.txt)
 * descriptive
   * descriptive/logs
@@ -18,6 +22,7 @@
   * descriptive/report
     * [descriptive/report/descriptive.pdf](descriptive/report/descriptive.pdf)
 * [first_event_type.png](first_event_type.png)
+* [hh_size_dist.png](hh_size_dist.png)
 * [log_descriptive.txt](log_descriptive.txt)
 * [model_coeffs.pdf](model_coeffs.pdf)
 * [model_comp.csv](model_comp.csv)
@@ -53,3 +58,6 @@
   * [outputs/tpp_coverage_map.png](outputs/tpp_coverage_map.png)
   * [outputs/tpp_coverage_msoa.png](outputs/tpp_coverage_msoa.png)
 * [test_pred_figs.pdf](test_pred_figs.pdf)
+* [tpp_coverage_carehomes.png](tpp_coverage_carehomes.png)
+* [tpp_coverage_map.pdf](tpp_coverage_map.pdf)
+* [tpp_coverage_msoa.png](tpp_coverage_msoa.png)

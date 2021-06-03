@@ -1,59 +1,56 @@
-[1] "Summary: community incidence MSOA/national"
-      date              eng_roll7             msoa           tpp_pop     
- Min.   :2020-01-02   Min.   :  0.00   E02000108:   341   Min.   :  504  
- 1st Qu.:2020-03-27   1st Qu.:  7.10   E02000119:   341   1st Qu.: 6066  
- Median :2020-06-20   Median : 14.90   E02000239:   341   Median : 7124  
- Mean   :2020-06-20   Mean   : 54.03   E02000242:   341   Mean   : 7307  
- 3rd Qu.:2020-09-13   3rd Qu.: 49.80   E02000246:   341   3rd Qu.: 8392  
- Max.   :2020-12-07   Max.   :276.10   E02000248:   341   Max.   :15432  
-                                       (Other)  :505362                  
-    msoa_pop          70+            tpp_cov       probable_cases    
- Min.   : 2224   Min.   :   774   Min.   : 9.033   Min.   :  0.0000  
- 1st Qu.: 6722   1st Qu.: 52788   1st Qu.:86.255   1st Qu.:  0.0000  
- Median : 7892   Median : 93088   Median :91.200   Median :  0.0000  
- Mean   : 8169   Mean   :112012   Mean   :89.398   Mean   :  0.3837  
- 3rd Qu.: 9244   3rd Qu.:145736   3rd Qu.:95.051   3rd Qu.:  0.0000  
- Max.   :16660   Max.   :663255   Max.   :99.985   Max.   :203.0000  
-                                                                     
- msoa_probable_rate   msoa_roll7       msoa_lag1wk       msoa_lag2wk     
- Min.   :   0.000   Min.   :  0.000   Min.   :  0.000   Min.   :  0.000  
- 1st Qu.:   0.000   1st Qu.:  0.000   1st Qu.:  0.000   1st Qu.:  0.000  
- Median :   0.000   Median :  0.000   Median :  0.000   Median :  0.000  
- Mean   :   5.274   Mean   :  5.274   Mean   :  5.273   Mean   :  5.273  
- 3rd Qu.:   0.000   3rd Qu.:  4.666   3rd Qu.:  4.665   3rd Qu.:  4.665  
- Max.   :2395.563   Max.   :345.595   Max.   :345.595   Max.   :345.595  
-                    NA's   :6         NA's   :13        NA's   :20       
-   eng_lag1wk       eng_lag2wk    
- Min.   :  0.00   Min.   :  0.00  
- 1st Qu.:  7.10   1st Qu.:  7.10  
- Median : 14.90   Median : 14.90  
- Mean   : 54.03   Mean   : 54.03  
- 3rd Qu.: 49.80   3rd Qu.: 49.80  
- Max.   :276.10   Max.   :276.10  
- NA's   :7        NA's   :14      
 [1] "Total included care homes:"
 [1] 6196
-[1] "Summary: number of carehomes per MSOA"
+[1] "No. care homes per MSOA"
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
   1.000   2.000   4.000   6.877   9.000  75.000 
+[1] "No. events among care home residents:"
+# A tibble: 1 x 4
+  primary_care_case_pro~ first_pos_test_s~ covid_admission_d~ ons_covid_death_d~
+                   <int>             <int>              <int>              <int>
+1                   3832              4829               1399               1674
+[1] "No. residents with >= 1 event:"
+   Mode   FALSE    TRUE 
+logical   29414    6005 
+[1] "No. events per home:"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   3.186   3.000  36.000 
+[1] "Summary: community incidence by occurrence of a care home event:"
+# A tibble: 12 x 7
+# Groups:   event_ahead [2]
+   event_ahead name          min   max  mean    sd   med
+         <dbl> <chr>       <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1           0 eng_lag1wk    0    276.  57.7  76.7 24.5 
+ 2           0 eng_lag2wk    0    276.  53.6  75.4 18.7 
+ 3           0 eng_roll7     0.1  276.  61.6  77.7 27.2 
+ 4           0 msoa_lag1wk   0   2419.  35.0  80.6  8.96
+ 5           0 msoa_lag2wk   0   2419.  32.4  78.7  0   
+ 6           0 msoa_roll7    0   2419.  37.3  82.1 10.8 
+ 7           1 eng_lag1wk    6.7  276.  95.0  84.6 49.1 
+ 8           1 eng_lag2wk    6.5  276.  86.3  81.5 47.7 
+ 9           1 eng_roll7     6.7  276.  98.5  86.0 49.4 
+10           1 msoa_lag1wk   0    933.  70.9 109.  25.7 
+11           1 msoa_lag2wk   0    973.  61.5 102.  19.9 
+12           1 msoa_roll7    0    973.  78.6 116.  30.4 
 [1] "Missingness in care home characteristics:"
-# A tibble: 14 x 2
-   name          value
-   <chr>         <int>
- 1 HHID              0
- 2 msoa              0
- 3 n_resid           0
- 4 ch_size           0
- 5 ch_type           0
- 6 rural_urban      18
- 7 imd              23
- 8 hh_med_age        0
- 9 hh_p_female       0
-10 hh_prop_min     873
-11 hh_p_dem          0
-12 hh_maj_dem        0
-13 first_event       0
-14 ever_affected     0
+# A tibble: 16 x 2
+   name              value
+   <chr>             <int>
+ 1 HHID                  0
+ 2 msoa                  0
+ 3 n_resid               0
+ 4 ch_size               0
+ 5 ch_type               0
+ 6 rural_urban          18
+ 7 imd                  23
+ 8 hh_med_age            0
+ 9 hh_p_female           0
+10 hh_p_min            873
+11 hh_p_dem              0
+12 hh_maj_dem            0
+13 n_case                0
+14 first_event           0
+15 first_event_which  4772
+16 ever_affected         0
 [1] "Summarise carehome characteristics by ever affected:"
                       Overall               Affected             
 N                     "6196"                "1424"               
@@ -75,27 +72,16 @@ Dementia > 50%, N (%) "2337 (0.49)"
 Type:PC               "3024 (0.63)"        
 Type:PN               "1672 (0.35)"        
 Type:PS               "76 (0.02)"          
-[1] "Residents with any covid event:"
-# A tibble: 2 x 2
-  case      n
-  <lgl> <int>
-1 FALSE 29414
-2 TRUE   6005
-[1] "Summary: community incidence by occurrence of a care home event:"
-# A tibble: 12 x 7
-# Groups:   event_ahead [2]
-   event_ahead name             min   max  mean    sd      med
-         <dbl> <chr>          <dbl> <dbl> <dbl> <dbl>    <dbl>
- 1           0 eng_lag1wk  0.        276. 57.7   76.7 2.45e+ 1
- 2           0 eng_lag2wk  0.        276. 53.6   75.4 1.87e+ 1
- 3           0 eng_roll7   1.00e- 1  276. 61.6   77.7 2.72e+ 1
- 4           0 msoa_lag1wk 0.        346.  5.10  11.6 1.38e+ 0
- 5           0 msoa_lag2wk 0.        346.  4.73  11.4 3.92e-14
- 6           0 msoa_roll7  0.        346.  5.43  11.8 1.62e+ 0
- 7           1 eng_lag1wk  6.70e+ 0  276. 95.0   84.6 4.91e+ 1
- 8           1 eng_lag2wk  6.50e+ 0  276. 86.3   81.5 4.77e+ 1
- 9           1 eng_roll7   6.70e+ 0  276. 98.5   86.0 4.94e+ 1
-10           1 msoa_lag1wk 0.        133. 10.3   15.7 3.76e+ 0
-11           1 msoa_lag2wk 0.        139.  9.00  14.7 3.09e+ 0
-12           1 msoa_roll7  1.02e-15  139. 11.4   16.7 4.43e+ 0
-Total time running descriptive: 8.55
+[1] "Summarise resident characteristics by ever affected:"
+                        Overall          Affected        Unaffected      
+No. TPP residents       "35419"          "13386"         "14675"         
+age med[IQR]            "86 [79, 91]"    "86 [80, 91]"   "86 [77, 91]"   
+minority ethnicity n(%) "557 (0.0157)"   "176 (0.0131)"  "283 (0.0193)"  
+dementia n(%)           "20280 (0.5726)" "7997 (0.5974)" "7491 (0.5105)" 
+Ethn:1                  "26086 (0.7365)" "9940 (0.7426)" "10648 (0.7256)"
+Ethn:2                  "78 (0.0022)"    "20 (0.0015)"   "47 (0.0032)"   
+Ethn:3                  "206 (0.0058)"   "59 (0.0044)"   "102 (0.007)"   
+Ethn:4                  "141 (0.004)"    "54 (0.004)"    "68 (0.0046)"   
+Ethn:5                  "132 (0.0037)"   "43 (0.0032)"   "66 (0.0045)"   
+Ethn:missing            "8776 (0.2478)"  "3270 (0.2443)" "3744 (0.2551)" 
+Total time running descriptive: 6.42

@@ -46,6 +46,8 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
 args = commandArgs(trailingOnly = TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
+  # Filter just to records from England
+  filter(grepl("E",msoa)) %>%
   # check for mixed HH/perc TPP agreement
   mutate(perc_tpp_lt100 = (percent_tpp < 100))
 
@@ -60,98 +62,77 @@ study_per <- seq(as.Date("2020-03-01"),as.Date("2020-12-07"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, positive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
-dates <- c(event_dates,"discharge_date")
 
 # ---------------------------------------------------------------------------- #
-
-#----------------------#
-#      CLEANING        #
-#----------------------#
 
 print("Summary: Raw input")
 summary(input_raw)
 
-input <- input_raw %>%
-  # Filter just to records from England
-  filter(grepl("E",msoa)) %>%
-  # Join with MSOA coverage data
-  left_join(tpp_cov, by = "msoa") %>% 
-  # Set up variables of interest
-  mutate(# Redefine -1/0 values as NA
-         across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         across(c(imd, household_size, household_id), function(x) na_if(x,0)),
-         # Variable formatting
-         dementia = replace_na(dementia,0),
-         ethnicity = as.factor(ethnicity),
-         rural_urban = as.factor(rural_urban),
-         # Date formats
-         across(all_of(dates), ymd),
-         # Set all character variables as factor
-         across(where(is.character), as.factor),
-         # Identify potential prisons/institutions - still needed?
-         institution = (care_home_type == "U" & household_size > 20),
-         # Define delays
-         test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
-         prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss), 
-         # Replace event dates pre 2020 and post end of study as NA
-         across(all_of(event_dates), na_replace_dates, max = max(study_per)),
-         HHID = paste(msoa, household_id, sep = ":")) %>% # Redefine unique household identifier
-  # Identify individuals with any covid event
-  rowwise() %>%
-  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
-  ungroup() 
-  
-print("Summary: Cleaned")
-summary(input)
-
-# Drop individuals with missing household ID
-input <- filter(input, !is.na(household_id))
-
 # ---------------------------------------------------------------------------- #
-# Check missingness in MSOA/type      
+
+#----------------------------------------#
+#      CHECK MISSING MSOA/HH/TYPE        #
+#----------------------------------------#
 
 print("Total Patients")
-n_distinct(input$patient_id)
+n_distinct(input_raw$patient_id)
 
 print("Patients with missing HH MSOA:")
-summary(is.na(input$msoa))
+summary(is.na(input_raw$msoa))
 
 print("Patients with missing HH type:")
-summary(is.na(input$care_home_type))
+summary(is.na(input_raw$care_home_type))
+
+# Drop individuals with missing household_ID
+print(paste0("Dropping patients with missing household_id: n = ", sum(input_raw$household_id == 0)))
+input <- filter(input_raw, household_id != 0)
+
+
+# Summarise households/patients with missing MSOA/type
 
 print("HHs with missing MSOA: n = ")
 input %>%
   filter(is.na(msoa)) %>%
-  pull(HHID) %>%
+  pull(household_id) %>%
   n_distinct()
 
 print("HHs with missing type: n = ")
 input %>%
   filter(is.na(care_home_type)) %>%
-  pull(HHID) %>%
+  pull(household_id) %>%
   n_distinct()
 
 print("COVID cases with missing MSOA or HH type: n = ")
 input %>%
   filter(is.na(msoa) | is.na(care_home_type)) %>%
-  filter(case) %>%
+  rowwise() %>%
+  filter(any(!is.na(c_across(all_of(event_dates))))) %>%
   pull(patient_id) %>%
   n_distinct()
 
-# Drop rows with missing MSOA or care home type
 
+# Drop individuals with missing MSOA or care home type
 input <- input %>%
-  filter(!is.na(msoa) & !is.na(care_home_type))
-
+  filter(!is.na(msoa) & !is.na(care_home_type)) 
+  
 # ---------------------------------------------------------------------------- #
 
-# Filter MSOAs by TPP coverage (missing value when merged with included MSOAs in tpp_cov)
+#------------------------------------------#
+#      EXCLUDE ON MSOA TPP COVERAGE        #
+#------------------------------------------#
+
+# Join with MSOA coverage data
+input <- input %>%
+  left_join(tpp_cov, by = "msoa") 
+
+# Identify MSOAs with missing value when merged with included MSOAs in tpp_cov
 exclude <- input %>%
   filter(is.na(tpp_cov_wHHID)) 
 
 print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(exclude)))
 print(paste0("MSOAs excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(exclude$msoa)))
 
+# Drop individuals in MSOAs that don't appear in tpp_cov
 input <- input %>%
   filter(!is.na(tpp_cov_wHHID))
 
@@ -165,7 +146,46 @@ input <- input %>%
   filter(tpp_cov_wHHID >= msoa_cov_cutoff)
 
 # ---------------------------------------------------------------------------- #
-# Check uniqueness of household ID
+
+#-----------------------------#
+#      VARIABLE SET UP        #
+#-----------------------------#
+
+# Set up variables of interest
+input <- input %>%
+  mutate(# Redefine -1/0 values as NA
+         across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
+         across(c(imd, household_size, household_id), function(x) na_if(x,0)),
+         # Variable formatting
+         dementia = replace_na(dementia,0),
+         ethnicity = as.factor(ethnicity),
+         rural_urban = as.factor(rural_urban),
+         # Date formats
+         across(all_of(event_dates), ymd),
+         # Set all character variables as factor
+         across(where(is.character), as.factor),
+         # Identify potential prisons/institutions - still needed?
+         institution = (care_home_type == "U" & household_size > 20),
+         # Define delays
+         # test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
+         # prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss), 
+         # Replace event dates pre 2020 and post end of study as NA
+         across(all_of(event_dates), na_replace_dates, max = max(study_per)),
+         # Redefine unique household identifier
+         HHID = paste(msoa, household_id, sep = ":")) %>% 
+  # Identify individuals with any covid event
+  rowwise() %>%
+  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
+  ungroup() 
+  
+print("Summary: Cleaned")
+summary(input)
+
+# ---------------------------------------------------------------------------- #
+
+#----------------------------------------#
+#      UNIQUENESS OF HOUSEHOLD ID        #
+#----------------------------------------#
 
 print("No. households, by household_id alone and by household_ID + MSOA")
 input %>%
@@ -181,10 +201,14 @@ input %>%
             imd = n_distinct(imd),
             rural_urban = n_distinct(rural_urban)) -> n_distinct_chars
 
+# Should be one distinct value for every household
 summary(n_distinct_chars)
 
 # ---------------------------------------------------------------------------- #
-# Counts of household, individuals and cases  
+
+#---------------------------------#
+#      CHECK COUNTS BY TYPE       #
+#---------------------------------#
 
 # By household type
 print("No. households, patients and probable cases per carehome type:")
@@ -197,13 +221,17 @@ input %>%
 # By institution
 print("Possible prisons/institutions (size>20 and not CH)")
 input %>%
-  mutate(institution = (care_home_type == "U" & household_size > 20)) %>%
   group_by(institution) %>%
   summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
-# By TPP coverage
+# ---------------------------------------------------------------------------- #
+
+#-------------------------------------------------#
+#      CHECK TPP COVERAGE WITHIN CARE HOMES       #
+#-------------------------------------------------#
+
 print("Care homes registered under > 1 system:")
 input %>%
   filter(care_home_type != "U") %>%
@@ -242,8 +270,12 @@ summary(
   pull(percent_tpp_cat)
 )
 
+
 # ---------------------------------------------------------------------------- #
-# Check household sizes
+
+#----------------------------------#
+#      CHECK HOUSEHOLD SIZES       #
+#----------------------------------#
 
 print("Household size by care home type:")
 input %>%
@@ -264,10 +296,8 @@ input %>%
             median = median(n_resid),
             minmax = paste(min(n_resid), max(n_resid), sep = ", ")) 
 
-# ---------------------------------------------------------------------------- #
 
-print("Summary: Final")
-summary(input)
+################################################################################
 
 # Save cleaned input data
 saveRDS(input, "./input_clean.rds")

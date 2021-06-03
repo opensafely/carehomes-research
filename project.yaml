@@ -9,6 +9,14 @@ actions:
     outputs:
       highly_sensitive:
         cohort: input.csv
+        
+          
+  check_hhid:
+    needs: [generate_study_population]
+    run: r:latest analysis/check_hhid.R input.csv
+    outputs:
+      moderately_sensitive:
+        log: check_hhid.txt
 
   calc_coverage:
     needs: [generate_study_population]

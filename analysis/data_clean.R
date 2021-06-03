@@ -51,11 +51,11 @@ input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # check for mixed HH/perc TPP agreement
   mutate(perc_tpp_lt100 = (percent_tpp < 100))
 
-# Load MSOA TPP coverage
-tpp_cov <- readRDS(args[2])
+# Load TPP coverage for included MSOAs
+tpp_cov_incl <- readRDS(args[2])
 
 # MSOA TPP coverage cut off
-msoa_cov_cutoff <- args[3]
+msoa_cov_cutoff <- as.numeric(args[3])
 
 # Set study period 
 study_per <- seq(as.Date("2020-03-01"),as.Date("2020-12-07"), by = "days")
@@ -67,6 +67,9 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 
 print("Summary: Raw input")
 summary(input_raw)
+
+print("Summary: TPP coverage, included MSOAs")
+summary(tpp_cov)
 
 # ---------------------------------------------------------------------------- #
 
@@ -85,25 +88,25 @@ summary(is.na(input_raw$care_home_type))
 
 # Drop individuals with missing household_ID
 print(paste0("Dropping patients with missing household_id: n = ", sum(input_raw$household_id == 0)))
-input <- filter(input_raw, household_id != 0)
+input_wHH <- filter(input_raw, household_id != 0)
 
 
 # Summarise households/patients with missing MSOA/type
 
 print("HHs with missing MSOA: n = ")
-input %>%
+input_wHH %>%
   filter(is.na(msoa)) %>%
   pull(household_id) %>%
   n_distinct()
 
 print("HHs with missing type: n = ")
-input %>%
+input_wHH %>%
   filter(is.na(care_home_type)) %>%
   pull(household_id) %>%
   n_distinct()
 
 print("COVID cases with missing MSOA or HH type: n = ")
-input %>%
+input_wHH %>%
   filter(is.na(msoa) | is.na(care_home_type)) %>%
   rowwise() %>%
   filter(any(!is.na(c_across(all_of(event_dates))))) %>%
@@ -112,7 +115,7 @@ input %>%
 
 
 # Drop individuals with missing MSOA or care home type
-input <- input %>%
+input_nomiss <- input_wHH %>%
   filter(!is.na(msoa) & !is.na(care_home_type)) 
   
 # ---------------------------------------------------------------------------- #
@@ -122,28 +125,26 @@ input <- input %>%
 #------------------------------------------#
 
 # Join with MSOA coverage data
-input <- input %>%
-  left_join(tpp_cov, by = "msoa") 
+input_wcov <- input_nomiss %>%
+  left_join(tpp_cov_incl, by = "msoa") 
 
 # Identify MSOAs with missing value when merged with included MSOAs in tpp_cov
-exclude <- input %>%
+exclude <- input_wcov %>%
   filter(is.na(tpp_cov_wHHID)) 
 
 print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(exclude)))
 print(paste0("MSOAs excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(exclude$msoa)))
 
 # Drop individuals in MSOAs that don't appear in tpp_cov
-input <- input %>%
-  filter(!is.na(tpp_cov_wHHID))
+input_wcov <- input_wcov %>%
+  filter(!(msoa %in% exclude$msoa))
 
 # Should now have no records with coverage < cutoff
 print("Summary: Remaining MSOA coverage:")
-summary(input$tpp_cov_wHHID)
+summary(input_wcov$tpp_cov_wHHID)
 
 # Double check
-nrow(filter(input, tpp_cov_wHHID < msoa_cov_cutoff))
-input <- input %>%
-  filter(tpp_cov_wHHID >= msoa_cov_cutoff)
+nrow(filter(input_wcov, tpp_cov_wHHID < msoa_cov_cutoff))
 
 # ---------------------------------------------------------------------------- #
 
@@ -152,7 +153,7 @@ input <- input %>%
 #-----------------------------#
 
 # Set up variables of interest
-input <- input %>%
+input_clean <- input_wcov %>%
   mutate(# Redefine -1/0 values as NA
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
          across(c(imd, household_size, household_id), function(x) na_if(x,0)),
@@ -179,7 +180,7 @@ input <- input %>%
   ungroup() 
   
 print("Summary: Cleaned")
-summary(input)
+summary(input_clean)
 
 # ---------------------------------------------------------------------------- #
 
@@ -188,12 +189,12 @@ summary(input)
 #----------------------------------------#
 
 print("No. households, by household_id alone and by household_ID + MSOA")
-input %>%
+input_clean %>%
   summarise(N_hhID = n_distinct(household_id),
             N_msoa_hhID = n_distinct(HHID))
 
 print("Uniqueness of household characteristics over residents:")
-input %>%
+input_clean %>%
   group_by(household_id) %>%
   summarise(msoa = n_distinct(msoa), 
             region = n_distinct(region),
@@ -212,7 +213,7 @@ summary(n_distinct_chars)
 
 # By household type
 print("No. households, patients and probable cases per carehome type:")
-input %>%
+input_clean %>%
   group_by(care_home_type) %>%
   summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),
@@ -220,7 +221,7 @@ input %>%
 
 # By institution
 print("Possible prisons/institutions (size>20 and not CH)")
-input %>%
+input_clean %>%
   group_by(institution) %>%
   summarise(n_hh = n_distinct(HHID),
             n_pat = n_distinct(patient_id),
@@ -233,7 +234,7 @@ input %>%
 #-------------------------------------------------#
 
 print("Care homes registered under > 1 system:")
-input %>%
+input_clean %>%
   filter(care_home_type != "U") %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
   group_by(mixed_household) %>% 
@@ -242,7 +243,7 @@ input %>%
             n_case = sum(case, na.rm = TRUE)) 
 
 print("Care homes with < 100% coverage:")
-input %>%
+input_clean %>%
   filter(care_home_type != "U") %>%
   group_by(percent_tpp < 100) %>% 
   summarise(n_hh = n_distinct(HHID),
@@ -251,7 +252,7 @@ input %>%
 
 print("Care homes % TPP coverage:")
 summary(
-  input %>%
+  input_clean %>%
   filter(care_home_type != "U") %>%
   dplyr::select(HHID, percent_tpp) %>%
   unique() %>% 
@@ -260,7 +261,7 @@ summary(
 
 print("Care homes % TPP coverage category:")
 summary(
-  input %>%
+  input_clean %>%
   filter(care_home_type != "U") %>%
   dplyr::select(HHID, percent_tpp) %>%
   unique() %>% 
@@ -278,7 +279,7 @@ summary(
 #----------------------------------#
 
 print("Household size by care home type:")
-input %>%
+input_clean %>%
   filter(!is.na(household_size)) %>%
   group_by(care_home_type) %>%
   summarise(mean = mean(household_size),
@@ -287,7 +288,7 @@ input %>%
             minmax = paste(min(household_size), max(household_size), sep = ", ")) 
 
 print("Number of records by care home type:")
-input %>%
+input_clean %>%
   group_by(care_home_type, HHID) %>%
   summarise(n_resid = n()) %>%
   group_by(care_home_type) %>%
@@ -300,8 +301,8 @@ input %>%
 ################################################################################
 
 # Save cleaned input data
-saveRDS(input, "./input_clean.rds")
-write_csv(input, "./input_clean.csv")
+saveRDS(input_clean, "./input_clean.rds")
+write_csv(input_clean, "./input_clean.csv")
 
 # ---------------------------------------------------------------------------- #
 

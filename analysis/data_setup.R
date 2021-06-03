@@ -78,7 +78,7 @@ input %>%
   group_by(care_home_type, age_ge65) %>%
   tally()
 
-# Split out carehome residents
+# Split out carehome residents 
 input %>%
   filter(care_home_type != "U") -> ch
 
@@ -112,10 +112,11 @@ ch_chars <- ch %>%
             hh_med_age = median(age),             # average age of registered residents
             age_miss = sum(is.na(age)), 
             hh_p_female = mean(sex == "F"),       # % registered residents female
-            hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
-            ethn_miss = sum(is.na(ethnicity)), 
-            hh_prop_min = mean(ethnicity != 1, na.rm = T),
-            hh_p_dem = mean(dementia, na.rm = T)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
+            # hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
+            # ethn_miss = sum(is.na(ethnicity)), 
+            hh_p_min = mean(ethnicity != 1, na.rm = T),
+            hh_p_dem = mean(dementia, na.rm = T),
+            n_case = sum(case)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
   mutate(imd_quint = as.factor(cut(imd, 5)),
          hh_maj_dem = (hh_p_dem >= 0.5),
@@ -203,7 +204,9 @@ ch_wevent <- ch_chars %>%
   # Exclude care homes with first event prior to study period
   filter(!first_event_pre_per) %>%
   mutate(date = first_event) %>%
-  select(-first_primary_care_case_probable:-first_ons_covid_death_date) 
+  select(-first_primary_care_case_probable:-first_ons_covid_death_date,
+         -rural_urban8, -rural_urban8_miss, -imd_miss, -age_miss,
+         -first_event_pre_per, -first_event_post_per) 
 
 print("Summary: First events")
 summary(ch_wevent)
@@ -225,24 +228,27 @@ ch_wevent %>%
 #-----------------------------#
 
 # Expand rows in data.table for speed:
-start <- Sys.time()
-vars <- names(select(ch_wevent, exclude, HHID:rural_urban, first_event:first_event_which, ever_affected))
+vars <- names(select(ch_wevent, -date))
 ch_wevent <- as.data.table(ch_wevent)
 
 # Replicate per region (by vars are all values I want to copy down per date):
 all_dates <- ch_wevent[,.(date = study_per),by = vars]
 
 # Merge and fill count with 0:
-setkey(ch_wevent, exclude, HHID, msoa, region, n_resid, ch_size, ch_type, 
-       rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
-       hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
-setkey(all_dates, exclude, HHID, msoa, region, n_resid, ch_size, ch_type, 
-       rural_urban8, rural_urban, imd, imd_quint, hh_med_age, hh_p_female, hh_prop_min, 
-       hh_p_dem, hh_maj_dem, first_event, ever_affected, first_event_which, date)
-ch_wevent <- ch_wevent[all_dates,roll = TRUE]
+setkey(ch_wevent, 
+       exclude, HHID, percent_tpp, region, msoa, n_resid, ch_size, ch_type, 
+       rural_urban, imd, imd_quint, 
+       hh_med_age, hh_p_female, hh_p_min, hh_p_dem, hh_maj_dem, 
+       n_case, first_event, first_event_which, ever_affected, 
+       date)
+setkey(all_dates, 
+       exclude, HHID, percent_tpp, region, msoa, n_resid, ch_size, ch_type, 
+       rural_urban, imd, imd_quint, 
+       hh_med_age, hh_p_female, hh_p_min, hh_p_dem, hh_maj_dem, 
+       n_case, first_event, first_event_which, ever_affected, 
+       date)
 
-# Finished expanding carehome dates: time = 
-round(Sys.time() - start,2)
+ch_wevent <- ch_wevent[all_dates,roll = TRUE]
 
 # ---------------------------------------------------------------------------- #
 
@@ -256,13 +262,13 @@ round(Sys.time() - start,2)
 # in next <ahead> days
 
 ch_long <- comm_inc %>%
-  right_join(ch_wevent, by = c("msoa","date")) %>% #View()
+  right_join(ch_wevent) %>% #View()
   group_by(HHID) %>%
   mutate(day = 1:n(),
          wave = factor(date >= ymd("2020-08-01"), labels = c("first","second")),
          event_ahead = replace_na(as.numeric(
-           first_event %within% interval(date,date + ahead)
-         ),0)) %>%
+           first_event %within% interval(date,date + ahead)),
+           0)) %>%
   ungroup()
 
 print("Homes in ch_long data:")
@@ -293,7 +299,7 @@ dat %>%
 
 print("Summary: community incidence by occurrence of a care home event:")
 dat %>% 
-  pivot_longer(c("msoa_probable_rate","msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
+  pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
   group_by(event_ahead, name) %>%
   summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 

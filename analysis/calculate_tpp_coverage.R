@@ -152,7 +152,6 @@ png("./tpp_cov_filtered.png", height = 800, width = 800)
 tpp_cov_incl %>%
   ggplot(aes(tpp_cov_wHHID)) +
   geom_histogram(bins = 30, fill = "steelblue") +
-  facet_wrap(~name) +
   labs(x = "TPP coverage per MSOA - filtered on 80% cutoff") +
   theme_minimal()
 dev.off() 

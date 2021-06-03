@@ -1,0 +1,46 @@
+[1] "No. MSOAs in England:"
+[1] 6791
+[1] "No. TPP-registered patients with non-missing MSOA:"
+[1] 23459751
+[1] "No. unique MSOAs with patients registered in TPP:"
+[1] 6641
+[1] "No. TPP-registered patients with non-missing MSOA and non-missing HHID:"
+[1] 20710277
+[1] "No. unique MSOAs with patients registered in TPP and non-missing HHID:"
+[1] 6619
+[1] "Count probable cases with/without HHID:"
+# A tibble: 2 x 2
+  `(household_id > 0)` n_probable
+  <lgl>                     <int>
+1 FALSE                     60526
+2 TRUE                     446064
+        msoa       tpp_pop_all    tpp_pop_wHHID      msoa_pop    
+ E02000001:   1   Min.   :    1   Min.   :    1   Min.   : 2224  
+ E02000002:   1   1st Qu.:   12   1st Qu.:   11   1st Qu.: 6865  
+ E02000003:   1   Median : 1042   Median :  904   Median : 8011  
+ E02000004:   1   Mean   : 3533   Mean   : 3129   Mean   : 8314  
+ E02000005:   1   3rd Qu.: 6996   3rd Qu.: 6168   3rd Qu.: 9346  
+ E02000007:   1   Max.   :24713   Max.   :23307   Max.   :26513  
+ (Other)  :6635                   NA's   :22                     
+      70+          tpp_cov_all        tpp_cov_wHHID       cov_gt_100
+ Min.   :   204   Min.   :  0.00808   Min.   :  0.00808   No :5363  
+ 1st Qu.: 40338   1st Qu.:  0.15493   1st Qu.:  0.13887   Yes:1278  
+ Median : 73260   Median : 12.69841   Median : 10.85999             
+ Mean   : 94075   Mean   : 42.56003   Mean   : 37.62384             
+ 3rd Qu.:124824   3rd Qu.: 96.60851   3rd Qu.: 83.06595             
+ Max.   :914664   Max.   :175.27372   Max.   :170.10341             
+                                      NA's   :22                    
+null device 
+          1 
+[1] "MSOAs excluded with 80% coverage cut off: n = 5131"
+[1] "MSOAs included with 80% coverage cut off: n = 1488"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  9.033  86.255  91.200  89.398  95.051  99.985 
+# A tibble: 1 x 2
+  low_cov     n
+  <lgl>   <int>
+1 FALSE    1488
+# A tibble: 0 x 8
+# ... with 8 variables: msoa <fct>, tpp_pop_all <int>, tpp_pop_wHHID <int>,
+#   msoa_pop <int>, `70+` <int>, tpp_cov_all <dbl>, tpp_cov_wHHID <dbl>,
+#   cov_gt_100 <fct>

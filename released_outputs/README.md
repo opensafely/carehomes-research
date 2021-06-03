@@ -33,6 +33,7 @@
   * [outputs/comm_vs_ch_risk_log2.png](outputs/comm_vs_ch_risk_log2.png)
   * [outputs/community_inc.png](outputs/community_inc.png)
   * [outputs/compare_epidemics.png](outputs/compare_epidemics.png)
+  * [outputs/coverage_log.txt](outputs/coverage_log.txt)
   * [outputs/data_clean_log.txt](outputs/data_clean_log.txt)
   * [outputs/data_setup_log.txt](outputs/data_setup_log.txt)
   * [outputs/descriptive.pdf](outputs/descriptive.pdf)

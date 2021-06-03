@@ -26,6 +26,7 @@ cat_coeffs <- function(coeff_tab){
 }
 
 coeffs_cat <- lapply(coeffs[!supp], cat_coeffs) %>%
+  imap(.x = ., ~ set_names(.x, c("Coefficient", .y))) %>%
   purrr::reduce(full_join, by = "Coefficient")
 coeffs_cat_all <- lapply(coeffs, cat_coeffs) %>%
   imap(.x = ., ~ set_names(.x, c("Coefficient", .y))) %>%

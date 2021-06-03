@@ -42,7 +42,7 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
 # * tpp_coverage_included.rds
 #   - Estimated coverage of TPP per MSOA, including only MSOAs with coverage >=80%
 
-# args <- c("input.csv","tpp_coverage_included.rds", 2)
+# args <- c("input.csv","tpp_coverage_included.rds", 600)
 args = commandArgs(trailingOnly = TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
@@ -69,7 +69,7 @@ print("Summary: Raw input")
 summary(input_raw)
 
 print("Summary: TPP coverage, included MSOAs")
-summary(tpp_cov)
+summary(tpp_cov_incl)
 
 # ---------------------------------------------------------------------------- #
 

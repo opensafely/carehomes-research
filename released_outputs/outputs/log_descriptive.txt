@@ -1,0 +1,87 @@
+[1] "Total included care homes:"
+[1] 6196
+[1] "No. care homes per MSOA"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   2.000   4.000   6.877   9.000  75.000 
+[1] "No. events among care home residents:"
+# A tibble: 1 x 4
+  primary_care_case_pro~ first_pos_test_s~ covid_admission_d~ ons_covid_death_d~
+                   <int>             <int>              <int>              <int>
+1                   3832              4829               1399               1674
+[1] "No. residents with >= 1 event:"
+   Mode   FALSE    TRUE 
+logical   29414    6005 
+[1] "No. events per home:"
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   3.186   3.000  36.000 
+[1] "Summary: community incidence by occurrence of a care home event:"
+# A tibble: 12 x 7
+# Groups:   event_ahead [2]
+   event_ahead name          min   max  mean    sd   med
+         <dbl> <chr>       <dbl> <dbl> <dbl> <dbl> <dbl>
+ 1           0 eng_lag1wk    0    276.  57.7  76.7 24.5 
+ 2           0 eng_lag2wk    0    276.  53.6  75.4 18.7 
+ 3           0 eng_roll7     0.1  276.  61.6  77.7 27.2 
+ 4           0 msoa_lag1wk   0   2419.  35.0  80.6  8.96
+ 5           0 msoa_lag2wk   0   2419.  32.4  78.7  0   
+ 6           0 msoa_roll7    0   2419.  37.3  82.1 10.8 
+ 7           1 eng_lag1wk    6.7  276.  95.0  84.6 49.1 
+ 8           1 eng_lag2wk    6.5  276.  86.3  81.5 47.7 
+ 9           1 eng_roll7     6.7  276.  98.5  86.0 49.4 
+10           1 msoa_lag1wk   0    933.  70.9 109.  25.7 
+11           1 msoa_lag2wk   0    973.  61.5 102.  19.9 
+12           1 msoa_roll7    0    973.  78.6 116.  30.4 
+[1] "Missingness in care home characteristics:"
+# A tibble: 16 x 2
+   name              value
+   <chr>             <int>
+ 1 HHID                  0
+ 2 msoa                  0
+ 3 n_resid               0
+ 4 ch_size               0
+ 5 ch_type               0
+ 6 rural_urban          18
+ 7 imd                  23
+ 8 hh_med_age            0
+ 9 hh_p_female           0
+10 hh_p_min            873
+11 hh_p_dem              0
+12 hh_maj_dem            0
+13 n_case                0
+14 first_event           0
+15 first_event_which  4772
+16 ever_affected         0
+[1] "Summarise carehome characteristics by ever affected:"
+                      Overall               Affected             
+N                     "6196"                "1424"               
+No. TPP residents     "28061"               "13386"              
+Size, med[IQR]        "1 [1, 6]"            "6 [1, 17]"          
+IMD, med[IQR]         "16600 [9200, 23600]" "15800 [8075, 23500]"
+Rural, N (%)          "1164 (0.19)"         "268 (0.19)"         
+Dementia > 50%, N (%) "3281 (0.53)"         "944 (0.66)"         
+Type:PC               "3769 (0.61)"         "745 (0.52)"         
+Type:PN               "2312 (0.37)"         "640 (0.45)"         
+Type:PS               "115 (0.02)"          "39 (0.03)"          
+                      Unaffected           
+N                     "4772"               
+No. TPP residents     "14675"              
+Size, med[IQR]        "1 [1, 3]"           
+IMD, med[IQR]         "16800 [9900, 23700]"
+Rural, N (%)          "896 (0.19)"         
+Dementia > 50%, N (%) "2337 (0.49)"        
+Type:PC               "3024 (0.63)"        
+Type:PN               "1672 (0.35)"        
+Type:PS               "76 (0.02)"          
+[1] "Summarise resident characteristics by ever affected:"
+                        Overall          Affected        Unaffected      
+No. TPP residents       "35419"          "13386"         "14675"         
+age med[IQR]            "86 [79, 91]"    "86 [80, 91]"   "86 [77, 91]"   
+minority ethnicity n(%) "557 (0.0157)"   "176 (0.0131)"  "283 (0.0193)"  
+dementia n(%)           "20280 (0.5726)" "7997 (0.5974)" "7491 (0.5105)" 
+Ethn:1                  "26086 (0.7365)" "9940 (0.7426)" "10648 (0.7256)"
+Ethn:2                  "78 (0.0022)"    "20 (0.0015)"   "47 (0.0032)"   
+Ethn:3                  "206 (0.0058)"   "59 (0.0044)"   "102 (0.007)"   
+Ethn:4                  "141 (0.004)"    "54 (0.004)"    "68 (0.0046)"   
+Ethn:5                  "132 (0.0037)"   "43 (0.0032)"   "66 (0.0045)"   
+Ethn:missing            "8776 (0.2478)"  "3270 (0.2443)" "3744 (0.2551)" 
+Total time running descriptive: 6.42

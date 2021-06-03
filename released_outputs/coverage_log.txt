@@ -32,14 +32,16 @@
                                       NA's   :22                    
 null device 
           1 
-[1] "MSOAs excluded with 80% coverage cut off: n = 5131"
-[1] "MSOAs included with 80% coverage cut off: n = 1488"
+[1] "MSOAs excluded with 80% coverage cut off: n = 4817"
+[1] "MSOAs included with 80% coverage cut off: n = 1802"
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  9.033  86.255  91.200  89.398  95.051  99.985 
+  80.03   88.01   93.00   93.99   98.22  170.10 
+null device 
+          1 
 # A tibble: 1 x 2
   low_cov     n
   <lgl>   <int>
-1 FALSE    1488
+1 FALSE    1802
 # A tibble: 0 x 8
 # ... with 8 variables: msoa <fct>, tpp_pop_all <int>, tpp_pop_wHHID <int>,
 #   msoa_pop <int>, `70+` <int>, tpp_cov_all <dbl>, tpp_cov_wHHID <dbl>,

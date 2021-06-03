@@ -167,8 +167,8 @@ input <- input %>%
          # Identify potential prisons/institutions - still needed?
          institution = (care_home_type == "U" & household_size > 20),
          # Define delays
-         # test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
-         # prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss), 
+         test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
+         prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable),
          # Replace event dates pre 2020 and post end of study as NA
          across(all_of(event_dates), na_replace_dates, max = max(study_per)),
          # Redefine unique household identifier

@@ -3,7 +3,7 @@
 # 
 # Generate summary tables and descriptive plots
 # 
-# Depends on data_setup.R and get_community_prevalence.R
+# Depends on data_setup.R and get_community_incidence.R
 #
 # Author: Emily S Nightingale
 # Date: 06/08/2020
@@ -24,7 +24,7 @@ library(tidyverse)
 library(lubridate)
 library(data.table)
 
-theme_set(theme_bw())
+theme_set(theme_minimal())
 
 # ---------------------------------------------------------------------------- #
 
@@ -39,7 +39,7 @@ input <- readRDS("./input_clean.rds")
 comm_inc <- readRDS("./community_incidence.rds")
 
 # Individual data - care home residents
-ch <- readRDS("./ch_linelist.rds")
+ch <- readRDS("./ch_linelist.rds") 
 
 # Aggregated data - daily care home events
 ch_long <- readRDS("./ch_agg_long.rds")
@@ -49,14 +49,14 @@ dat <- readRDS("./analysisdata.rds")
 
 study_per <- range(dat$date)
 
-event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
+event_dates <- c("primary_care_case_probable","first_pos_test_sgss",
+                 "covid_admission_date", "ons_covid_death_date")
 
 # ---------------------------------------------------------------------------- #
 
-print("Summary: community incidence MSOA/national")
-summary(comm_inc)
-
-# ---------------------------------------------------------------------------- #
+#--------------------------------------------------------#
+#      TALLY CARE HOMES/RESIDENTS/PRACTICES/EVENTS       #
+#--------------------------------------------------------#
 
 # Total care homes in analysis dataset
 N_ch_tot <- n_distinct(dat$HHID)
@@ -64,7 +64,7 @@ N_ch_tot <- n_distinct(dat$HHID)
 print("Total included care homes:")
 N_ch_tot
 
-# Number of carehomes per MSOA
+# Counts per MSOA
 ch %>% 
   group_by(msoa) %>% 
   summarise(
@@ -75,10 +75,43 @@ ch %>%
 
 write.csv(per_msoa, file = "./ch_gp_permsoa.csv", row.names = FALSE)
 
-print("Summary: number of carehomes per MSOA")
+print("No. care homes per MSOA")
 per_msoa %>%
   pull(n_ch) %>%
   summary() 
+
+# Covid events
+print("No. events among care home residents:")
+ch %>%
+  summarise(across(event_dates, function(x) sum(!is.na(x))))
+
+# Unique affected residents
+print("No. residents with >= 1 event:")
+summary(ch$case)
+
+print("No. events per home:")
+ch %>%
+  filter(case) %>%
+  group_by(HHID) %>%
+  summarise(N_case = n()) -> events_per_home
+summary(events_per_home$N_case)
+
+#------------------------------------------------------------------------------#
+
+#---------------------------------------------#
+#        COMMUNITY INC VS INTRODUCTION        #
+#---------------------------------------------#
+
+print("Summary: community incidence by occurrence of a care home event:")
+dat %>% 
+  pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk",
+                 "eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
+  group_by(event_ahead, name) %>%
+  summarise(min = min(value, na.rm = T), 
+            max = max(value, na.rm = T), 
+            mean = mean(value, na.rm = T), 
+            sd = sqrt(var(value, na.rm = T)), 
+            med = median(value, na.rm = T))
 
 #------------------------------------------------------------------------------#
 
@@ -87,9 +120,9 @@ per_msoa %>%
 #----------------------#
 
 # Characteristics of interest
-chars <- c("HHID","msoa","n_resid","ch_size","ch_type","rural_urban",
-           "imd","hh_med_age","hh_p_female","hh_prop_min","hh_p_dem","hh_maj_dem",
-           "first_event", "ever_affected")
+chars <- c("HHID","msoa","n_resid","ch_size","ch_type","rural_urban", "imd",
+           "hh_med_age","hh_p_female","hh_p_min","hh_p_dem", "hh_maj_dem", 
+           "n_case", "first_event", "first_event_which", "ever_affected")
 
 # One row per home from analysis dataset
 dat %>%
@@ -122,7 +155,9 @@ chars_waffect %>%
   summarise(n_resid = n()) %>%
   ungroup() %>%
   mutate(ch_type = replace_na(as.character(ch_type), "missing")) %>%
-  pivot_wider(names_from = ch_type, values_from = n_resid, names_prefix = "Type:") %>%
+  pivot_wider(names_from = ch_type, 
+              values_from = n_resid, 
+              names_prefix = "Type:") %>%
   rowwise() %>%
   mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
   ungroup() %>%
@@ -154,7 +189,8 @@ chars_waffect %>%
          `Size, med[IQR]` = paste0(ch_size_med, " [",ch_size_quants,"]"),
          `IMD, med[IQR]` = paste0(imd_med, " [",imd_quants,"]"),
          `Rural, N (%)` = paste0(`N rural`, " (",`% rural`,")"),
-         `Dementia > 50%, N (%)` = paste0(`N dementia`, " (",`% dementia`,")"),) %>% 
+         `Dementia > 50%, N (%)` = paste0(`N dementia`, 
+                                          " (",`% dementia`,")"),) %>% 
   ungroup() %>% 
   remove_rownames() %>%
   column_to_rownames(var = "ever_affected") %>%
@@ -171,28 +207,23 @@ t(tab1)
 write.csv(tab1, "./ch_chars_tab.csv")
 
 #------------------------------------------------------------------------------#
-# Summarise resident characteristics by ever affected
+# Resident characteristics by ever affected
 
 # Age, dementia status and ethnicity of care home residents, stratified by 
 # whether or not their home was affected (percentages out of total residents in 
 # that stratum):
 
-print("Residents with any covid event:")
-ch %>%
-  rowwise() %>%
-  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
-  group_by(case) %>%
-  tally()
-  
 ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
 ch %>%
   right_join(dplyr::select(ch_chars, HHID, msoa, ever_affected)) %>% 
-  mutate(ever_affected = ifelse(ever_affected,"Affected","Unaffected")) %>%
+  mutate(ever_affected = ifelse(ever_affected, "Affected", "Unaffected")) %>%
   bind_rows(ch_resid_all) %>% 
   mutate(ever_affected = factor(ever_affected, 
-                                levels = c("Overall","Affected","Unaffected"))) -> ch_resid_all
+                                levels = c("Overall",
+                                           "Affected",
+                                           "Unaffected"))) -> ch_resid_all
 
 ch_resid_all %>%
   group_by(ever_affected) %>%
@@ -200,30 +231,45 @@ ch_resid_all %>%
             med_age = round(median(age, na.rm = T)),
             q_age = paste(round(quantile(age, 
                                          probs = c(0.25, 0.75), 
-                                         na.rm = T)), collapse = ", "),
+                                         na.rm = T)), 
+                          collapse = ", "),
             n_minor = sum(ethnicity != 1, na.rm = T),
             prop_minor = mean(ethnicity != 1, na.rm = T),
             n_dem = sum(dementia, na.rm = T)
   ) %>% 
   mutate(`age med[IQR]` = paste0(med_age, " [",q_age,"]"),
-         `minority ethnicity n(%)` = paste0(n_minor, " (",round(n_minor/`No. TPP residents`,4),")"),
-         `dementia n(%)` = paste0(n_dem, " (",round(n_dem/`No. TPP residents`,4),")")) %>%
+         `minority ethnicity n(%)` = paste0(n_minor, 
+                                            " (",
+                                            round(n_minor/`No. TPP residents`,4),
+                                            ")"),
+         `dementia n(%)` = paste0(n_dem, 
+                                  " (",
+                                  round(n_dem/`No. TPP residents`,4),
+                                  ")")) %>%
   ungroup() %>%
   remove_rownames() %>% 
   column_to_rownames("ever_affected") %>%
-  dplyr::select(`No. TPP residents`, `age med[IQR]`, `minority ethnicity n(%)`, `dementia n(%)` ) -> tab_age
+  dplyr::select(`No. TPP residents`, 
+                `age med[IQR]`, 
+                `minority ethnicity n(%)`, 
+                `dementia n(%)` ) -> tab_age
 
 ch_resid_all %>%
   group_by(ever_affected, ethnicity) %>%
   summarise(n_resid = n()) %>%
   ungroup() %>%
   mutate(ethnicity = replace_na(as.character(ethnicity), "missing")) %>%
-  pivot_wider(names_from = ethnicity, values_from = n_resid, names_prefix = "Ethn:") %>%
+  pivot_wider(names_from = ethnicity, 
+              values_from = n_resid, 
+              names_prefix = "Ethn:") %>%
   rowwise() %>%
   mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
   ungroup() %>%
   mutate_at(vars(-n_resid, -ever_affected), 
-            function(x) paste0(x, " (", round(x/.$n_resid,4), ")")) %>%
+            function(x) paste0(x, 
+                               " (", 
+                               round(x/.$n_resid,4), 
+                               ")")) %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(-n_resid) -> tab_ethn
 
@@ -231,13 +277,6 @@ tab2 <- cbind(tab_age, tab_ethn)
 
 print("Summarise resident characteristics by ever affected:")
 t(tab2)
-
-print("Summary: community incidence by occurrence of a care home event:")
-dat %>% 
-  pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
-  filter(value >= 0) %>%
-  group_by(event_ahead, name) %>%
-  summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
 
 #------------------------------------------------------------------------------#
 
@@ -247,15 +286,14 @@ dat %>%
 
 # pdf(file = "./descriptive.pdf", height = 7, width = 9)
 
-## Age distribution
+# Age distribution
 ggplot(input, aes(age)) +
   geom_histogram() +
-  facet_wrap(~ care_home_type, scales = "free_y") -> age_hist
+  facet_wrap(~ care_home_type, scales = "free") -> age_hist
 ggsave("./age_dist.png", age_hist, height = 5, width = 6, units = "in")
 
-## Care home survival
-# Cumulative care home survival
 
+# Care home survival
 ch_long %>%
   group_by(date) %>%
   filter(first_event > date) %>%
@@ -276,9 +314,13 @@ ch_long %>%
        x = "", y = "No. without event", col = "Type") -> surv2
 ggsave("./ch_survival_bytype.png", surv2, height = 5, width = 6, units = "in")
 
+
 # Type of first event
-ch_long %>%
+ch_chars %>%
   filter(ever_affected) %>% 
+  group_by(HHID) %>%
+  summarise(first_event = unique(first_event),
+            first_event_which = unique(first_event_which)) %>%
   mutate(first_event_which = factor(first_event_which, levels = event_dates, 
                                     labels = c("Primary care probable diagnosis", 
                                                "Positive test result", 
@@ -295,18 +337,20 @@ ggsave("./first_event_type.png", first_events, height = 5, width = 7, units = "i
 
 ## Community burden
 # Average daily incidence
-dat %>%
+ch_long %>%
   group_by(date) %>%
-  summarise(msoa_roll7 = mean(msoa_roll7, na.rm = T)) %>%
+  summarise(msoa_mean = mean(msoa_roll7, na.rm = T),
+            eng_roll7 = unique(eng_roll7, na.rm = T)) %>%
   ungroup() -> comm_inc_avg
 
 # Community incidence over time
-dat %>%
-  ggplot(aes(date, msoa_roll7)) +
-  geom_line(aes(group = msoa), alpha = 0.1) +
-  geom_line(data = comm_inc_avg, col = "black", lty = "dashed", lwd = 1.5) + 
-  labs(title = "Probable cases per 100,000, by MSOA",
-       subtitle = "Rolling seven day mean",
+ch_long %>%
+  ggplot(aes(x = date)) +
+  geom_line(aes(y = msoa_roll7, group = msoa), col = "grey", alpha = 0.05) +
+  geom_line(data = comm_inc_avg, aes(y = msoa_mean), col = "white", lty = "dashed", lwd = 1.5) + 
+  geom_line(data = comm_inc_avg, aes(y = eng_roll7), col = "steelblue", lty = "dashed", lwd = 1.5) + 
+  labs(title = "Rolling seven day incidence per 100,000",
+       subtitle = "Probable cases per MSOA (grey/white) and confirmed cases nationally (blue)",
        x = "", y = "Rate") +
   scale_x_date(limits = study_per) -> comm_inc_time
 ggsave("./community_inc.png", comm_inc_time, height = 5, width = 7, units = "in")
@@ -346,7 +390,7 @@ ggsave("./comm_vs_ch_risk_log2.png", comm_v_ch_log2, height = 8, width = 10, uni
 
 ## Community, care home and older population epidemics
 ## Currently just absolute numbers as don't have denominator of population in 
-## community and carehome per MSOA
+## community and care home per MSOA
 
 input %>%
   filter(!is.na(primary_care_case_probable) & primary_care_case_probable > ymd("2020-01-01")) %>%

@@ -85,7 +85,8 @@ dev.off()
 
 input %>%
   group_by(msoa) %>%
-  summarise(tpp_cov = mean(tpp_cov, na.rm = T)) -> by_msoa
+  summarise(tpp_cov = mean(tpp_cov, na.rm = T)) %>%
+  ungroup() -> by_msoa
 
 pdf("./tpp_coverage_map.pdf", height = 10, width = 8)
 msoa_shp %>% 

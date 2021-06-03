@@ -98,16 +98,16 @@ summary(ch)
 
 ch_chars <- ch %>%
   group_by(HHID) %>%
-  summarise(percent_tpp = getmode(percent_tpp),
+  summarise(percent_tpp = unique(percent_tpp),
             exclude = (percent_tpp < ch_cov_cutoff),
-            region = getmode(region),
-            msoa = getmode(msoa),
+            region = unique(region),
+            msoa = unique(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
-            ch_size = getmode(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
-            ch_type = getmode(care_home_type),    # Care, nursing, other
-            rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
+            ch_size = unique(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            ch_type = unique(care_home_type),    # Care, nursing, other
+            rural_urban8 = unique(rural_urban),  # Rural/urban location classification - select mode value over all residents
             rural_urban8_miss = sum(is.na(rural_urban)), 
-            imd = getmode(imd),                   # In case missing for some indivs, take mode over HH residents
+            imd = unique(imd),                   # In case missing for some indivs, take mode over HH residents
             imd_miss = sum(is.na(rural_urban)), 
             hh_med_age = median(age),             # average age of registered residents
             age_miss = sum(is.na(age)), 

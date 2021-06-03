@@ -77,10 +77,9 @@ input <- input_raw %>%
   # Join with MSOA coverage data
   left_join(tpp_cov, by = "msoa") %>% 
   # Set up variables of interest
-  mutate(HHID = paste(msoa, household_id, sep = ":"), # Redefine unique household identifier
-         # Redefine -1/0 values as NA
+  mutate(# Redefine -1/0 values as NA
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         across(c(imd, household_size), function(x) na_if(x,0)),
+         across(c(imd, household_size, household_id), function(x) na_if(x,0)),
          # Variable formatting
          dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),
@@ -95,7 +94,8 @@ input <- input_raw %>%
          test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
          prob_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss), 
          # Replace event dates pre 2020 and post end of study as NA
-         across(all_of(event_dates), na_replace_dates, max = max(study_per))) %>%
+         across(all_of(event_dates), na_replace_dates, max = max(study_per)),
+         HHID = paste(msoa, household_id, sep = ":")) %>% # Redefine unique household identifier
   # Identify individuals with any covid event
   rowwise() %>%
   mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
@@ -104,28 +104,11 @@ input <- input_raw %>%
 print("Summary: Cleaned")
 summary(input)
 
-# ---------------------------------------------------------------------------- #
-
-# Filter MSOAs by TPP coverage (missing value when merged with included MSOAs in tpp_cov)
-exclude <- input %>%
-  filter(is.na(tpp_cov_wHHID)) 
-
-print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(exclude)))
-print(paste0("MSOAs excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(exclude$msoa)))
-
-input <- input %>%
-  filter(!is.na(tpp_cov_wHHID))
-
-# Should now have no records with coverage < cutoff
-summary(input$tpp_cov_wHHID)
-
-# Double check
-nrow(filter(input, tpp_cov_wHHID < msoa_cov_cutoff))
-input <- input %>%
-  filter(tpp_cov_wHHID >= msoa_cov_cutoff)
+# Drop individuals with missing household ID
+input <- filter(input, !is.na(household_id))
 
 # ---------------------------------------------------------------------------- #
-# Check missingness in location/type      
+# Check missingness in MSOA/type      
 
 print("Total Patients")
 n_distinct(input$patient_id)
@@ -151,16 +134,35 @@ input %>%
 print("COVID cases with missing MSOA or HH type: n = ")
 input %>%
   filter(is.na(msoa) | is.na(care_home_type)) %>%
-  rowwise() %>%
-  filter(any(!is.na(c_across(all_of(event_dates))))) %>%
+  filter(case) %>%
   pull(patient_id) %>%
   n_distinct()
 
-# ---------------------------------------------------------------------------- #
-# Drop rows with missing MSOA, household ID or care home type
+# Drop rows with missing MSOA or care home type
 
 input <- input %>%
-  filter(!is.na(msoa) & household_id > 0 & !is.na(household_id) & !is.na(care_home_type))
+  filter(!is.na(msoa) & !is.na(care_home_type))
+
+# ---------------------------------------------------------------------------- #
+
+# Filter MSOAs by TPP coverage (missing value when merged with included MSOAs in tpp_cov)
+exclude <- input %>%
+  filter(is.na(tpp_cov_wHHID)) 
+
+print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(exclude)))
+print(paste0("MSOAs excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(exclude$msoa)))
+
+input <- input %>%
+  filter(!is.na(tpp_cov_wHHID))
+
+# Should now have no records with coverage < cutoff
+print("Summary: Remaining MSOA coverage:")
+summary(input$tpp_cov_wHHID)
+
+# Double check
+nrow(filter(input, tpp_cov_wHHID < msoa_cov_cutoff))
+input <- input %>%
+  filter(tpp_cov_wHHID >= msoa_cov_cutoff)
 
 # ---------------------------------------------------------------------------- #
 # Check uniqueness of household ID
@@ -193,7 +195,7 @@ input %>%
             n_case = sum(case, na.rm = TRUE)) 
 
 # By institution
-print("Probable prisons/institutions (size>20 and not CH)")
+print("Possible prisons/institutions (size>20 and not CH)")
 input %>%
   mutate(institution = (care_home_type == "U" & household_size > 20)) %>%
   group_by(institution) %>%

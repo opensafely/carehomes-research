@@ -34,7 +34,7 @@ options(datatable.old.fread.datetime.character = TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 # 
-# args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv", 2)
+# args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv", 600)
 args = commandArgs(trailingOnly = TRUE)
 
 ## TPP-registered patient records (from study definition)
@@ -56,7 +56,7 @@ msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   ungroup()
 
 ## MSOA TPP coverage cut off
-msoa_cov_cutoff <- args[3]
+msoa_cov_cutoff <- as.numeric(args[3])
 
 # ---------------------------------------------------------------------------- #
 
@@ -147,6 +147,15 @@ tpp_cov_incl <- tpp_cov %>%
 print(paste0("MSOAs included with ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(tpp_cov_incl)))
 
 summary(tpp_cov_incl$tpp_cov_wHHID)
+
+png("./tpp_cov_filtered.png", height = 800, width = 800)
+tpp_cov_incl %>%
+  ggplot(aes(tpp_cov_wHHID)) +
+  geom_histogram(bins = 30, fill = "steelblue") +
+  facet_wrap(~name) +
+  labs(x = "TPP coverage per MSOA - filtered on 80% cutoff") +
+  theme_minimal()
+dev.off() 
 
 # Trying to find where the cov = 9% come from...
 tpp_cov_incl %>%

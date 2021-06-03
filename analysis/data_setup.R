@@ -295,15 +295,6 @@ dat %>%
   summarise(N = n_distinct(HHID))
 
 # ---------------------------------------------------------------------------- #
-# Check distribution of community incidence measures against events
-
-print("Summary: community incidence by occurrence of a care home event:")
-dat %>% 
-  pivot_longer(c("msoa_roll7","msoa_lag1wk","msoa_lag2wk","eng_roll7","eng_lag1wk","eng_lag2wk")) %>%
-  group_by(event_ahead, name) %>%
-  summarise(min = min(value, na.rm = T), max = max(value, na.rm = T), mean = mean(value, na.rm = T), sd = sqrt(var(value, na.rm = T)), med = median(value, na.rm = T))
-
-# ---------------------------------------------------------------------------- #
 # Save analysis data
 
 saveRDS(comm_inc, "./community_incidence.rds")

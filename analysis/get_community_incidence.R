@@ -44,7 +44,7 @@ case_eng %>%
 
 # Count number of patients and unique MSOAs in TPP without a carehome flag
 input %>%
-  filter(care_home_type == "U" & !institution) %>%
+  filter(care_home_type == "U") %>% # & !institution
   summarise(n = n(), msoa = n_distinct(msoa)) -> comm_tally
 
 print(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"))
@@ -77,22 +77,22 @@ start <- Sys.time()
 comm_probable <- as.data.table(comm_probable)
 
 # Replicate per region (by vars are all values I want to copy down per date):
-all_dates <- comm_probable[,.(date=obs_per),by = c("msoa","tpp_pop", "msoa_pop", "70+", "tpp_cov"),]
+all_dates <- comm_probable[,.(date = obs_per),by = c("msoa","tpp_pop", "msoa_pop", "70+", "tpp_cov")]
 
 # Merge and fill count with 0:
 setkey(comm_probable, msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date)
 setkey(all_dates, msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date)
-comm_probable_expand <- comm_probable[all_dates,roll=FALSE]
-comm_probable_expand <- comm_probable_expand[is.na(probable_cases), probable_cases:=0]
+
+comm_probable_expand <- comm_probable[all_dates, roll = FALSE]
+comm_probable_expand <- comm_probable_expand[is.na(probable_cases), probable_cases := 0]
 
 time <- Sys.time() - start
 print(paste0("Finished expanding community dates (time = ",round(time,2),")"))
 
 comm_probable_expand %>%
   lazy_dt() %>%
-  mutate(msoa_probable_rate = probable_cases*1e5/tpp_pop) %>%
   left_join(dplyr::select(case_eng, date, eng_roll7)) %>%
-  mutate(msoa_roll7 = rollmean(msoa_probable_rate, 7, fill = NA, align = "right"),
+  mutate(msoa_roll7 = rollsum(probable_cases, 7, fill = NA, align = "right")*1e5/tpp_pop,
          msoa_lag1wk = lag(msoa_roll7, 7),
          msoa_lag2wk = lag(msoa_roll7, 14),
          eng_roll7 = replace_na(eng_roll7, 0),

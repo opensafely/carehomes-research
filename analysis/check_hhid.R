@@ -28,13 +28,19 @@ args = commandArgs(trailingOnly = TRUE)
 input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # Filter just to records from England
   filter(grepl("E",msoa)) %>%
-  mutate(HHID = paste(msoa, household_id, sep = ":"),
-         across(c(imd, rural_urban), function(x) na_if(x,-1)),
-         across(c(imd, household_size, household_id), function(x) na_if(x,0)))
+  mutate(across(c(imd, rural_urban), function(x) na_if(x,-1)),
+         across(c(imd, household_size, household_id), function(x) na_if(x,0)),
+         HHID = paste(msoa, household_id, sep = ":"))
 
 #----------------------------------------#
 #      UNIQUENESS OF HOUSEHOLD ID        #
 #----------------------------------------#
+
+print("No. with missing household id")
+summary(input$household_id == 0)
+summary(is.na(input$household_id))
+
+input <- filter(input, household_id > 0 & !is.na(household_id))
 
 print("No. households, by household_id alone and by household_ID + MSOA")
 input %>%

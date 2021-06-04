@@ -137,7 +137,7 @@ print("% TPP coverage - by HHID:")
 summary(
   ch %>%
     group_by(HHID) %>%
-    summarise(percent_tpp = getmode(percent_tpp)) %>%
+    summarise(percent_tpp = unique(percent_tpp)) %>%
     ungroup() %>%
     mutate(percent_tpp_cat = cut(percent_tpp, 
                                  breaks = 10,

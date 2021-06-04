@@ -31,7 +31,7 @@ theme_set(theme_minimal())
 #   - individual health records for identification of covid events
 
 # args <- c("input_clean.rds", "data/msoa_shp.rds")
-args = commandArgs(trailingOnly=TRUE)
+args = commandArgs(trailingOnly = TRUE)
 
 input <- readRDS(args[1]) %>%
   rename(tpp_cov = tpp_cov_wHHID)

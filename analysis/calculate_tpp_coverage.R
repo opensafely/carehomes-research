@@ -117,7 +117,7 @@ tpp_msoas <- unique(input$msoa)
 write.csv(tpp_msoas, "./msoas_in_tpp.csv", row.names = FALSE)
 
 # Figure
-png("./total_vs_tpp_pop.png", height = 800, width = 800)
+png("./total_vs_tpp_pop.png", height = 800, width = 1000)
 tpp_cov %>%
   pivot_longer(c("tpp_cov_all","tpp_cov_wHHID")) %>%
   ggplot(aes(value)) +
@@ -156,14 +156,14 @@ tpp_cov_incl %>%
   theme_minimal()
 dev.off() 
 
-# Trying to find where the cov = 9% come from...
-tpp_cov_incl %>%
-  mutate(low_cov = (tpp_cov_wHHID < msoa_cov_cutoff)) %>%
-  group_by(low_cov) %>%
-  tally()
-
-tpp_cov_incl %>%
-  filter(tpp_cov_wHHID < msoa_cov_cutoff)
+# # Trying to find where the cov = 9% come from...
+# tpp_cov_incl %>%
+#   mutate(low_cov = (tpp_cov_wHHID < msoa_cov_cutoff)) %>%
+#   group_by(low_cov) %>%
+#   tally()
+# 
+# tpp_cov_incl %>%
+#   filter(tpp_cov_wHHID < msoa_cov_cutoff)
 
 saveRDS(tpp_cov_incl, file = "./tpp_coverage_included.rds")
 saveRDS(tpp_cov, file = "./tpp_coverage_all.rds")

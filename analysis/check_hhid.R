@@ -50,11 +50,11 @@ input %>%
 print("Uniqueness of household characteristics over residents:")
 input %>%
   group_by(household_id) %>%
-  summarise(msoa = n_distinct(msoa), 
-            region = n_distinct(region),
-            household_size = n_distinct(household_size),
-            imd = n_distinct(imd),
-            rural_urban = n_distinct(rural_urban)) -> n_distinct_chars
+  summarise(msoa = n_distinct(msoa, na.rm = T), 
+            region = n_distinct(region, na.rm = T),
+            household_size = n_distinct(household_size, na.rm = T),
+            imd = n_distinct(imd, na.rm = T),
+            rural_urban = n_distinct(rural_urban, na.rm = T)) -> n_distinct_chars
 
 # Should be one distinct value for every household
 summary(n_distinct_chars)

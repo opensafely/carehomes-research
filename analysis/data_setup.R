@@ -30,10 +30,10 @@ library(zoo)
 sink("data_setup_log.txt")
 
 # Function: calculate mode value
-getmode <- function(v) {
-  uniqv <- unique(na.omit(v))
-  uniqv[which.max(tabulate(match(v, uniqv)))]
-}
+# getmode <- function(v) {
+#   uniqv <- unique(na.omit(v))
+#   uniqv[which.max(tabulate(match(v, uniqv)))]
+# }
 
 # ---------------------------------------------------------------------------- #
 

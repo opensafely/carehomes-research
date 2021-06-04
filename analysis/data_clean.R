@@ -156,7 +156,7 @@ nrow(filter(input_wcov, tpp_cov_wHHID < msoa_cov_cutoff))
 input_clean <- input_wcov %>%
   mutate(# Redefine -1/0 values as NA
          across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         across(c(imd, household_size, household_id), function(x) na_if(x,0)),
+         across(c(imd, household_size), function(x) na_if(x,0)),
          # Variable formatting
          dementia = replace_na(dementia,0),
          ethnicity = as.factor(ethnicity),

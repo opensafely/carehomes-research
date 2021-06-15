@@ -29,11 +29,15 @@ library(zoo)
 # write("Data setup log",file="data_setup_log.txt")
 sink("data_setup_log.txt")
 
-# Function: calculate mode value
-# getmode <- function(v) {
-#   uniqv <- unique(na.omit(v))
-#   uniqv[which.max(tabulate(match(v, uniqv)))]
-# }
+# Function: calculate mode value across residents in household
+getmode <- function(v) {
+  uniqv <- unique(na.omit(v))
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+# Household characteristics were defined according to address on 01/02/2020.
+# HHID will be updated when patient relocates but characteristics remain fixed.
+# Therefore households may have a mix of values for each characteristics from 
+# residents who moved since Feb 2020. 
 
 # ---------------------------------------------------------------------------- #
 
@@ -98,16 +102,16 @@ summary(ch)
 
 ch_chars <- ch %>%
   group_by(HHID) %>%
-  summarise(percent_tpp = unique(percent_tpp),
+  summarise(percent_tpp = getmode(percent_tpp),
             exclude = (percent_tpp < ch_cov_cutoff),
-            region = unique(region),
-            msoa = unique(msoa),
+            region = getmode(region),
+            msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
-            ch_size = unique(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
-            ch_type = unique(care_home_type),    # Care, nursing, other
-            rural_urban8 = unique(rural_urban),  # Rural/urban location classification - select mode value over all residents
+            ch_size = getmode(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            ch_type = getmode(care_home_type),    # Care, nursing, other
+            rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
             rural_urban8_miss = sum(is.na(rural_urban)), 
-            imd = unique(imd),                   # In case missing for some indivs, take mode over HH residents
+            imd = getmode(imd),                   # In case missing for some indivs, take mode over HH residents
             imd_miss = sum(is.na(rural_urban)), 
             hh_med_age = median(age),             # average age of registered residents
             age_miss = sum(is.na(age)), 

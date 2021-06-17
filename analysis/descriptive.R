@@ -59,7 +59,7 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss",
 #--------------------------------------------------------#
 
 # Total care homes in analysis dataset
-N_ch_tot <- n_distinct(dat$HHID)
+N_ch_tot <- n_distinct(dat$household_id)
 
 print("Total included care homes:")
 N_ch_tot
@@ -69,7 +69,7 @@ ch %>%
   group_by(msoa) %>% 
   summarise(
     n_resid = n_distinct(patient_id),
-    n_ch = n_distinct(HHID),
+    n_ch = n_distinct(household_id),
     n_gp = n_distinct(practice_id)) %>%
   ungroup() -> per_msoa
 
@@ -92,7 +92,7 @@ summary(ch$case)
 print("No. events per home:")
 ch %>%
   filter(case) %>%
-  group_by(HHID) %>%
+  group_by(household_id) %>%
   summarise(N_case = n()) -> events_per_home
 summary(events_per_home$N_case)
 
@@ -120,7 +120,7 @@ dat %>%
 #----------------------#
 
 # Characteristics of interest
-chars <- c("HHID","msoa","n_resid","ch_size","ch_type","rural_urban", "imd",
+chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban", "imd",
            "hh_med_age","hh_p_female","hh_p_min","hh_p_dem", "hh_maj_dem", 
            "n_case", "first_event", "first_event_which", "ever_affected")
 
@@ -217,7 +217,7 @@ ch_resid_all <- ch %>%
   mutate(ever_affected = "Overall")
 
 ch %>%
-  right_join(dplyr::select(ch_chars, HHID, msoa, ever_affected)) %>% 
+  right_join(dplyr::select(ch_chars, household_id, msoa, ever_affected)) %>% 
   mutate(ever_affected = ifelse(ever_affected, "Affected", "Unaffected")) %>%
   bind_rows(ch_resid_all) %>% 
   mutate(ever_affected = factor(ever_affected, 
@@ -297,7 +297,7 @@ ggsave("./age_dist.png", age_hist, height = 5, width = 6, units = "in")
 ch_long %>%
   group_by(date) %>%
   filter(first_event > date) %>%
-  summarise(n = n_distinct(HHID)) %>%
+  summarise(n = n_distinct(household_id)) %>%
   ggplot(aes(date, n)) +
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
@@ -307,7 +307,7 @@ ggsave("./ch_survival.png", surv1, height = 5, width = 6, units = "in")
 ch_long %>%
   group_by(date, ch_type) %>%
   filter(first_event > date & ch_type != "PS") %>%
-  summarise(n = n_distinct(HHID)) %>%
+  summarise(n = n_distinct(household_id)) %>%
   ggplot(aes(date, n, col = ch_type)) +
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
@@ -318,14 +318,14 @@ ggsave("./ch_survival_bytype.png", surv2, height = 5, width = 6, units = "in")
 # Type of first event
 ch_chars %>%
   filter(ever_affected) %>% 
-  group_by(HHID) %>%
+  group_by(household_id) %>%
   summarise(first_event = unique(first_event),
             first_event_which = unique(first_event_which)) %>%
   mutate(first_event_which = factor(first_event_which, levels = event_dates, 
                                     labels = c("Primary care probable diagnosis", 
                                                "Positive test result", 
                                                "Hospital admission (confirmed/suspected)", 
-                                               "Death (confirmed/suspected"))) %>%
+                                               "Death (confirmed/suspected)"))) %>%
   ggplot(aes(first_event, fill = first_event_which)) +
   geom_histogram() + 
   theme_minimal() +

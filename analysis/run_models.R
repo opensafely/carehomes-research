@@ -36,7 +36,7 @@ print("Summary: NA filtered data")
 summary(dat)
 
 print("No. care homes in final analysis data:")
-n_distinct(dat$HHID)
+n_distinct(dat$household_id)
 
 # Add 1% of mean to probable cases in order to use log transform
 dat %>%
@@ -44,9 +44,9 @@ dat %>%
 
 # ------------------------ Split data into training and test------------------ #
 
-samp <- sample(unique(dat$HHID),(1 - test_sample)*n_distinct(dat$HHID))
-train <- filter(dat, HHID %in% samp)
-test <- filter(dat, !HHID %in% samp)
+samp <- sample(unique(dat$household_id),(1 - test_sample)*n_distinct(dat$household_id))
+train <- filter(dat, household_id %in% samp)
+test <- filter(dat, !household_id %in% samp)
 
 # Save test data for use in model validation
 saveRDS(test,"./testdata.rds")
@@ -54,12 +54,12 @@ saveRDS(test,"./testdata.rds")
 print("No. care homes in training data:")
 train %>% 
   group_by(ever_affected) %>%
-  summarise(n_ch = n_distinct(HHID))
+  summarise(n_ch = n_distinct(household_id))
 
 print("No. care homes in testing data:")
 test %>% 
   group_by(ever_affected, wave) %>%
-  summarise(n_ch = n_distinct(HHID))
+  summarise(n_ch = n_distinct(household_id))
 
 ## ----------------------------- Model Formulae -------------------------------##
 

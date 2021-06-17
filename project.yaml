@@ -62,6 +62,7 @@ actions:
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt
+        figure: carehome_size.png
       highly_sensitive:
         comm_prev: community_incidence.rds
         analysisdata: analysisdata.rds

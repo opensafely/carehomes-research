@@ -48,10 +48,11 @@ msoa_shp <- readRDS(args[2])
 # Distribution of household size, 
 png("./hh_size_dist.png", height = 800, width = 1400)
 input %>%
+  filter(household_size < quantile(household_size, 0.999, na.rm = T)) %>%
   group_by(care_home_type, household_id) %>%
-  summarise(household_size = median(household_size, na.rm = T)) %>%
+  summarise(household_size = unique(household_size)) %>%
   ggplot(aes(household_size)) +
-  geom_histogram() +
+  geom_histogram(fill = "white", col = "black") +
   facet_wrap(~care_home_type, scales = "free") 
 dev.off()
 
@@ -61,8 +62,8 @@ input %>%
   mutate(group = case_when(care_home_type == "U" ~ "Community",
                            care_home_type !="U" ~ "Care home")) %>%
   ggplot(aes(age)) +
-  geom_histogram(bins = 30) +
-  facet_wrap(~group) 
+  geom_histogram(bins = 30, fill = "white", col = "black") +
+  facet_wrap(~group, scales = "free") 
 dev.off()
 
 # TPP coverage by MSOA
@@ -71,7 +72,7 @@ input %>%
   group_by(msoa) %>%
   summarise(tpp_cov = unique(tpp_cov)) %>%
   ggplot(aes(tpp_cov)) +
-  geom_histogram(bins = 30, fill = "steelblue") 
+  geom_histogram(bins = 30, fill = "white", col = "black") 
 dev.off()
 
 png("./tpp_coverage_carehomes.png", height = 500, width = 600)
@@ -80,7 +81,7 @@ input %>%
   dplyr::select(HHID, percent_tpp) %>%
   unique() %>% 
   ggplot(aes(percent_tpp)) +
-  geom_histogram(bins = 30, fill = "steelblue") 
+  geom_histogram(bins = 30, fill = "white", col = "black") 
 dev.off() 
 
 input %>%
@@ -102,8 +103,8 @@ input %>%
   filter(care_home_type != "U") %>%
   pivot_longer(prob_death_delay:test_death_delay) %>%
   ggplot(aes(value)) +
-  geom_histogram(bins = 30, fill = "steelblue") +
-  facet_wrap(~name)
+  geom_histogram(bins = 30, fill = "white", col = "black") +
+  facet_wrap(~name, scales = "free")
 dev.off()
 
 # ---------------------------------------------------------------------------- #

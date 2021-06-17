@@ -107,7 +107,7 @@ ch_chars <- ch %>%
             region = getmode(region),
             msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
-            ch_size = getmode(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            ch_size = unique(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = getmode(care_home_type),    # Care, nursing, other
             rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
             rural_urban8_miss = sum(is.na(rural_urban)), 
@@ -129,6 +129,12 @@ ch_chars <- ch %>%
 
 print("Summary: Care home characteristics")
 summary(ch_chars)
+
+png("carehome_size.png", width = 600, height = 500)
+ggplot(ch_chars, aes(x = ch_size)) +
+  geom_histogram(fill = "white", col = "black", bins = 20) +
+  theme_minimal()
+dev.off()
 
 print("No. unique homes:")
 nrow(ch_chars)

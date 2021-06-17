@@ -215,7 +215,7 @@ summary(n_distinct_chars)
 print("No. households, patients and probable cases per carehome type:")
 input_clean %>%
   group_by(care_home_type) %>%
-  summarise(n_hh = n_distinct(HHID),
+  summarise(n_hh = n_distinct(household_id),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -223,7 +223,7 @@ input_clean %>%
 print("Possible prisons/institutions (size>20 and not CH)")
 input_clean %>%
   group_by(institution) %>%
-  summarise(n_hh = n_distinct(HHID),
+  summarise(n_hh = n_distinct(household_id),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -238,7 +238,7 @@ input_clean %>%
   filter(care_home_type != "U") %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
   group_by(mixed_household) %>% 
-  summarise(n_hh = n_distinct(HHID),
+  summarise(n_hh = n_distinct(household_id),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -246,7 +246,7 @@ print("Care homes with < 100% coverage:")
 input_clean %>%
   filter(care_home_type != "U") %>%
   group_by(percent_tpp < 100) %>% 
-  summarise(n_hh = n_distinct(HHID),
+  summarise(n_hh = n_distinct(household_id),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
 
@@ -254,7 +254,7 @@ print("Care homes % TPP coverage:")
 summary(
   input_clean %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(HHID, percent_tpp) %>%
+  dplyr::select(household_id, percent_tpp) %>%
   unique() %>% 
   pull(percent_tpp)
 )
@@ -263,7 +263,7 @@ print("Care homes % TPP coverage category:")
 summary(
   input_clean %>%
   filter(care_home_type != "U") %>%
-  dplyr::select(HHID, percent_tpp) %>%
+  dplyr::select(household_id, percent_tpp) %>%
   unique() %>% 
   mutate(percent_tpp_cat = cut(percent_tpp, 
                                breaks = 10,
@@ -289,7 +289,7 @@ input_clean %>%
 
 print("Number of records by care home type:")
 input_clean %>%
-  group_by(care_home_type, HHID) %>%
+  group_by(care_home_type, household_id) %>%
   summarise(n_resid = n()) %>%
   group_by(care_home_type) %>%
   summarise(mean = mean(n_resid),

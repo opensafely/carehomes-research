@@ -165,6 +165,9 @@ input_clean <- input_wcov %>%
          across(all_of(event_dates), ymd),
          # Set all character variables as factor
          across(where(is.character), as.factor),
+         # Identify carehome residents aged >= 65
+         age_ge65 = (age >= 65),
+         ch_ge65 = (care_home_type != "U" & age >= 65),
          # Identify potential prisons/institutions - still needed?
          institution = (care_home_type == "U" & household_size > 20),
          # Define delays
@@ -214,7 +217,7 @@ summary(n_distinct_chars)
 # By household type
 print("No. households, patients and probable cases per carehome type:")
 input_clean %>%
-  group_by(care_home_type) %>%
+  group_by(care_home_type, age_ge65) %>%
   summarise(n_hh = n_distinct(household_id),
             n_pat = n_distinct(patient_id),
             n_case = sum(case, na.rm = TRUE)) 
@@ -235,7 +238,7 @@ input_clean %>%
 
 print("Care homes registered under > 1 system:")
 input_clean %>%
-  filter(care_home_type != "U") %>%
+  filter(ch_ge65) %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
   group_by(mixed_household) %>% 
   summarise(n_hh = n_distinct(household_id),
@@ -244,7 +247,7 @@ input_clean %>%
 
 print("Care homes with < 100% coverage:")
 input_clean %>%
-  filter(care_home_type != "U") %>%
+  filter(ch_ge65) %>%
   group_by(percent_tpp < 100) %>% 
   summarise(n_hh = n_distinct(household_id),
             n_pat = n_distinct(patient_id),
@@ -253,7 +256,7 @@ input_clean %>%
 print("Care homes % TPP coverage:")
 summary(
   input_clean %>%
-  filter(care_home_type != "U") %>%
+  filter(ch_ge65) %>%
   dplyr::select(household_id, percent_tpp) %>%
   unique() %>% 
   pull(percent_tpp)
@@ -262,7 +265,7 @@ summary(
 print("Care homes % TPP coverage category:")
 summary(
   input_clean %>%
-  filter(care_home_type != "U") %>%
+  filter(ch_ge65) %>%
   dplyr::select(household_id, percent_tpp) %>%
   unique() %>% 
   mutate(percent_tpp_cat = cut(percent_tpp, 
@@ -281,7 +284,7 @@ summary(
 print("Household size by care home type:")
 input_clean %>%
   filter(!is.na(household_size)) %>%
-  group_by(care_home_type) %>%
+  group_by(care_home_type, age_ge65) %>%
   summarise(mean = mean(household_size),
             sd = sd(household_size),
             median = median(household_size),
@@ -289,9 +292,9 @@ input_clean %>%
 
 print("Number of records by care home type:")
 input_clean %>%
-  group_by(care_home_type, household_id) %>%
+  group_by(care_home_type, age_ge65, household_id) %>%
   summarise(n_resid = n()) %>%
-  group_by(care_home_type) %>%
+  group_by(care_home_type, age_ge65) %>%
   summarise(mean = mean(n_resid),
             sd = sd(n_resid),
             median = median(n_resid),

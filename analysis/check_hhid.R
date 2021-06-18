@@ -30,6 +30,7 @@ input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   filter(grepl("E",msoa)) %>%
   mutate(across(c(imd, rural_urban), function(x) na_if(x,-1)),
          across(c(imd, household_size, household_id), function(x) na_if(x,0)),
+         ch_ge65 = (care_home_type != "U" & age >= 65),
          HHID = paste(msoa, household_id, sep = ":"))
 
 #----------------------------------------#
@@ -53,6 +54,7 @@ input %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
             region = n_distinct(region, na.rm = T),
             household_size = n_distinct(household_size, na.rm = T),
+            percent_tpp = n_distinct(household_size, na.rm = T),
             imd = n_distinct(imd, na.rm = T),
             rural_urban = n_distinct(rural_urban, na.rm = T)) -> n_distinct_chars
 
@@ -62,7 +64,7 @@ summary(n_distinct_chars)
 
 print("Uniqueness of household characteristics over care home residents:")
 input %>%
-  filter(care_home_type != "U") %>%
+  filter(ch_ge65) %>%
   group_by(household_id) %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
             region = n_distinct(region, na.rm = T),
@@ -88,7 +90,7 @@ n_distinct_chars2 %>%
 print("Household size by care home type:")
 input %>%
   filter(!is.na(household_size)) %>%
-  group_by(care_home_type) %>%
+  group_by(ch_ge65) %>%
   summarise(mean = mean(household_size),
             sd = sd(household_size),
             median = median(household_size),
@@ -96,9 +98,9 @@ input %>%
 
 print("Number of records by care home type (household_id):")
 input %>%
-  group_by(care_home_type, household_id) %>%
+  group_by(ch_ge65, household_id) %>%
   summarise(n_resid = n()) %>%
-  group_by(care_home_type) %>%
+  group_by(ch_ge65) %>%
   summarise(mean = mean(n_resid),
             sd = sd(n_resid),
             median = median(n_resid),
@@ -106,9 +108,9 @@ input %>%
 
 print("Number of records by care home type (HHID):")
 input %>%
-  group_by(care_home_type, HHID) %>%
+  group_by(ch_ge65, HHID) %>%
   summarise(n_resid = n()) %>%
-  group_by(care_home_type) %>%
+  group_by(ch_ge65) %>%
   summarise(mean = mean(n_resid),
             sd = sd(n_resid),
             median = median(n_resid),

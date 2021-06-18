@@ -171,7 +171,7 @@ input_clean <- input_wcov %>%
          # Identify potential prisons/institutions - still needed?
          institution = (care_home_type == "U" & household_size > 20),
          # Estimate total household size according to tpp percentage
-         household_size = household_size/tpp_percentage,
+         household_size = household_size/percent_tpp,
          # Define delays
          test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
          prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable),

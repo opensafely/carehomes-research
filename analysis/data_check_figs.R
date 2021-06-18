@@ -85,19 +85,19 @@ input %>%
   geom_histogram(bins = 30, fill = "white", col = "black") 
 dev.off() 
 
-# input %>%
-#   group_by(msoa) %>%
-#   summarise(tpp_cov = mean(tpp_cov, na.rm = T)) %>%
-#   ungroup() -> by_msoa
-# 
-# pdf("./tpp_coverage_map.pdf", height = 10, width = 8)
-# msoa_shp %>% 
-#   full_join(by_msoa, by = c("MSOA11CD" = "msoa")) %>%
-#   ggplot(aes(geometry = geometry, fill = tpp_cov)) +
-#   geom_sf(lwd = 0) +
-#   scale_fill_gradient2(midpoint = 100, low = "steelblue", high = "indianred", mid = "white") +
-#   theme(legend.position = c(0.2,0.9)) 
-# dev.off()
+input %>%
+  group_by(msoa) %>%
+  summarise(tpp_cov = mean(tpp_cov, na.rm = T)) %>%
+  ungroup() -> by_msoa
+
+pdf("./tpp_coverage_map.pdf", height = 10, width = 8)
+msoa_shp %>%
+  full_join(by_msoa, by = c("MSOA11CD" = "msoa")) %>%
+  ggplot(aes(geometry = geometry, fill = tpp_cov)) +
+  geom_sf(lwd = 0) +
+  scale_fill_gradient2(midpoint = 100, low = "steelblue", high = "indianred", mid = "white") +
+  theme(legend.position = c(0.2,0.9))
+dev.off()
 
 png("./infection_death_delays.png", height = 500, width = 900)
 input %>%

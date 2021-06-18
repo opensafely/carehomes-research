@@ -84,7 +84,7 @@ input %>%
 
 # Split out carehome residents 
 input %>%
-  filter(care_home_type != "U") -> ch
+  filter(care_home_type != "U" & age >= 65) -> ch
 
 print("Summary: all care home residents")
 summary(ch)
@@ -132,7 +132,7 @@ summary(ch_chars)
 
 png("carehome_size.png", width = 600, height = 500)
 ggplot(ch_chars, aes(x = ch_size)) +
-  geom_histogram(fill = "white", col = "black", bins = 20) +
+  geom_histogram(fill = "white", col = "black", bins = 50) +
   theme_minimal()
 dev.off()
 

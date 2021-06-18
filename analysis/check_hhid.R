@@ -54,6 +54,7 @@ input %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
             region = n_distinct(region, na.rm = T),
             household_size = n_distinct(household_size, na.rm = T),
+            care_home_type = n_distinct(care_home_type, na.rm = T),
             percent_tpp = n_distinct(household_size, na.rm = T),
             imd = n_distinct(imd, na.rm = T),
             rural_urban = n_distinct(rural_urban, na.rm = T)) -> n_distinct_chars
@@ -69,6 +70,7 @@ input %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
             region = n_distinct(region, na.rm = T),
             household_size = n_distinct(household_size, na.rm = T),
+            care_home_type = n_distinct(care_home_type, na.rm = T),
             imd = n_distinct(imd, na.rm = T),
             rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
   ungroup() -> n_distinct_chars2

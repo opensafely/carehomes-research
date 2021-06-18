@@ -1,6 +1,7 @@
 # Table of contents
 
 * [age_dist.png](age_dist.png)
+* [carehome_size.png](carehome_size.png)
 * [ch_chars_tab.csv](ch_chars_tab.csv)
 * [ch_survival.png](ch_survival.png)
 * [ch_survival_bytype.png](ch_survival_bytype.png)

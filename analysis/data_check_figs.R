@@ -34,7 +34,7 @@ theme_set(theme_minimal())
 args = commandArgs(trailingOnly = TRUE)
 
 input <- readRDS(args[1]) %>%
-  rename(tpp_cov = tpp_cov_whousehold_id)
+  rename(tpp_cov = tpp_cov_wHHID)
 
 ## Load shapefiles
 msoa_shp <- readRDS(args[2])

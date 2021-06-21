@@ -43,6 +43,13 @@ actions:
       highly_sensitive:
         input_clean: input_clean.rds
         
+  data_check:
+    needs: [data_clean]
+    run: r:latest analysis/data_check.R input_clean.rds 
+    outputs:
+      moderately_sensitive:
+        log: data_check_log.txt
+        
   data_check_figs:
     needs: [data_clean]
     run: r:latest analysis/data_check_figs.R input_clean.rds data/msoa_shp.rds

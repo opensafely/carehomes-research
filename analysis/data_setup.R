@@ -107,7 +107,7 @@ ch_chars <- ch %>%
             region = getmode(region),
             msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
-            ch_size = unique(household_size),    # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            ch_size = unique(household_size_tot),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = getmode(care_home_type),    # Care, nursing, other
             rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
             rural_urban8_miss = sum(is.na(rural_urban)), 

@@ -24,12 +24,20 @@ sink("./data_clean_log.txt", type = "output")
 
 options(datatable.old.fread.datetime.character = TRUE)
 
+
+replace_na_neg1 <- function(x) na_if(x,-1)
+
 # Replace dates outside specified range with NAs (default outside 2020)
 na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
+  x <- lubridate::ymd(x)
   x[x < min] <- NA
   x[x > max] <- NA
-  return(ymd(x))
+  return(x)
 }
+
+
+replace_na_neg1 <- function(x) na_if(x,-1)
+
 
 # ---------------------------------------------------------------------------- #
 
@@ -154,178 +162,46 @@ nrow(filter(input_wcov, tpp_cov_wHHID < msoa_cov_cutoff))
 
 # Set up variables of interest
 input_clean <- input_wcov %>%
-  mutate(# Redefine -1/0 values as NA
-         across(c(age, ethnicity, imd, rural_urban), function(x) na_if(x,-1)),
-         across(c(imd, household_size), function(x) na_if(x,0)),
-         # Variable formatting
-         dementia = replace_na(dementia,0),
-         ethnicity = as.factor(ethnicity),
-         rural_urban = as.factor(rural_urban),
-         # Date formats
-         across(all_of(event_dates), ymd),
-         # Set all character variables as factor
-         across(where(is.character), as.factor),
-         # Identify carehome residents aged >= 65
-         age_ge65 = (age >= 65),
-         ch_ge65 = (care_home_type != "U" & age >= 65),
-         # Identify potential prisons/institutions - still needed?
-         institution = (care_home_type == "U" & household_size > 20),
-         # Estimate total household size according to tpp percentage
-         household_size = household_size/percent_tpp,
-         # Define delays
-         test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),
-         prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable),
-         # Replace event dates pre 2020 and post end of study as NA
-         across(all_of(event_dates), na_replace_dates, max = max(study_per)),
-         # Redefine unique household identifier
-         HHID = paste(msoa, household_id, sep = ":")) %>% 
-  # Identify individuals with any covid event
-  rowwise() %>%
-  mutate(case = any(!is.na(c_across(all_of(event_dates))))) %>%
-  ungroup() 
+  lazy_dt() %>%
+  mutate(
+    
+    # Identify dates
+    primary_care_case_probable = na_replace_dates(primary_care_case_probable, max = max(study_per)),
+    first_pos_test_sgss = na_replace_dates(first_pos_test_sgss, max = max(study_per)),
+    covid_admission_date = na_replace_dates(covid_admission_date, max = max(study_per)),
+    ons_covid_death_date = na_replace_dates(ons_covid_death_date, max = max(study_per)),
+    discharge_date = na_replace_dates(discharge_date, max = max(study_per)),
+    
+    # Reformat existing variables
+    care_home_type = as.factor(care_home_type),
+    household_size = na_if(household_size,0),
+    region = as.factor(region),
+    stp = as.factor(stp),
+    msoa = as.factor(msoa),
+    rural_urban = as.factor(na_if(rural_urban, -1)),
+    imd = na_if(na_if(imd, -1),0), 
+    age = na_if(age, -1),
+    sex  = as.factor(sex),
+    ethnicity = as.factor(na_if(ethnicity, -1)),
+    dementia = replace_na(dementia,0),
+    
+    # Define new variables
+    age_ge65 = (age >= 65),   # Identify carehome residents aged >= 65
+    ch_ge65 = (care_home_type != "U" & age >= 65),
+    institution = (care_home_type == "U" & household_size > 20),    # Identify potential prisons/institutions - still needed?
+    household_size_tot = na_if(household_size/(percent_tpp/100), Inf),    # Estimate total household size according to tpp percentage
+    test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),    # Define delays
+    prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable),
+    HHID = paste(msoa, household_id, sep = ":")    # Redefine unique household identifier
+    
+    ) %>%    
+  as_tibble() 
+
+events <- !is.na(input_clean[,event_dates])
+input_clean$case <- (rowSums(events) > 0)
   
 print("Summary: Cleaned")
 summary(input_clean)
-
-# ---------------------------------------------------------------------------- #
-
-#----------------------------------------#
-#      UNIQUENESS OF HOUSEHOLD ID        #
-#----------------------------------------#
-
-print("No. households, by household_id alone and by household_ID + MSOA")
-input_clean %>%
-  summarise(N_hhID = n_distinct(household_id),
-            N_msoa_hhID = n_distinct(HHID))
-
-print("Uniqueness of household characteristics over all residents:")
-input_clean %>%
-  group_by(household_id) %>%
-  summarise(msoa = n_distinct(msoa, na.rm = T), 
-            region = n_distinct(region, na.rm = T),
-            household_size = n_distinct(household_size, na.rm = T),
-            care_home_type = n_distinct(care_home_type, na.rm = T),
-            percent_tpp = n_distinct(household_size, na.rm = T),
-            imd = n_distinct(imd, na.rm = T),
-            rural_urban = n_distinct(rural_urban, na.rm = T)) -> n_distinct_chars
-
-# Should be one distinct value for every household
-summary(n_distinct_chars)
-
-
-print("Uniqueness of household characteristics over care home residents:")
-input_clean %>%
-  filter(ch_ge65) %>%
-  group_by(household_id) %>%
-  summarise(msoa = n_distinct(msoa, na.rm = T), 
-            region = n_distinct(region, na.rm = T),
-            household_size = n_distinct(household_size, na.rm = T),
-            care_home_type = n_distinct(care_home_type, na.rm = T),
-            imd = n_distinct(imd, na.rm = T),
-            rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
-  ungroup() -> n_distinct_chars2
-
-# Should be one distinct value for every household
-summary(n_distinct_chars2)
-
-print("No. care homes with non-unique characteristics across residents:")
-n_distinct_chars2 %>%
-  dplyr::select(-household_id) %>%
-  summarise(across(everything(), function(x) sum(x > 1)))
-
-
-# ---------------------------------------------------------------------------- #
-
-#---------------------------------#
-#      CHECK COUNTS BY TYPE       #
-#---------------------------------#
-
-# By household type
-print("No. households, patients and probable cases per carehome type:")
-input_clean %>%
-  group_by(care_home_type, age_ge65) %>%
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n_distinct(patient_id),
-            n_case = sum(case, na.rm = TRUE)) 
-
-# By institution
-print("Possible prisons/institutions (size>20 and not CH)")
-input_clean %>%
-  group_by(institution) %>%
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n_distinct(patient_id),
-            n_case = sum(case, na.rm = TRUE)) 
-
-# ---------------------------------------------------------------------------- #
-
-#-------------------------------------------------#
-#      CHECK TPP COVERAGE WITHIN CARE HOMES       #
-#-------------------------------------------------#
-
-print("Care homes registered under > 1 system:")
-input_clean %>%
-  filter(ch_ge65) %>%
-  mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
-  group_by(mixed_household) %>% 
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n_distinct(patient_id),
-            n_case = sum(case, na.rm = TRUE)) 
-
-print("Care homes with < 100% coverage:")
-input_clean %>%
-  filter(ch_ge65) %>%
-  group_by(percent_tpp < 100) %>% 
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n_distinct(patient_id),
-            n_case = sum(case, na.rm = TRUE)) 
-
-print("Care homes % TPP coverage:")
-summary(
-  input_clean %>%
-  filter(ch_ge65) %>%
-  dplyr::select(household_id, percent_tpp) %>%
-  unique() %>% 
-  pull(percent_tpp)
-)
-
-print("Care homes % TPP coverage category:")
-summary(
-  input_clean %>%
-  filter(ch_ge65) %>%
-  dplyr::select(household_id, percent_tpp) %>%
-  unique() %>% 
-  mutate(percent_tpp_cat = cut(percent_tpp, 
-                               breaks = 10,
-                               include.lowest = TRUE)) %>%
-  pull(percent_tpp_cat)
-)
-
-
-# ---------------------------------------------------------------------------- #
-
-#----------------------------------#
-#      CHECK HOUSEHOLD SIZES       #
-#----------------------------------#
-
-print("Household size by care home type:")
-input_clean %>%
-  filter(!is.na(household_size)) %>%
-  group_by(care_home_type, age_ge65) %>%
-  summarise(mean = mean(household_size),
-            sd = sd(household_size),
-            median = median(household_size),
-            minmax = paste(min(household_size), max(household_size), sep = ", ")) 
-
-print("Number of records by care home type:")
-input_clean %>%
-  group_by(care_home_type, age_ge65, household_id) %>%
-  summarise(n_resid = n()) %>%
-  group_by(care_home_type, age_ge65) %>%
-  summarise(mean = mean(n_resid),
-            sd = sd(n_resid),
-            median = median(n_resid),
-            minmax = paste(min(n_resid), max(n_resid), sep = ", ")) 
-
 
 ################################################################################
 

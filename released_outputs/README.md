@@ -31,6 +31,7 @@
 * [output_model_val.txt](output_model_val.txt)
 * outputs
   * [outputs/age_dist.png](outputs/age_dist.png)
+  * [outputs/carehome_size.png](outputs/carehome_size.png)
   * [outputs/ch_chars_tab.csv](outputs/ch_chars_tab.csv)
   * [outputs/ch_survival.png](outputs/ch_survival.png)
   * [outputs/ch_survival_bytype.png](outputs/ch_survival_bytype.png)
@@ -40,6 +41,7 @@
   * [outputs/community_inc.png](outputs/community_inc.png)
   * [outputs/compare_epidemics.png](outputs/compare_epidemics.png)
   * [outputs/coverage_log.txt](outputs/coverage_log.txt)
+  * [outputs/data_check_log.txt](outputs/data_check_log.txt)
   * [outputs/data_clean_log.txt](outputs/data_clean_log.txt)
   * [outputs/data_setup_log.txt](outputs/data_setup_log.txt)
   * [outputs/descriptive.pdf](outputs/descriptive.pdf)

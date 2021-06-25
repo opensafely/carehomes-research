@@ -57,9 +57,9 @@ input %>%
          tpp_pop = tpp_pop_wHHID) %>%
   # exclude any cases pre-2020 
   filter(date > lubridate::ymd("2020-01-01")) %>%
-  # count probable diagnoses per day and per msoa
+  # count probable diagnoses per day and per msoa and scale by estimated TPP coverage
   group_by(msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date) %>%
-  summarise(probable_cases = n()) %>%
+  summarise(probable_cases = n()/(tpp_cov/100)) %>%
   ungroup() -> comm_probable
 
 # define total period of observed events

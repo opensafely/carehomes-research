@@ -175,6 +175,7 @@ input_clean <- input_wcov %>%
     # Reformat existing variables
     care_home_type = as.factor(care_home_type),
     household_size = na_if(household_size,0),
+    percent_tpp = na_if(percent_tpp, 0),
     region = as.factor(region),
     stp = as.factor(stp),
     msoa = as.factor(msoa),

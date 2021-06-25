@@ -72,6 +72,7 @@ png("./tpp_coverage_msoa.png", height = 500, width = 600)
 input %>%
   group_by(msoa) %>%
   summarise(tpp_cov = unique(tpp_cov)) %>%
+  ungroup() %>%
   ggplot(aes(tpp_cov)) +
   geom_histogram(bins = 30, fill = "white", col = "black") 
 dev.off()
@@ -95,7 +96,7 @@ msoa_shp %>%
   full_join(by_msoa, by = c("MSOA11CD" = "msoa")) %>%
   ggplot(aes(geometry = geometry, fill = tpp_cov)) +
   geom_sf(lwd = 0) +
-  scale_fill_gradient2(midpoint = 100, low = "steelblue", high = "indianred", mid = "white") +
+  scale_fill_gradient2(midpoint = 100, high = "steelblue", low = "indianred", mid = "white") +
   theme(legend.position = c(0.2,0.9))
 dev.off()
 

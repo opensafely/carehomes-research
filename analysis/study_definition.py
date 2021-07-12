@@ -15,7 +15,7 @@ from codelists import *
 study = StudyDefinition(
     # Configure the expectations framework
     default_expectations={
-        "date": {"earliest": "2020-01-01", "latest": "today"},
+        "date": {"earliest": "2020-02-01", "latest": "today"},
         "rate": "exponential_increase",
         "incidence" : 0.2
     },
@@ -42,7 +42,7 @@ study = StudyDefinition(
        find_first_match_in_period=True,
        returning="date",
        date_format="YYYY-MM-DD",
-       return_expectations={"date": {"earliest": "2020-03-01"},
+       return_expectations={"date": {"earliest": "2020-02-01"},
                             "rate": "exponential_increase"
        },
     ),
@@ -54,14 +54,14 @@ study = StudyDefinition(
         on_or_after="2020-02-01",
         find_first_match_in_period=True,  
         date_format="YYYY-MM-DD",  
-        return_expectations={"date": {"earliest": "2020-03-01"}},
+        return_expectations={"date": {"earliest": "2020-02-01"}},
    ),
     
     ### Covid-related death
     # Registered death, any COVID
     ons_covid_death_date=patients.with_these_codes_on_death_certificate(
        covid_codelist,
-       on_or_before="2020-10-01",
+       on_or_before="2020-12-07",
        match_only_underlying_cause=False,
        returning="date_of_death",
        date_format="YYYY-MM-DD",
@@ -78,7 +78,7 @@ study = StudyDefinition(
         on_or_after="2020-02-01",
         find_first_match_in_period=True,  
         date_format="YYYY-MM-DD",  
-        return_expectations={"date": {"earliest": "2020-03-01"}},
+        return_expectations={"date": {"earliest": "2020-02-01"}},
    ),
 
     ## HOUSEHOLD INFORMATION

@@ -206,7 +206,7 @@ study = StudyDefinition(
     ),    
 
     rural_urban=patients.address_as_of(
-        "2020-03-01",
+        "2020-02-01",
         returning="rural_urban_classification",
         return_expectations={
             "rate": "universal",

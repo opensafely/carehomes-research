@@ -90,7 +90,7 @@ print("Summary: all care home residents")
 summary(ch)
 
 print("Uniqueness of household characteristics over care home residents:")
-ch
+ch %>%
   group_by(household_id) %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
             region = n_distinct(region, na.rm = T),

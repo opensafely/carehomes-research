@@ -58,7 +58,7 @@ input %>%
   # exclude any cases pre-2020 
   filter(date > lubridate::ymd("2020-01-01")) %>%
   # count probable diagnoses per day and per msoa
-  group_by(msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date) %>%
+  group_by(msoa, tpp_pop, msoa_pop, `65+`, tpp_cov, date) %>%
   summarise(probable_cases = n()) %>%
   ungroup() -> comm_probable
 
@@ -77,11 +77,11 @@ start <- Sys.time()
 comm_probable <- as.data.table(comm_probable)
 
 # Replicate per region (by vars are all values I want to copy down per date):
-all_dates <- comm_probable[,.(date = obs_per),by = c("msoa","tpp_pop", "msoa_pop", "70+", "tpp_cov")]
+all_dates <- comm_probable[,.(date = obs_per),by = c("msoa","tpp_pop", "msoa_pop", "65+", "tpp_cov")]
 
 # Merge and fill count with 0:
-setkey(comm_probable, msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date)
-setkey(all_dates, msoa, tpp_pop, msoa_pop, `70+`, tpp_cov, date)
+setkey(comm_probable, msoa, tpp_pop, msoa_pop, `65+`, tpp_cov, date)
+setkey(all_dates, msoa, tpp_pop, msoa_pop, `65+`, tpp_cov, date)
 
 comm_probable_expand <- comm_probable[all_dates, roll = FALSE]
 comm_probable_expand <- comm_probable_expand[is.na(probable_cases), probable_cases := 0]

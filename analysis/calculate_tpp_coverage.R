@@ -51,9 +51,9 @@ msoa_pop <- fread(args[2], data.table = FALSE, na.strings = "") %>%
   filter(grepl("E", msoa)) %>%
   # Sum older populations
   rowwise() %>%
-  mutate(`70+` = sum(`70-74`:`90+`)) %>%
-  dplyr::select(msoa, msoa_pop, `70+`) %>%
-  ungroup()
+  mutate(`65+` = sum(c_across(`65-69`:`90+`))) %>%
+  ungroup() %>%
+  dplyr::select(msoa, msoa_pop, `65+`)
 
 ## MSOA TPP coverage cut off
 msoa_cov_cutoff <- as.numeric(args[3])

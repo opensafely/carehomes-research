@@ -405,9 +405,9 @@ ggsave("./comm_vs_ch_risk_log2.png", comm_v_ch_log2, height = 8, width = 10, uni
 
 input %>%
   filter(!is.na(primary_care_case_probable) & primary_care_case_probable > ymd("2020-01-01")) %>%
-  mutate(group = case_when(care_home_type == "U" & age < 70 ~ "Community",
+  mutate(group = case_when(care_home_type == "U" & age < 65 ~ "Community",
                            care_home_type != "U" ~ "Care home",
-                           care_home_type == "U" & age >= 70 ~ "Community, aged 70+")) %>%
+                           care_home_type == "U" & age >= 65 ~ "Community, aged 65+")) %>%
   group_by(primary_care_case_probable, group) %>%
   summarise(n = n()) %>% #, msoa_pop = unique(msoa_pop), pop_gt70 = unique(`70+`)
   ggplot(aes(primary_care_case_probable, n, col = group)) +

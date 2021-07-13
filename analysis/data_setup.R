@@ -89,25 +89,6 @@ input %>%
 print("Summary: all care home residents")
 summary(ch)
 
-print("Uniqueness of household characteristics over care home residents:")
-ch %>%
-  group_by(household_id) %>%
-  summarise(msoa = n_distinct(msoa, na.rm = T), 
-            region = n_distinct(region, na.rm = T),
-            household_size_tot = n_distinct(household_size_tot, na.rm = T),
-            care_home_type = n_distinct(care_home_type, na.rm = T),
-            imd = n_distinct(imd, na.rm = T),
-            rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
-  ungroup() -> n_distinct_chars
-
-# Should be one distinct value for every household
-summary(n_distinct_chars)
-
-print("No. care homes with non-unique characteristics across residents:")
-n_distinct_chars %>%
-  dplyr::select(-household_id) %>%
-  summarise(across(everything(), function(x) sum(x > 1)))
-
 # ---------------------------------------------------------------------------- #
 
 #-----------------------------#
@@ -169,7 +150,7 @@ n_distinct(ch_chars$household_id)
 # household.
 
 print("Mixed household - by household_id:")
-summary(ch_chars$mixed_household)
+summary(as.factor(ch_chars$mixed_household))
 
 print("% TPP coverage - by household_id:")
 summary(ch_chars$percent_tpp)
@@ -200,6 +181,26 @@ summary(ch_chars)
 # Also keep only residents in homes with sufficient coverage
 ch <- ch %>%
   filter(household_id %in% incl)
+
+
+print("Uniqueness of household characteristics over care home residents (included homes):")
+ch %>%
+  group_by(household_id) %>%
+  summarise(msoa = n_distinct(msoa, na.rm = T), 
+            region = n_distinct(region, na.rm = T),
+            household_size_tot = n_distinct(household_size_tot, na.rm = T),
+            care_home_type = n_distinct(care_home_type, na.rm = T),
+            imd = n_distinct(imd, na.rm = T),
+            rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
+  ungroup() -> n_distinct_chars
+
+# Should be one distinct value for every household
+summary(n_distinct_chars)
+
+print("No. included care homes with non-unique characteristics across residents:")
+n_distinct_chars %>%
+  dplyr::select(-household_id) %>%
+  summarise(across(everything(), function(x) sum(x > 1)))
 
 # ---------------------------------------------------------------------------- #
 

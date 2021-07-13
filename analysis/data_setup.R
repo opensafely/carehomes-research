@@ -89,6 +89,25 @@ input %>%
 print("Summary: all care home residents")
 summary(ch)
 
+print("Uniqueness of household characteristics over care home residents:")
+ch
+  group_by(household_id) %>%
+  summarise(msoa = n_distinct(msoa, na.rm = T), 
+            region = n_distinct(region, na.rm = T),
+            household_size_tot = n_distinct(household_size_tot, na.rm = T),
+            care_home_type = n_distinct(care_home_type, na.rm = T),
+            imd = n_distinct(imd, na.rm = T),
+            rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
+  ungroup() -> n_distinct_chars
+
+# Should be one distinct value for every household
+summary(n_distinct_chars)
+
+print("No. care homes with non-unique characteristics across residents:")
+n_distinct_chars %>%
+  dplyr::select(-household_id) %>%
+  summarise(across(everything(), function(x) sum(x > 1)))
+
 # ---------------------------------------------------------------------------- #
 
 #-----------------------------#

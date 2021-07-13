@@ -27,8 +27,8 @@ options(datatable.old.fread.datetime.character = TRUE)
 
 replace_na_neg1 <- function(x) na_if(x,-1)
 
-# Replace dates outside specified range with NAs (default outside 2020)
-na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-31') {
+# Replace dates outside specified range with NAs (default outside 1st Jan to 7th Dec (study end))
+na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-07') {
   x <- lubridate::ymd(x)
   x[x < min] <- NA
   x[x > max] <- NA
@@ -64,9 +64,6 @@ tpp_cov_incl <- readRDS(args[2])
 
 # MSOA TPP coverage cut off
 msoa_cov_cutoff <- as.numeric(args[3])
-
-# Set study period 
-study_per <- seq(as.Date("2020-03-01"),as.Date("2020-12-07"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, positive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
@@ -166,11 +163,11 @@ input_clean <- input_wcov %>%
   mutate(
     
     # Identify dates
-    primary_care_case_probable = na_replace_dates(primary_care_case_probable, max = max(study_per)),
-    first_pos_test_sgss = na_replace_dates(first_pos_test_sgss, max = max(study_per)),
-    covid_admission_date = na_replace_dates(covid_admission_date, max = max(study_per)),
-    ons_covid_death_date = na_replace_dates(ons_covid_death_date, max = max(study_per)),
-    discharge_date = na_replace_dates(discharge_date, max = max(study_per)),
+    primary_care_case_probable = na_replace_dates(primary_care_case_probable),
+    first_pos_test_sgss = na_replace_dates(first_pos_test_sgss),
+    covid_admission_date = na_replace_dates(covid_admission_date),
+    ons_covid_death_date = na_replace_dates(ons_covid_death_date),
+    discharge_date = na_replace_dates(discharge_date),
     
     # Reformat existing variables
     care_home_type = as.factor(care_home_type),

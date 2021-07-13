@@ -301,7 +301,8 @@ ch_long %>%
   ggplot(aes(date, n)) +
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
-       x = "", y = "No. without event") -> surv1
+       x = "", y = "No. without event") +
+  ylim(c(0,NA)) -> surv1
 ggsave("./ch_survival.png", surv1, height = 5, width = 6, units = "in")
 
 ch_long %>%
@@ -311,9 +312,9 @@ ch_long %>%
   ggplot(aes(date, n, col = ch_type)) +
   geom_line() +
   labs(title = "Survival of care homes from COVID-19 introduction",
-       x = "", y = "No. without event", col = "Type") -> surv2
+       x = "", y = "No. without event", col = "Type") +
+  ylim(c(0,NA)) -> surv2
 ggsave("./ch_survival_bytype.png", surv2, height = 5, width = 6, units = "in")
-
 
 # Type of first event
 ch_chars %>%
@@ -326,6 +327,16 @@ ch_chars %>%
                                                "Positive test result", 
                                                "Hospital admission (confirmed/suspected)", 
                                                "Death (confirmed/suspected)"))) %>%
+  ungroup() -> first_event_which
+
+print("First event type:")
+first_event_which %>%
+  group_by(first_event_which) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(perc = n/sum(n))
+
+first_event_which %>%
   ggplot(aes(first_event, fill = first_event_which)) +
   geom_histogram() + 
   theme_minimal() +

@@ -58,7 +58,7 @@ case_eng <- read.csv(args[2])
 ch_cov_cutoff <- as.numeric(args[3])
 
 # Set study period 
-study_per <- seq(as.Date("2020-03-01"), as.Date("2020-12-07"), by = "days")
+study_per <- seq(as.Date("2020-02-01"), as.Date("2020-12-07"), by = "days")
 
 # Identify vars containing event dates: probable covid identified via primary care, positive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
@@ -98,12 +98,13 @@ summary(ch)
 # Summarise care home resident characteristics
 # **will be replaced with CQC vars when codelists available**
 # NOTE: multiple events in same HH may have different sizes in dummy data
-#       same HH mas have both rural/urban and multiple IMD values in dummy data
+#       same HH may have both rural/urban and multiple IMD values in dummy data
 
 ch_chars <- ch %>%
   group_by(household_id) %>%
   summarise(percent_tpp = getmode(percent_tpp),
-            exclude = (percent_tpp < ch_cov_cutoff),
+            mixed_household = getmode(mixed_household),
+            exclude = (is.na(percent_tpp) | percent_tpp < ch_cov_cutoff),
             region = getmode(region),
             msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
@@ -148,18 +149,18 @@ n_distinct(ch_chars$household_id)
 # on the coverage of the MSOA listed for the majority of residents within that
 # household.
 
+print("Mixed household - by household_id:")
+summary(ch_chars$mixed_household)
+
 print("% TPP coverage - by household_id:")
+summary(ch_chars$percent_tpp)
 summary(
-  ch %>%
-    group_by(household_id) %>%
-    summarise(percent_tpp = getmode(percent_tpp)) %>%
-    ungroup() %>%
+  ch_chars %>%
     mutate(percent_tpp_cat = cut(percent_tpp, 
                                  breaks = 10,
                                  include.lowest = TRUE)) %>%
     pull(percent_tpp_cat)
 )
-
 
 ch_bycovg <- split(ch_chars, ch_chars$exclude) %>%
   lapply(FUN = function(x) unique(pull(x, household_id)))
@@ -198,9 +199,9 @@ ch_first_event <- ch %>%
   mutate(first_event = ymd(replace_na(min(c_across(starts_with("first_"))),"3000-01-01")),
          first_event_which = as.factor(event_dates[which.min(c_across(starts_with("first_")))])) %>%
   group_by(household_id) %>%
-  mutate(first_event_pre_per = (first_event < ymd("2020-04-15")),
-         first_event_post_per = (first_event > ymd("2020-12-07") & first_event < ymd("3000-01-01")),
-         ever_affected = between(first_event, ymd("2020-04-15"), ymd("2020-12-07"))) 
+  mutate(first_event_pre_per = (first_event < min(study_per)),
+         first_event_post_per = (first_event > max(study_per) & first_event < ymd("3000-01-01")),
+         ever_affected = between(first_event, min(study_per), max(study_per))) 
 ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
 print("Care homes with first event prior to study period (excluded from analysis):")

@@ -147,7 +147,7 @@ ch_chars <- ch %>%
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                            rural_urban8 %in% 5:8 ~ "rural")))
 
-print("Summary: Care home characteristics")
+print("Summary: All care home characteristics")
 summary(ch_chars)
 
 png("carehome_size.png", width = 600, height = 500)
@@ -193,6 +193,9 @@ print(paste0("Care homes included with ",ch_cov_cutoff,"% coverage cut off: n = 
 # Keep only homes with sufficient coverage
 ch_chars <- ch_chars %>%
   filter(household_id %in% incl)
+
+print("Summary: Included care home characteristics")
+summary(ch_chars)
 
 # Also keep only residents in homes with sufficient coverage
 ch <- ch %>%

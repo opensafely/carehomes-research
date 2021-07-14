@@ -12,8 +12,6 @@
 
 sink("./log_descriptive.txt")
 
-time_desc <- Sys.time()
-
 ################################################################################
 
 #----------------------#
@@ -58,11 +56,8 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss",
 #      TALLY CARE HOMES/RESIDENTS/PRACTICES/EVENTS       #
 #--------------------------------------------------------#
 
-# Total care homes in analysis dataset
+print(paste0("Total included care homes:", n_distinct(dat$household_id)))
 N_ch_tot <- n_distinct(dat$household_id)
-
-print("Total included care homes:")
-N_ch_tot
 
 # Counts per MSOA
 ch %>% 
@@ -71,14 +66,8 @@ ch %>%
     n_resid = n_distinct(patient_id),
     n_ch = n_distinct(household_id),
     n_gp = n_distinct(practice_id)) %>%
-  ungroup() -> per_msoa
-
-write.csv(per_msoa, file = "./ch_gp_permsoa.csv", row.names = FALSE)
-
-print("No. care homes per MSOA")
-per_msoa %>%
-  pull(n_ch) %>%
-  summary() 
+  ungroup() %>%
+  summary()
 
 # Covid events
 print("No. events among care home residents:")
@@ -93,8 +82,9 @@ print("No. events per home:")
 ch %>%
   filter(case) %>%
   group_by(household_id) %>%
-  summarise(N_case = n()) -> events_per_home
-summary(events_per_home$N_case)
+  summarise(N_case = n()) %>%
+  pull(N_case) %>%
+  summary() -> events_per_home
 
 #------------------------------------------------------------------------------#
 
@@ -120,8 +110,8 @@ dat %>%
 #----------------------#
 
 # Characteristics of interest
-chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban", "imd",
-           "hh_med_age","hh_p_female","hh_p_min","hh_p_dem", "hh_maj_dem", 
+chars <- c("household_id","msoa","n_resid","ch_size","ch_type","rural_urban", 
+           "imd", "hh_med_age","hh_p_female","hh_p_dem", "hh_maj_dem", 
            "n_case", "first_event", "first_event_which", "ever_affected")
 
 # One row per home from analysis dataset
@@ -209,7 +199,7 @@ write.csv(tab1, "./ch_chars_tab.csv")
 #------------------------------------------------------------------------------#
 # Resident characteristics by ever affected
 
-# Age, dementia status and ethnicity of care home residents, stratified by 
+# Age and dementia status of care home residents, stratified by 
 # whether or not their home was affected (percentages out of total residents in 
 # that stratum):
 
@@ -233,15 +223,15 @@ ch_resid_all %>%
                                          probs = c(0.25, 0.75), 
                                          na.rm = T)), 
                           collapse = ", "),
-            n_minor = sum(ethnicity != 1, na.rm = T),
-            prop_minor = mean(ethnicity != 1, na.rm = T),
+            # n_minor = sum(ethnicity != 1, na.rm = T),
+            # prop_minor = mean(ethnicity != 1, na.rm = T),
             n_dem = sum(dementia, na.rm = T)
   ) %>% 
   mutate(`age med[IQR]` = paste0(med_age, " [",q_age,"]"),
-         `minority ethnicity n(%)` = paste0(n_minor, 
-                                            " (",
-                                            round(n_minor/`No. TPP residents`,4),
-                                            ")"),
+         # `minority ethnicity n(%)` = paste0(n_minor, 
+         #                                    " (",
+         #                                    round(n_minor/`No. TPP residents`,4),
+         #                                    ")"),
          `dementia n(%)` = paste0(n_dem, 
                                   " (",
                                   round(n_dem/`No. TPP residents`,4),
@@ -251,72 +241,41 @@ ch_resid_all %>%
   column_to_rownames("ever_affected") %>%
   dplyr::select(`No. TPP residents`, 
                 `age med[IQR]`, 
-                `minority ethnicity n(%)`, 
-                `dementia n(%)` ) -> tab_age
+                # `minority ethnicity n(%)`, 
+                `dementia n(%)` ) -> tab2
 
-ch_resid_all %>%
-  group_by(ever_affected, ethnicity) %>%
-  summarise(n_resid = n()) %>%
-  ungroup() %>%
-  mutate(ethnicity = replace_na(as.character(ethnicity), "missing")) %>%
-  pivot_wider(names_from = ethnicity, 
-              values_from = n_resid, 
-              names_prefix = "Ethn:") %>%
-  rowwise() %>%
-  mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
-  ungroup() %>%
-  mutate_at(vars(-n_resid, -ever_affected), 
-            function(x) paste0(x, 
-                               " (", 
-                               round(x/.$n_resid,4), 
-                               ")")) %>%
-  column_to_rownames("ever_affected") %>%
-  dplyr::select(-n_resid) -> tab_ethn
-
-tab2 <- cbind(tab_age, tab_ethn)
+# ch_resid_all %>%
+#   group_by(ever_affected, ethnicity) %>%
+#   summarise(n_resid = n()) %>%
+#   ungroup() %>%
+#   mutate(ethnicity = replace_na(as.character(ethnicity), "missing")) %>%
+#   pivot_wider(names_from = ethnicity, 
+#               values_from = n_resid, 
+#               names_prefix = "Ethn:") %>%
+#   rowwise() %>%
+#   mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
+#   ungroup() %>%
+#   mutate_at(vars(-n_resid, -ever_affected), 
+#             function(x) paste0(x, 
+#                                " (", 
+#                                round(x/.$n_resid,4), 
+#                                ")")) %>%
+#   column_to_rownames("ever_affected") %>%
+#   dplyr::select(-n_resid) -> tab_ethn
+# 
+# tab2 <- cbind(tab2, tab_ethn)
 
 print("Summarise resident characteristics by ever affected:")
 t(tab2)
 
 #------------------------------------------------------------------------------#
+# Occurence and type of first event
 
-#----------------------#
-#       FIGURES        #
-#----------------------#
+print(paste0("Care homes with at least one covid event: N = ", 
+      sum(ch_chars$ever_affected),
+      " affected between ",
+      range(ch_chars$first_event[ch_chars$ever_affected])))
 
-# pdf(file = "./descriptive.pdf", height = 7, width = 9)
-
-# Age distribution
-ggplot(input, aes(age)) +
-  geom_histogram() +
-  facet_wrap(~ care_home_type, scales = "free") -> age_hist
-ggsave("./age_dist.png", age_hist, height = 5, width = 6, units = "in")
-
-
-# Care home survival
-ch_long %>%
-  group_by(date) %>%
-  filter(first_event > date) %>%
-  summarise(n = n_distinct(household_id)) %>%
-  ggplot(aes(date, n)) +
-  geom_line() +
-  labs(title = "Survival of care homes from COVID-19 introduction",
-       x = "", y = "No. without event") +
-  ylim(c(0,NA)) -> surv1
-ggsave("./ch_survival.png", surv1, height = 5, width = 6, units = "in")
-
-ch_long %>%
-  group_by(date, ch_type) %>%
-  filter(first_event > date & ch_type != "PS") %>%
-  summarise(n = n_distinct(household_id)) %>%
-  ggplot(aes(date, n, col = ch_type)) +
-  geom_line() +
-  labs(title = "Survival of care homes from COVID-19 introduction",
-       x = "", y = "No. without event", col = "Type") +
-  ylim(c(0,NA)) -> surv2
-ggsave("./ch_survival_bytype.png", surv2, height = 5, width = 6, units = "in")
-
-# Type of first event
 ch_chars %>%
   filter(ever_affected) %>% 
   group_by(household_id) %>%
@@ -335,6 +294,51 @@ first_event_which %>%
   count() %>%
   ungroup() %>%
   mutate(perc = n/sum(n))
+
+#------------------------------------------------------------------------------#
+
+#----------------------#
+#       FIGURES        #
+#----------------------#
+
+# pdf(file = "./descriptive.pdf", height = 7, width = 9)
+
+png("carehome_size.png", width = 600, height = 500)
+ggplot(ch_chars, aes(x = ch_size)) +
+  geom_histogram(fill = "white", col = "black", bins = 50) +
+  theme_minimal()
+dev.off()
+
+# Age distribution
+ggplot(input, aes(age)) +
+  geom_histogram() +
+  facet_wrap(~ care_home_type, scales = "free") -> age_hist
+ggsave("./age_dist.png", age_hist, height = 5, width = 6, units = "in")
+
+
+# Care home survival
+ch_long %>%
+  group_by(date) %>%
+  filter(first_event > date) %>%
+  summarise(n = n_distinct(household_id)) %>%
+  ggplot(aes(date, n)) +
+  geom_line() +
+  labs(title = "Survival of care homes from COVID-19 introduction",
+       x = "Date of first COVID event", y = "No. without event") +
+  ylim(c(0,NA)) -> surv1
+ggsave("./ch_survival.png", surv1, height = 5, width = 6, units = "in")
+
+ch_long %>%
+  group_by(date, ch_type) %>%
+  filter(first_event > date & ch_type != "PS") %>%
+  summarise(n = n_distinct(household_id)) %>%
+  ggplot(aes(date, n, col = ch_type)) +
+  geom_line() +
+  labs(title = "Survival of care homes from COVID-19 introduction",
+       x = "Date of first COVID event", y = "No. without event", col = "Type") +
+  ylim(c(0,NA)) -> surv2
+ggsave("./ch_survival_bytype.png", surv2, height = 5, width = 6, units = "in")
+
 
 first_event_which %>%
   ggplot(aes(first_event, fill = first_event_which)) +
@@ -422,9 +426,6 @@ ggsave("./compare_epidemics.png", comp_epi, height = 5, width = 7, units = "in")
 # dev.off()
 
 ################################################################################
-
-time_desc <- Sys.time() - time_desc
-write(paste0("Total time running descriptive: ",round(time_desc,2)), file="log_descriptive.txt", append = TRUE)
 
 sink() 
 

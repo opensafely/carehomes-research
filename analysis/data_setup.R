@@ -222,7 +222,8 @@ ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
 print(paste0("Care homes with first event prior to study period (",
              min(study_per),
-             ") :"))ch_first_event %>%
+             ") :")) 
+ch_first_event %>%
   group_by(first_event_pre_per) %>%
   tally()
 
@@ -240,8 +241,7 @@ ch_wevent <- ch_chars %>%
   filter(!first_event_pre_per) %>%
   mutate(date = first_event) %>%
   select(-first_primary_care_case_probable:-first_ons_covid_death_date,
-         -rural_urban8, -rural_urban8_miss, -imd_miss, -age_miss,
-         -first_event_pre_per, -first_event_post_per) 
+         -ch_size_orig, -rural_urban8, -first_event_pre_per, -first_event_post_per) 
 
 print("Summary: First events")
 summary(ch_wevent)
@@ -273,13 +273,13 @@ all_dates <- ch_wevent[,.(date = study_per),by = vars]
 setkey(ch_wevent, 
        exclude, household_id, percent_tpp, region, msoa, n_resid, ch_size, ch_type, 
        rural_urban, imd, imd_quint, 
-       hh_med_age, hh_p_female, hh_p_min, hh_p_dem, hh_maj_dem, 
+       hh_med_age, hh_p_female, hh_p_dem, hh_maj_dem, 
        n_case, first_event, first_event_which, ever_affected, 
        date)
 setkey(all_dates, 
        exclude, household_id, percent_tpp, region, msoa, n_resid, ch_size, ch_type, 
        rural_urban, imd, imd_quint, 
-       hh_med_age, hh_p_female, hh_p_min, hh_p_dem, hh_maj_dem, 
+       hh_med_age, hh_p_female, hh_p_dem, hh_maj_dem, 
        n_case, first_event, first_event_which, ever_affected, 
        date)
 

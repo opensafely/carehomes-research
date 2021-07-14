@@ -193,9 +193,10 @@ input_clean <- input_wcov %>%
     dementia = replace_na(dementia,0),
     
     # Define new variables
-    age_ge65 = (age >= 65),   # Identify carehome residents aged >= 65
-    ch_ge65 = (care_home_type != "U" & age >= 65),
-    ch_lt65 = (care_home_type != "U" & age < 65),
+    ch_res = (care_home_type != "U"),
+    age_ge65 = (age >= 65), 
+    ch_ge65 = (ch_res & age_ge65),
+    ch_lt65 = (ch_res & !age_ge65),
     institution = (care_home_type == "U" & household_size > 20),    # Identify potential prisons/institutions - still needed?
     household_size_tot = household_size/(percent_tpp/100),    # Estimate total household size according to tpp percentage
     test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),    # Define delays
@@ -209,12 +210,12 @@ events <- !is.na(input_clean[,event_dates])
 input_clean$case <- (rowSums(events) > 0)
   
 print(paste0("Unique households marked as care homes: N =", 
-      n_distinct(input_clean$household_id[input_clean$care_home_type != "U"])))
+      n_distinct(input_clean$household_id[input_clean$ch_res])))
 
-print(paste0("Included records for care home residents over age of 65: N =", 
-      sum(input_clean$ch_ge65),
+print(paste0("Included records for care home residents: N =", 
+      sum(input_clean$ch_res),
       " over ",
-      n_distinct(input_clean$household_id[input_clean$ch_ge65]),
+      n_distinct(input_clean$household_id[input_clean$ch_res]),
       " unique households"))
 
 print(paste0("Included records for care home residents under 65: N =", 

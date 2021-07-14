@@ -84,9 +84,9 @@ input %>%
 
 # Split out carehome residents 
 input %>%
-  filter(ch_ge65) -> ch
+  filter(ch_res) -> ch
 
-print("Summary: all care home residents over 65")
+print("Summary: all care home residents")
 summary(ch)
 
 # ---------------------------------------------------------------------------- #

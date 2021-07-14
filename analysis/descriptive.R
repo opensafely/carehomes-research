@@ -167,10 +167,13 @@ chars_waffect %>%
                                                   na.rm = T)), collapse = ", "),
             `N rural` = sum(rural_urban == "rural", na.rm = T),
             `% rural` = round(sum(rural_urban == "rural", na.rm = T)/N, 2),
+            `Rural, missing` = sum(is.na(rural_urban)),
             imd_med = median(imd, na.rm = T),
             imd_quants = paste(round(quantile(imd, 
                                               probs = c(0.25, 0.75), 
                                               na.rm = T)), collapse = ", "),
+            `IMD, missing` = sum(is.na(imd)),
+            `Rural or IMD missing` = sum((is.na(imd) | is.na(rural_urban))),
             `N dementia` = sum(hh_maj_dem),
             `% dementia` = round(sum(hh_maj_dem)/N, 2)
             ) %>%
@@ -186,9 +189,12 @@ chars_waffect %>%
   column_to_rownames(var = "ever_affected") %>%
   dplyr::select(N, `No. TPP residents`, 
                 `Size, med[IQR]`,
-                `IMD, med[IQR]`, 
+                `IMD, med[IQR]`,
                 `Rural, N (%)`,
-                `Dementia > 50%, N (%)`) %>% 
+                `Dementia > 50%, N (%)`,
+                `IMD, missing`,
+                `Rural, missing`,
+                `Rural or IMD missing`) %>% 
   cbind(tab_type) -> tab1
 
 print("Summarise carehome characteristics by ever affected:")

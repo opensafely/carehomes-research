@@ -91,12 +91,13 @@ print(paste0("Finished expanding community dates (time = ",round(time,2),")"))
 
 comm_probable_expand %>%
   lazy_dt() %>%
-  # Keep only period available in both MSOA and national data
-  inner_join(dplyr::select(case_eng, date, eng_roll7)) %>%
   mutate(msoa_roll7 = rollsum(probable_cases, 7, fill = NA, align = "right")*1e5/tpp_pop,
          msoa_lag1wk = lag(msoa_roll7, 7),
-         msoa_lag2wk = lag(msoa_roll7, 14),
-         eng_roll7 = replace_na(eng_roll7, 0),
+         msoa_lag2wk = lag(msoa_roll7, 14)) %>%
+  filter(!is.na(msoa_roll7)) %>%
+  # Keep only period available in both MSOA and national data
+  inner_join(dplyr::select(case_eng, date, eng_roll7)) %>%
+  mutate(eng_roll7 = replace_na(eng_roll7, 0),
          eng_lag1wk = lag(eng_roll7, 7),
          eng_lag2wk = lag(eng_roll7, 14)) %>%
   as.data.frame() -> comm_inc

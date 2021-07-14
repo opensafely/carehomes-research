@@ -70,6 +70,7 @@ summary(comm_inc)
 
 # Set study period based on period available in community incidence
 study_per <- seq(min(comm_inc$date), as.Date("2020-12-07"), by = "days")
+range(study_per)
 
 # ---------------------------------------------------------------------------- #
 
@@ -108,18 +109,16 @@ ch_chars <- ch %>%
             region = getmode(region),
             msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered under CHID
+            ch_size_orig = unique(household_size),
             ch_size = unique(household_size_tot),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = getmode(care_home_type),    # Care, nursing, other
             rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
-            rural_urban8_miss = sum(is.na(rural_urban)), 
             imd = getmode(imd),                   # In case missing for some indivs, take mode over HH residents
-            imd_miss = sum(is.na(rural_urban)), 
             hh_med_age = median(age),             # average age of registered residents
-            age_miss = sum(is.na(age)), 
             hh_p_female = mean(sex == "F"),       # % registered residents female
             # hh_maj_ethn = getmode(ethnicity),     # majority ethnicity of registered residents (5 categories)
             # ethn_miss = sum(is.na(ethnicity)), 
-            hh_p_min = mean(ethnicity != 1, na.rm = T),
+            # hh_p_min = mean(ethnicity != 1, na.rm = T),
             hh_p_dem = mean(dementia, na.rm = T),
             n_case = sum(case)) %>%        # % registered residents with dementia - implies whether care home is dementia-specific
   ungroup() %>%
@@ -132,6 +131,10 @@ print("Summary: All care home characteristics")
 summary(ch_chars)
 
 print(paste0("No. unique homes in selected MSOAs:", nrow(ch_chars)))
+
+print("Correspondence between resident count and TPP household size:")
+summary(ch_chars$n_resid == ch_chars$ch_size_orig)
+summary(ch_chars$n_resid - ch_chars$ch_size_orig)
 
 # ---------------------------------------------------------------------------- #
 # Exclude care homes on TPP coverage
@@ -220,12 +223,15 @@ ch_first_event <- ch %>%
          ever_affected = between(first_event, min(study_per), max(study_per))) 
 ch_first_event$first_event_which[!ch_first_event$ever_affected] <- NA
 
-print("Care homes with first event prior to study period (excluded from analysis):")
-ch_first_event %>%
+print(paste0("Care homes with first event prior to study period (",
+             min(study_per),
+             ") :"))ch_first_event %>%
   group_by(first_event_pre_per) %>%
   tally()
 
-print("Care homes with first event posterior to study period (excluded from analysis):")
+print(paste0("Care homes with first event posterior to study period (",
+             max(study_per),
+             ") :"))
 ch_first_event %>%
   group_by(first_event_post_per) %>%
   tally()

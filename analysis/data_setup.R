@@ -11,9 +11,6 @@
 # Date: 06/08/2020
 #
 ################################################################################
-
-time_total <- Sys.time()
-
 ################################################################################
 
 #----------------------#
@@ -78,15 +75,18 @@ summary(comm_inc)
 
 # Check number of individuals in community and aged 65+ in care homes
 input %>%
-  mutate(age_ge65 = (age >= 65)) %>%
-  group_by(care_home_type, age_ge65) %>%
+  group_by(care_home_type) %>%
+  tally()
+
+input %>%
+  group_by(care_home_type, ch_ge65) %>%
   tally()
 
 # Split out carehome residents 
 input %>%
-  filter(care_home_type != "U" & age >= 65) -> ch
+  filter(ch_ge65) -> ch
 
-print("Summary: all care home residents")
+print("Summary: all care home residents over 65")
 summary(ch)
 
 # ---------------------------------------------------------------------------- #
@@ -131,15 +131,7 @@ ch_chars <- ch %>%
 print("Summary: All care home characteristics")
 summary(ch_chars)
 
-png("carehome_size.png", width = 600, height = 500)
-ggplot(ch_chars, aes(x = ch_size)) +
-  geom_histogram(fill = "white", col = "black", bins = 50) +
-  theme_minimal()
-dev.off()
-
-print("No. unique homes:")
-nrow(ch_chars)
-n_distinct(ch_chars$household_id)
+print(paste0("No. unique homes in selected MSOAs:", nrow(ch_chars)))
 
 # ---------------------------------------------------------------------------- #
 # Exclude care homes on TPP coverage
@@ -149,10 +141,10 @@ n_distinct(ch_chars$household_id)
 # on the coverage of the MSOA listed for the majority of residents within that
 # household.
 
-print("Mixed household - by household_id:")
-summary(as.factor(ch_chars$mixed_household))
+print(paste0("No. homes with residents under >1 system: ",
+             sum(ch_chars$mixed_household == 1)))
 
-print("% TPP coverage - by household_id:")
+print("% TPP coverage - by household:")
 summary(ch_chars$percent_tpp)
 summary(
   ch_chars %>%
@@ -182,8 +174,10 @@ summary(ch_chars)
 ch <- ch %>%
   filter(household_id %in% incl)
 
+# ---------------------------------------------------------------------------- #
+# Check uniqueness of characteristics per household
 
-print("Uniqueness of household characteristics over care home residents (included homes):")
+print("Uniqueness of household characteristics over residents (included homes):")
 ch %>%
   group_by(household_id) %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
@@ -193,7 +187,6 @@ ch %>%
             imd = n_distinct(imd, na.rm = T),
             rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
   ungroup() -> n_distinct_chars
-
 # Should be one distinct value for every household
 summary(n_distinct_chars)
 
@@ -342,9 +335,6 @@ saveRDS(ch_long, file = "./ch_agg_long.rds")
 saveRDS(dat, file = "./analysisdata.rds")
 
 # ---------------------------------------------------------------------------- #
-
-# Total time running data_setup:
-round(Sys.time() - time_total,2)
 
 sink()
 

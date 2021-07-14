@@ -24,9 +24,6 @@ sink("./data_clean_log.txt", type = "output")
 
 options(datatable.old.fread.datetime.character = TRUE)
 
-
-replace_na_neg1 <- function(x) na_if(x,-1)
-
 # Replace dates outside specified range with NAs (default outside 1st Jan to 7th Dec (study end))
 na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-07') {
   x <- lubridate::ymd(x)
@@ -35,9 +32,7 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-07') {
   return(x)
 }
 
-
-replace_na_neg1 <- function(x) na_if(x,-1)
-
+# replace_na_neg1 <- function(x) na_if(x,-1)
 
 # ---------------------------------------------------------------------------- #
 
@@ -83,26 +78,31 @@ summary(tpp_cov_incl)
 #----------------------------------------#
 
 print("Total Patients")
-n_distinct(input_raw$patient_id)
-
-print("Patients with missing HH MSOA:")
-summary(is.na(input_raw$msoa))
-
-print("Patients with missing HH type:")
-summary(is.na(input_raw$care_home_type))
+nrow(input_raw)
 
 # Drop individuals with missing household_ID
-print(paste0("Dropping patients with missing household_id: n = ", sum(input_raw$household_id == 0)))
+print(paste0("Dropping patients with missing household_id: n = ", 
+             sum(input_raw$household_id == 0)))
+
 input_wHH <- filter(input_raw, household_id != 0)
 
+print(paste0("Records with non-missing household ID: N = ", 
+             nrow(input_wHH)))
 
 # Summarise households/patients with missing MSOA/type
+
+
+print("Patients with missing HH MSOA:")
+sum(is.na(input_raw$msoa))
 
 print("HHs with missing MSOA: n = ")
 input_wHH %>%
   filter(is.na(msoa)) %>%
   pull(household_id) %>%
   n_distinct()
+
+print("Patients with missing HH type:")
+sum(is.na(input_raw$care_home_type))
 
 print("HHs with missing type: n = ")
 input_wHH %>%
@@ -122,7 +122,13 @@ input_wHH %>%
 # Drop individuals with missing MSOA or care home type
 input_nomiss <- input_wHH %>%
   filter(!is.na(msoa) & !is.na(care_home_type)) 
-  
+
+print(paste0("Records with non-missing MSOA, household ID and household type: N = ", 
+             nrow(input_nomiss)))
+print(paste0("Records attributed to ", 
+             n_distinct(input_nomiss$msoa), 
+             " MSOAs"))
+
 # ---------------------------------------------------------------------------- #
 
 #------------------------------------------#
@@ -137,8 +143,14 @@ input_wcov <- input_nomiss %>%
 exclude <- input_wcov %>%
   filter(is.na(tpp_cov_wHHID)) 
 
-print(paste0("Individuals excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(exclude)))
-print(paste0("MSOAs excluded with MSOA ",msoa_cov_cutoff,"% coverage cut off: n = ",n_distinct(exclude$msoa)))
+print(paste0("Individuals excluded with MSOA ",
+             msoa_cov_cutoff,
+             "% MSOA coverage cut off: n = ",
+             nrow(exclude)))
+print(paste0("MSOAs excluded with ",
+             msoa_cov_cutoff,
+             "% MSOA coverage cut off: n = ",
+             n_distinct(exclude$msoa)))
 
 # Drop individuals in MSOAs that don't appear in tpp_cov
 input_wcov <- input_wcov %>%
@@ -147,9 +159,6 @@ input_wcov <- input_wcov %>%
 # Should now have no records with coverage < cutoff
 print("Summary: Remaining MSOA coverage:")
 summary(input_wcov$tpp_cov_wHHID)
-
-# Double check
-nrow(filter(input_wcov, tpp_cov_wHHID < msoa_cov_cutoff))
 
 # ---------------------------------------------------------------------------- #
 
@@ -186,6 +195,7 @@ input_clean <- input_wcov %>%
     # Define new variables
     age_ge65 = (age >= 65),   # Identify carehome residents aged >= 65
     ch_ge65 = (care_home_type != "U" & age >= 65),
+    ch_lt65 = (care_home_type != "U" & age < 65),
     institution = (care_home_type == "U" & household_size > 20),    # Identify potential prisons/institutions - still needed?
     household_size_tot = household_size/(percent_tpp/100),    # Estimate total household size according to tpp percentage
     test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),    # Define delays
@@ -198,6 +208,24 @@ input_clean <- input_wcov %>%
 events <- !is.na(input_clean[,event_dates])
 input_clean$case <- (rowSums(events) > 0)
   
+print(paste0("Unique households marked as care homes: N =", 
+      n_distinct(input_clean$household_id[input_clean$care_home_type != "U"])))
+
+print(paste0("Included records for care home residents over age of 65: N =", 
+      sum(input_clean$ch_ge65),
+      " over ",
+      n_distinct(input_clean$household_id[input_clean$ch_ge65]),
+      " unique households"))
+
+print(paste0("Included records for care home residents under 65: N =", 
+      sum(input_clean$ch_lt65),
+      " of whom ",
+      sum(input_clean$ch_lt65[input_clean$case]),
+      " had a COVID event"))
+
+print("Age summary of care home residents under 65:")
+summary(input_clean$age[input_clean$ch_lt65])
+
 print("Summary: Cleaned")
 summary(input_clean)
 

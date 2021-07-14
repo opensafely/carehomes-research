@@ -69,7 +69,6 @@ actions:
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt
-        figure: carehome_size.png
       highly_sensitive:
         comm_prev: community_incidence.rds
         analysisdata: analysisdata.rds
@@ -83,8 +82,8 @@ actions:
       moderately_sensitive:
        # report: descriptive.pdf
         log: log_descriptive.txt
-        data: ch_gp_permsoa.csv
         table: ch_chars_tab.csv
+        figure: carehome_size.png
         figure1: ch_survival.png
         figure2: ch_survival_bytype.png
         figure3: first_event_type.png

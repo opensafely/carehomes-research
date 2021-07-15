@@ -108,7 +108,7 @@ ch_chars <- ch %>%
             exclude = (is.na(percent_tpp) | percent_tpp < ch_cov_cutoff),
             region = getmode(region),
             msoa = getmode(msoa),
-            n_resid = n(),                        # number of individuals registered under CHID
+            n_resid = n(),                        # number of individuals registered in TPP under HHID
             ch_size_orig = getmode(household_size),
             ch_size = getmode(household_size_tot),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = getmode(care_home_type),    # Care, nursing, other

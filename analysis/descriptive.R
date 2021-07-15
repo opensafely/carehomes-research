@@ -147,14 +147,14 @@ chars_waffect %>%
   mutate(ch_type = replace_na(as.character(ch_type), "missing")) %>%
   pivot_wider(names_from = ch_type, 
               values_from = n_resid, 
-              names_prefix = "Type:") %>%
+              names_prefix = "Type:") %>% 
   rowwise() %>%
-  mutate(n_resid = sum(c_across(cols = -ever_affected))) %>% 
+  mutate(n_resid_tot = sum(c_across(cols = -ever_affected))) %>%
   ungroup() %>%
-  mutate_at(vars(-n_resid, -ever_affected), 
-            function(x) paste0(x, " (", round(x/.$n_resid,2), ")")) %>%
+  mutate_at(vars(-n_resid_tot, -ever_affected), 
+            function(x) paste0(x, " (", round(x/.$n_resid_tot,2), ")")) %>%
   column_to_rownames("ever_affected") %>%
-  dplyr::select(-n_resid) -> tab_type
+  dplyr::select(-n_resid_tot) -> tab_type
 
 # Summarise other variables
 chars_waffect %>%

@@ -1,7 +1,7 @@
 version: '3.0'
 
 expectations:
-  population_size: 1000000
+  population_size: 100000
 
 actions:
   generate_study_population:
@@ -25,18 +25,19 @@ actions:
     outputs:
       moderately_sensitive:
         log: coverage_log.txt
-        rds: tpp_coverage_included.rds
-        rds2: tpp_coverage_all.rds
-        csv: tpp_coverage_all.csv
+        # rds: tpp_coverage_included.rds
+        rds2: tpp_coverage.rds
+        csv: tpp_coverage.csv
         csv2: msoas_in_tpp.csv
         csv3: msoa_gt_100_cov.csv
         figure: total_vs_tpp_pop.png
+        figure1: tpp_cov_all.png
         figure2: tpp_cov_filtered.png
 
   data_clean:
     needs: [generate_study_population, calc_coverage]
     # last argument relates to MSOA TPP coverage >= X%
-    run: r:latest analysis/data_clean.R input.csv tpp_coverage_included.rds 80
+    run: r:latest analysis/data_clean.R input.csv
     outputs:
       moderately_sensitive:
         log: data_clean_log.txt
@@ -65,7 +66,7 @@ actions:
   data_setup:
     needs: [data_clean]
     # last argument relates to carehome TPP coverage >= X%
-    run: r:latest analysis/data_setup.R input_clean.rds data/cases_rolling_nation.csv 90
+    run: r:latest analysis/data_setup.R input_clean.rds tpp_coverage_all.rds data/cases_rolling_nation.csv 100
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt

@@ -6,6 +6,15 @@
 #
 # Author: Emily S Nightingale
 # Date: 01/10/2020
+# 
+# Steps:
+# + Filter raw input to patients with non-missing household ID, MSOA and care 
+#   home status in England.
+# + Define variable types and replace missing value codes (-1/0) with NA.
+# + Define care home indicators and total household size based on percent TPP 
+#   coverage in the household.
+# + Define case indicator as those with >=1 non-missing date for any of the 
+#   specified COVID event variables.
 #
 ################################################################################
 
@@ -20,7 +29,7 @@ library(data.table)
 library(dtplyr)
 library(lubridate)
 
-sink("./data_clean_log.txt", type = "output")
+sink("data_clean_log.txt", type = "output")
 
 options(datatable.old.fread.datetime.character = TRUE)
 
@@ -30,6 +39,12 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-07') {
   x[x < min] <- NA
   x[x > max] <- NA
   return(x)
+}
+
+# Function: calculate mode value across residents in household
+getmode <- function(v) {
+  uniqv <- unique(na.omit(v))
+  uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
 # replace_na_neg1 <- function(x) na_if(x,-1)
@@ -45,17 +60,15 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-07') {
 # * tpp_coverage_included.rds
 #   - Estimated coverage of TPP per MSOA, including only MSOAs with coverage >=80%
 
-# args <- c("input.csv","tpp_coverage_included.rds", 600)
+# args <- c("input.csv","tpp_coverage.rds", 600)
 args = commandArgs(trailingOnly = TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # Filter just to records from England
-  filter(grepl("E",msoa)) %>%
-  # check for mixed HH/perc TPP agreement
-  mutate(perc_tpp_lt100 = (percent_tpp < 100))
+  filter(grepl("E",msoa)) 
 
-# Load TPP coverage for included MSOAs
-tpp_cov_incl <- readRDS(args[2])
+# TPP coverage for all MSOAs
+tpp_cov_msoa <- readRDS(args[2])
 
 # MSOA TPP coverage cut off
 msoa_cov_cutoff <- as.numeric(args[3])
@@ -67,9 +80,6 @@ event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admis
 
 print("Summary: Raw input")
 summary(input_raw)
-
-print("Summary: TPP coverage, included MSOAs")
-summary(tpp_cov_incl)
 
 # ---------------------------------------------------------------------------- #
 
@@ -90,7 +100,6 @@ print(paste0("Records with non-missing household ID: N = ",
              nrow(input_wHH)))
 
 # Summarise households/patients with missing MSOA/type
-
 
 print("Patients with missing HH MSOA:")
 sum(is.na(input_raw$msoa))
@@ -123,43 +132,47 @@ input_wHH %>%
 input_nomiss <- input_wHH %>%
   filter(!is.na(msoa) & !is.na(care_home_type)) 
 
-print(paste0("Records with non-missing MSOA, household ID and household type: N = ", 
+print(paste0("Records with non-missing MSOA, household ID and household type: n = ", 
              nrow(input_nomiss)))
 print(paste0("Records attributed to ", 
              n_distinct(input_nomiss$msoa), 
              " MSOAs"))
 
 # ---------------------------------------------------------------------------- #
+# Join with MSOA TPP coverage data
 
-#------------------------------------------#
-#      EXCLUDE ON MSOA TPP COVERAGE        #
-#------------------------------------------#
-
-# Join with MSOA coverage data
 input_wcov <- input_nomiss %>%
-  left_join(tpp_cov_incl, by = "msoa") 
+  left_join(tpp_cov_msoa, by = "msoa")
 
-# Identify MSOAs with missing value when merged with included MSOAs in tpp_cov
-exclude <- input_wcov %>%
-  filter(is.na(tpp_cov_wHHID)) 
+# Residents of one household may be assigned to multiple MSOAs with different 
+# coverage.
 
-print(paste0("Individuals excluded with MSOA ",
-             msoa_cov_cutoff,
-             "% MSOA coverage cut off: n = ",
-             nrow(exclude)))
-print(paste0("MSOAs excluded with ",
-             msoa_cov_cutoff,
-             "% MSOA coverage cut off: n = ",
-             n_distinct(exclude$msoa)))
+# Identify and exclude households where *mode* MSOA across residents has low 
+# coverage
+input_wcov %>%
+  group_by(household_id) %>%
+  summarise(household_n = n(),
+         tpp_cov = getmode(tpp_cov),
+         msoa_low_cov = getmode(msoa_low_cov)) -> hh_msoa_covg
 
-# Drop individuals in MSOAs that don't appear in tpp_cov
-input_wcov <- input_wcov %>%
-  filter(!(msoa %in% exclude$msoa))
+print("No. households where mode MSOA has low coverage:")
+hh_msoa_covg %>% 
+  group_by(msoa_low_cov) %>%
+  tally()
 
-# Should now have no records with coverage < cutoff
-print("Summary: Remaining MSOA coverage:")
-summary(input_wcov$tpp_cov_wHHID)
+hh_bycovg <- split(hh_msoa_covg, hh_msoa_covg$msoa_low_cov) %>%
+  lapply(FUN = function(x) unique(pull(x, household_id)))
 
+excl <- hh_bycovg[["TRUE"]]
+incl <- hh_bycovg[["FALSE"]]
+
+print(paste0("Households excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(excl)))
+print(paste0("Individuals excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(filter(input_wcov, household_id %in% excl))))
+
+# Keep only residents of households in MSOAs with sufficient coverage
+input_filter <- input_wcov %>%
+  filter(household_id %in% incl)
+  
 # ---------------------------------------------------------------------------- #
 
 #-----------------------------#
@@ -167,7 +180,7 @@ summary(input_wcov$tpp_cov_wHHID)
 #-----------------------------#
 
 # Set up variables of interest
-input_clean <- input_wcov %>%
+input_clean <- input_filter %>%
   lazy_dt() %>%
   mutate(
     
@@ -194,21 +207,27 @@ input_clean <- input_wcov %>%
     
     # Define new variables
     ch_res = (care_home_type != "U"),
-    age_ge65 = (age >= 65), 
-    ch_ge65 = (ch_res & age_ge65),
-    ch_lt65 = (ch_res & !age_ge65),
-    institution = (care_home_type == "U" & household_size > 20),    # Identify potential prisons/institutions - still needed?
+    ch_lt65 = (ch_res & age < 65),
     household_size_tot = household_size/(percent_tpp/100),    # Estimate total household size according to tpp percentage
     test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),    # Define delays
-    prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable),
-    HHID = paste(msoa, household_id, sep = ":")    # Redefine unique household identifier
-    
+    prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable)
     ) %>%    
   as_tibble() 
 
 events <- !is.na(input_clean[,event_dates])
 input_clean$case <- (rowSums(events) > 0)
-  
+
+# ---------------------------------------------------------------------------- #
+
+# Check care home residents aged < 65 years
+
+input_clean %>%
+  mutate(age_ge65 = (age >= 65)) %>%
+  group_by(care_home_type, age_ge65) %>%
+  summarise(n_hh = n_distinct(household_id),
+            n_pat = n(),
+            n_case = sum(case, na.rm = TRUE)) 
+
 print(paste0("Unique households marked as care homes: N =", 
       n_distinct(input_clean$household_id[input_clean$ch_res])))
 
@@ -227,14 +246,21 @@ print(paste0("Included records for care home residents under 65: N =",
 print("Age summary of care home residents under 65:")
 summary(input_clean$age[input_clean$ch_lt65])
 
+
+# Redefine care home residents < 65 yrs as community residents
+input_clean$care_home_type[input_clean$ch_lt65] <- "U"
+input_clean$ch_res[input_clean$ch_lt65] <- FALSE
+
+# ---------------------------------------------------------------------------- #
+
 print("Summary: Cleaned")
 summary(input_clean)
 
 ################################################################################
 
 # Save cleaned input data
-saveRDS(input_clean, "./input_clean.rds")
-write_csv(input_clean, "./input_clean.csv")
+saveRDS(input_clean, "input_clean.rds")
+write_csv(input_clean, "input_clean.csv")
 
 # ---------------------------------------------------------------------------- #
 

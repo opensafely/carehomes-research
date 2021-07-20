@@ -20,7 +20,7 @@ library(data.table)
 library(dtplyr)
 library(lubridate)
 
-sink("./data_check_log.txt", type = "output")
+sink("data_check_log.txt", type = "output")
 
 # ---------------------------------------------------------------------------- #
 
@@ -44,11 +44,6 @@ input_clean <- readRDS(args[1])
 #      UNIQUENESS OF HOUSEHOLD ID        #
 #----------------------------------------#
 
-print("No. households, by household_id alone and by household_ID + MSOA")
-input_clean %>%
-  summarise(N_hhID = n_distinct(household_id),
-            N_msoa_hhID = n_distinct(HHID))
-
 print("Uniqueness of household characteristics over all residents:")
 input_clean %>%
   group_by(household_id) %>%
@@ -66,7 +61,7 @@ summary(n_distinct_chars)
 
 print("Uniqueness of household characteristics over care home residents:")
 input_clean %>%
-  filter(ch_ge65) %>%
+  filter(ch_res) %>%
   group_by(household_id) %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
             region = n_distinct(region, na.rm = T),
@@ -87,24 +82,24 @@ n_distinct_chars2 %>%
 
 # ---------------------------------------------------------------------------- #
 
-#---------------------------------#
-#      CHECK COUNTS BY TYPE       #
-#---------------------------------#
+#-------------------------------------------------#
+#      CHECK COUNTS of CARE HOMES/RESIDENTS       #
+#-------------------------------------------------#
 
-# By household type
+print(paste0("Unique households marked as care homes: N =", 
+             n_distinct(input_clean$household_id[input_clean$ch_res])))
+
+print(paste0("Included records for care home residents: N =", 
+             sum(input_clean$ch_res),
+             " over ",
+             n_distinct(input_clean$household_id[input_clean$ch_res]),
+             " unique households"))
+
 print("No. households, patients and probable cases per carehome type:")
 input_clean %>%
-  group_by(care_home_type, age_ge65) %>%
+  group_by(care_home_type) %>%
   summarise(n_hh = n_distinct(household_id),
-            n_pat = n_distinct(patient_id),
-            n_case = sum(case, na.rm = TRUE)) 
-
-# By institution
-print("Possible prisons/institutions (size>20 and not CH)")
-input_clean %>%
-  group_by(institution) %>%
-  summarise(n_hh = n_distinct(household_id),
-            n_pat = n_distinct(patient_id),
+            n_pat = n(),
             n_case = sum(case, na.rm = TRUE)) 
 
 # ---------------------------------------------------------------------------- #
@@ -115,7 +110,7 @@ input_clean %>%
 
 print("Care homes registered under > 1 system:")
 input_clean %>%
-  filter(ch_ge65) %>%
+  filter(ch_res) %>%
   mutate(mixed_household = replace_na(mixed_household, 0)) %>% 
   group_by(mixed_household) %>% 
   summarise(n_hh = n_distinct(household_id),
@@ -124,7 +119,7 @@ input_clean %>%
 
 print("Care homes with < 100% coverage:")
 input_clean %>%
-  filter(ch_ge65) %>%
+  filter(ch_res) %>%
   group_by(percent_tpp < 100) %>% 
   summarise(n_hh = n_distinct(household_id),
             n_pat = n_distinct(patient_id),
@@ -133,7 +128,7 @@ input_clean %>%
 print("Care homes % TPP coverage:")
 summary(
   input_clean %>%
-    filter(ch_ge65) %>%
+    filter(ch_res) %>%
     dplyr::select(household_id, percent_tpp) %>%
     unique() %>% 
     pull(percent_tpp)
@@ -142,7 +137,7 @@ summary(
 print("Care homes % TPP coverage category:")
 summary(
   input_clean %>%
-    filter(ch_ge65) %>%
+    filter(ch_res) %>%
     dplyr::select(household_id, percent_tpp) %>%
     unique() %>% 
     mutate(percent_tpp_cat = cut(percent_tpp, 
@@ -161,7 +156,7 @@ summary(
 print("Household size by care home type:")
 input_clean %>%
   filter(!is.na(household_size_tot)) %>%
-  group_by(care_home_type, age_ge65) %>%
+  group_by(care_home_type) %>%
   summarise(mean = mean(household_size_tot),
             sd = sd(household_size_tot),
             median = median(household_size_tot),
@@ -169,13 +164,13 @@ input_clean %>%
 
 print("Number of records by care home type:")
 input_clean %>%
-  group_by(care_home_type, age_ge65, household_id) %>%
-  summarise(n_resid = n()) %>%
-  group_by(care_home_type, age_ge65) %>%
-  summarise(mean = mean(n_resid),
-            sd = sd(n_resid),
-            median = median(n_resid),
-            minmax = paste(min(n_resid), max(n_resid), sep = ", ")) 
+  group_by(care_home_type, household_id) %>%
+  summarise(household_n = n()) %>%
+  group_by(care_home_type) %>%
+  summarise(mean = mean(household_n),
+            sd = sd(household_n),
+            median = median(household_n),
+            minmax = paste(min(household_n), max(household_n), sep = ", ")) 
 
 
 ################################################################################

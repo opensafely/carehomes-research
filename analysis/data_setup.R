@@ -31,6 +31,7 @@ getmode <- function(v) {
   uniqv <- unique(na.omit(v))
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
+
 # Household characteristics were defined according to address on 01/02/2020.
 # household_id will be updated when patient relocates but characteristics remain fixed.
 # Therefore households may have a mix of values for each characteristics from 
@@ -47,12 +48,23 @@ getmode <- function(v) {
 # * community_prevalence.csv 
 #   - derived dataset of daily probable case counts per MSOA plus population estimates
 
-# args <- c("./input_clean.rds","./data/cases_rolling_nation.csv", 50)
+# args <- c("input_clean.rds","tpp_coverage_included.rds", 600, "data/cases_rolling_nation.csv", 50)
 args = commandArgs(trailingOnly = TRUE)
 
+# Cleaned input data
 input <- readRDS(args[1]) 
-case_eng <- read.csv(args[2])
-ch_cov_cutoff <- as.numeric(args[3])
+
+# TPP coverage for all MSOAs
+tpp_cov <- readRDS(args[2])
+
+# MSOA TPP coverage cut off
+msoa_cov_cutoff <- as.numeric(args[3])
+
+# National confirmed case incidence data
+case_eng <- read.csv(args[4])
+
+# Care home TPP coverage cut off
+ch_cov_cutoff <- as.numeric(args[5])
 
 # Identify vars containing event dates: probable covid identified via primary care, positive test result, covid-related hospital admission and covid-related death (underlying and mentioned)
 event_dates <- c("primary_care_case_probable","first_pos_test_sgss","covid_admission_date", "ons_covid_death_date")
@@ -63,7 +75,7 @@ ahead <- 14
 # ---------------------------------------------------------------------------- #
 
 # Run script to aggregate non-carehome cases by MSOA
-source("./analysis/get_community_incidence.R")
+source("analysis/get_community_incidence.R")
 
 print("Summary: Daily community incidence")
 summary(comm_inc)
@@ -73,21 +85,23 @@ study_per <- seq(min(comm_inc$date), as.Date("2020-12-07"), by = "days")
 range(study_per)
 
 # ---------------------------------------------------------------------------- #
+# Join with MSOA coverage data
 
-# Check number of individuals in community and aged 65+ in care homes
-input %>%
+input_wcov <- input %>%
+  left_join(tpp_cov, by = "msoa")
+
+# ---------------------------------------------------------------------------- #
+
+# Check number of individuals in community and in care homes
+input_wcov %>%
   group_by(care_home_type) %>%
   tally()
 
-input %>%
-  group_by(care_home_type, ch_ge65) %>%
-  tally()
-
 # Split out carehome residents 
-input %>%
+input_wcov %>%
   filter(ch_res) -> ch
 
-print("Summary: all care home residents")
+print("Summary: all care home residents in included MSOAs")
 summary(ch)
 
 # ---------------------------------------------------------------------------- #
@@ -134,7 +148,32 @@ summary(ch_chars$n_resid == ch_chars$ch_size_orig)
 summary(ch_chars$n_resid - ch_chars$ch_size_orig)
 
 # ---------------------------------------------------------------------------- #
-# Exclude care homes on TPP coverage
+# Exclude households in MSOAs with low TPP coverage
+
+#
+# # Identify MSOAs with < cutoff % coverage
+# exclude <- input_wcov %>%
+#   filter(tpp_cov_wHHID < msoa_cov_cutoff)
+# 
+# print(paste0("Individuals excluded with MSOA ",
+#              msoa_cov_cutoff,
+#              "% MSOA coverage cut off: n = ",
+#              nrow(exclude)))
+# print(paste0("MSOAs excluded with ",
+#              msoa_cov_cutoff,
+#              "% MSOA coverage cut off: n = ",
+#              n_distinct(exclude$msoa)))
+# 
+# # Drop individuals in MSOAs with low coverage
+# input_wcov <- input_wcov %>%
+#   filter(!(msoa %in% exclude$msoa))
+# 
+# # Should now have no records with coverage < cutoff
+# print("Summary: Remaining MSOA coverage:")
+# summary(input_wcov$tpp_cov_wHHID)
+
+# ---------------------------------------------------------------------------- #
+# Exclude care homes with low TPP coverage
 
 # For homes in which some residents lived elsewhere in Feb 2020, the MSOA listed
 # may not be unique, hence the coverage won't be unique. Therefore we exclude based

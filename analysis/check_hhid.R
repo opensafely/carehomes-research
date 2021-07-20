@@ -14,6 +14,8 @@ library(data.table)
 
 sink("./check_hhid.txt", type = "output")
 
+theme_set(theme_minimal())
+
 options(datatable.old.fread.datetime.character = TRUE)
 
 # ---------------------------------------------------------------------------- #
@@ -25,98 +27,147 @@ options(datatable.old.fread.datetime.character = TRUE)
 # args <- c("input.csv")
 args = commandArgs(trailingOnly = TRUE)
 
-input <- fread(args[1], data.table = FALSE, na.strings = "") %>%
-  # Filter just to records from England
-  filter(grepl("E",msoa)) %>%
-  mutate(across(c(imd, rural_urban), function(x) na_if(x,-1)),
-         across(c(imd, household_size, household_id), function(x) na_if(x,0)),
-         ch_ge65 = (care_home_type != "U" & age >= 65),
-         HHID = paste(msoa, household_id, sep = ":"))
+dat <- fread(args[1], data.table = FALSE, na.strings = "") 
 
-#----------------------------------------#
-#      UNIQUENESS OF HOUSEHOLD ID        #
-#----------------------------------------#
+# Redefine missing value codes in IMD and rural index
+dat$imd <- na_if(na_if(dat$imd, -1),0)
+dat$rural_urban <- na_if(dat$rural_urban, -1)
 
-print("No. with missing household id")
-summary(input$household_id == 0)
-summary(is.na(input$household_id))
+#--------------------------#
+#      COMPLETENESS        #
+#--------------------------#
 
-input <- filter(input, household_id > 0 & !is.na(household_id))
+# Household ID
 
-print("No. households, by household_id alone and by household_ID + MSOA")
-input %>%
-  summarise(N_hhID = n_distinct(household_id),
-            N_msoa_hhID = n_distinct(HHID))
+print("No. with missing household id:")
+summary(dat$household_id == 0)
+summary(is.na(dat$household_id))
+
+dat <- filter(dat, household_id > 0 & !is.na(household_id))
+
+
+# TPP coverage
+
+print("No. with missing/0 TPP coverage:")
+summary(dat$percent_tpp == 0)
+summary(is.na(dat$percent_tpp))
+
+ggplot(dat, aes(percent_tpp)) +
+  geom_histogram(bins = 50) -> percent_tpp_hist
+
+ggsave("household_tpp_coverage.png",
+       percent_tpp_hist,
+       height = 4, width = 6, units = "in")
+
+dat$percent_tpp <- na_if(dat$percent_tpp,0)
+
+
+#-------------------------------#
+#     HOUSEHOLD SIZE - TPP      #
+#-------------------------------#
+
+print("No. with missing HH size:")
+summary(dat$household_size == 0)
+summary(is.na(dat$household_size))
+
+dat$household_size <- na_if(dat$household_size,0)
+
+
+# By individual:
+ 
+dat %>% 
+  group_by(household_id) %>%
+  mutate(household_n = n(),
+         diff_size_count = household_size - household_n) -> dat
+
+print("Individuals with discrepant household sizes:")
+summary(dat$diff_size_count != 0)
+
+
+# By household: 
+
+dat %>% 
+  group_by(household_id) %>%
+  summarise(household_size_distinct = n_distinct(household_size, na.rm = T),
+            household_size_mean = mean(household_size),
+            household_n = n(),
+            diff_size_count = household_size_mean - household_n) -> hh_size_check
+
+summary(hh_size_check)
+
+print("Households with discrepant sizes:")
+summary(hh_size_check$diff_size_count != 0)
+
+
+# Distribution of household size and discrepancies:
+
+hh_size_check %>% 
+  pivot_longer(-household_id, names_to = "variable") %>%
+  ggplot(aes(value)) +
+    geom_histogram(bins = 50) +
+    facet_wrap(~variable, scales = "free")
+
+ggsave("household_size_comparison.png",
+       height = 6, width = 8)
+
+
+print("Household size by care home type:")
+dat %>%
+  filter(!is.na(household_size)) %>%
+  group_by(care_home_type) %>%
+  summarise(mean = mean(household_size),
+            sd = sd(household_size),
+            median = median(household_size),
+            minmax = paste(min(household_size), max(household_size), sep = ", ")) 
+
+print("Number of records by care home type:")
+dat %>%
+  group_by(care_home_type, household_id) %>%
+  summarise(household_n = n()) %>%
+  group_by(care_home_type) %>%
+  summarise(mean = mean(household_n),
+            sd = sd(household_n),
+            median = median(household_n),
+            minmax = paste(min(household_n), max(household_n), sep = ", ")) 
+
+
+
+#---------------------------------#
+#     HOUSEHOLD SIZE - TOTAL      #
+#---------------------------------#
+
+# Adjusted for TPP coverage
+
+dat %>% 
+  mutate(household_size_tot = household_size/(percent_tpp/100)) -> dat
+
+
+
+#-------------------------------------------#
+#      UNIQUENESS OF CHARACTERISTICS        #
+#-------------------------------------------#
 
 print("Uniqueness of household characteristics over all residents:")
-input %>%
+dat %>%
   group_by(household_id) %>%
   summarise(msoa = n_distinct(msoa, na.rm = T), 
             region = n_distinct(region, na.rm = T),
             household_size = n_distinct(household_size, na.rm = T),
+            percent_tpp = n_distinct(percent_tpp, na.rm = T),
             care_home_type = n_distinct(care_home_type, na.rm = T),
-            percent_tpp = n_distinct(household_size, na.rm = T),
             imd = n_distinct(imd, na.rm = T),
             rural_urban = n_distinct(rural_urban, na.rm = T)) -> n_distinct_chars
 
 # Should be one distinct value for every household
 summary(n_distinct_chars)
 
-
-print("Uniqueness of household characteristics over care home residents:")
-input %>%
-  filter(ch_ge65) %>%
-  group_by(household_id) %>%
-  summarise(msoa = n_distinct(msoa, na.rm = T), 
-            region = n_distinct(region, na.rm = T),
-            household_size = n_distinct(household_size, na.rm = T),
-            care_home_type = n_distinct(care_home_type, na.rm = T),
-            imd = n_distinct(imd, na.rm = T),
-            rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
-  ungroup() -> n_distinct_chars2
-
-# Should be one distinct value for every household
-summary(n_distinct_chars2)
-
-print("No. care homes with non-unique characteristics across residents:")
-n_distinct_chars2 %>%
+print("No. households with non-unique characteristics across residents:")
+n_distinct_chars %>%
   dplyr::select(-household_id) %>%
   summarise(across(everything(), function(x) sum(x > 1)))
 
 # ---------------------------------------------------------------------------- #
 
-#----------------------------------#
-#      CHECK HOUSEHOLD SIZES       #
-#----------------------------------#
-
-print("Household size by care home type:")
-input %>%
-  filter(!is.na(household_size)) %>%
-  group_by(ch_ge65) %>%
-  summarise(mean = mean(household_size),
-            sd = sd(household_size),
-            median = median(household_size),
-            minmax = paste(min(household_size), max(household_size), sep = ", ")) 
-
-print("Number of records by care home type (household_id):")
-input %>%
-  group_by(ch_ge65, household_id) %>%
-  summarise(n_resid = n()) %>%
-  group_by(ch_ge65) %>%
-  summarise(mean = mean(n_resid),
-            sd = sd(n_resid),
-            median = median(n_resid),
-            minmax = paste(min(n_resid), max(n_resid), sep = ", ")) 
-
-print("Number of records by care home type (HHID):")
-input %>%
-  group_by(ch_ge65, HHID) %>%
-  summarise(n_resid = n()) %>%
-  group_by(ch_ge65) %>%
-  summarise(mean = mean(n_resid),
-            sd = sd(n_resid),
-            median = median(n_resid),
-            minmax = paste(min(n_resid), max(n_resid), sep = ", ")) 
 
 ################################################################################
 

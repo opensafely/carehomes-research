@@ -44,7 +44,7 @@ case_eng %>%
 
 # Count number of patients and unique MSOAs in TPP without a carehome flag
 input %>%
-  filter(care_home_type == "U") %>% # & !institution
+  filter(care_home_type == "U") %>% 
   summarise(n = n(), msoa = n_distinct(msoa)) -> comm_tally
 
 print(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"))

@@ -200,8 +200,7 @@ input_clean <- input_wcov %>%
     institution = (care_home_type == "U" & household_size > 20),    # Identify potential prisons/institutions - still needed?
     household_size_tot = household_size/(percent_tpp/100),    # Estimate total household size according to tpp percentage
     test_death_delay = as.integer(ons_covid_death_date - first_pos_test_sgss),    # Define delays
-    prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable),
-    HHID = paste(msoa, household_id, sep = ":")    # Redefine unique household identifier
+    prob_death_delay = as.integer(ons_covid_death_date - primary_care_case_probable)
     
     ) %>%    
   as_tibble() 

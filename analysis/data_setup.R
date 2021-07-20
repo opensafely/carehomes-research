@@ -113,14 +113,13 @@ ch_chars <- ch %>%
             ch_size = getmode(household_size_tot),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = getmode(care_home_type),    # Care, nursing, other
             rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
-            imd = getmode(imd),                   # In case missing for some indivs, take mode over HH residents
+            imd_quint = getmode(imd_quint),                   # In case missing for some indivs, take mode over HH residents
             hh_med_age = median(age),             # average age of registered residents
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_p_dem = mean(dementia, na.rm = T), # % registered residents with dementia - implies whether care home is dementia-specific
             n_case = sum(case)) %>%        
   ungroup() %>%
-  mutate(imd_quint = as.factor(cut(imd, 5)),
-         hh_maj_dem = (hh_p_dem >= 0.5),
+  mutate(hh_maj_dem = (hh_p_dem >= 0.5),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                            rural_urban8 %in% 5:8 ~ "rural")))
 

@@ -11,12 +11,12 @@ actions:
         cohort: input.csv
         
           
-  check_hhid:
-    needs: [generate_study_population]
-    run: r:latest analysis/check_hhid.R input.csv
-    outputs:
-      moderately_sensitive:
-        log: check_hhid.txt
+  # check_hhid:
+  #   needs: [generate_study_population]
+  #   run: r:latest analysis/check_hhid.R input.csv
+  #   outputs:
+  #     moderately_sensitive:
+  #       log: check_hhid.txt
 
   calc_coverage:
     needs: [generate_study_population]
@@ -43,29 +43,29 @@ actions:
       highly_sensitive:
         input_clean: input_clean.rds
         
-  data_check:
-    needs: [data_clean]
-    run: r:latest analysis/data_check.R input_clean.rds 
-    outputs:
-      moderately_sensitive:
-        log: data_check_log.txt
-        
-  data_check_figs:
-    needs: [data_clean]
-    run: r:latest analysis/data_check_figs.R input_clean.rds data/msoa_shp.rds
-    outputs:
-      moderately_sensitive:
-        figure1: tpp_coverage_msoa.png
-        figure2: tpp_coverage_carehomes.png
-        figure3: tpp_coverage_map.pdf
-        figure4: age_dist.png
-        figure5: infection_death_delays.png
-        figure6: hh_size_dist.png
+  # data_check:
+  #   needs: [data_clean]
+  #   run: r:latest analysis/data_check.R input_clean.rds 
+  #   outputs:
+  #     moderately_sensitive:
+  #       log: data_check_log.txt
+  #       
+  # data_check_figs:
+  #   needs: [data_clean]
+  #   run: r:latest analysis/data_check_figs.R input_clean.rds data/msoa_shp.rds
+  #   outputs:
+  #     moderately_sensitive:
+  #       figure1: tpp_coverage_msoa.png
+  #       figure2: tpp_coverage_carehomes.png
+  #       figure3: tpp_coverage_map.pdf
+  #       figure4: age_dist.png
+  #       figure5: infection_death_delays.png
+  #       figure6: hh_size_dist.png
 
   data_setup:
     needs: [data_clean]
     # last argument relates to carehome TPP coverage >= X%
-    run: r:latest analysis/data_setup.R input_clean.rds data/cases_rolling_nation.csv 90
+    run: r:latest analysis/data_setup.R input_clean.rds data/cases_rolling_nation.csv 100
     outputs:
       moderately_sensitive:
         log: data_setup_log.txt

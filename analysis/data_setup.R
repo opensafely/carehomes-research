@@ -113,6 +113,7 @@ ch_chars <- ch %>%
             ch_size = getmode(household_size_tot),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
             ch_type = getmode(care_home_type),    # Care, nursing, other
             rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
+            imd = getmode(imd),                   # In case missing for some indivs, take mode over HH residents
             imd_quint = getmode(imd_quint),                   # In case missing for some indivs, take mode over HH residents
             hh_med_age = median(age),             # average age of registered residents
             hh_p_female = mean(sex == "F"),       # % registered residents female
@@ -183,7 +184,7 @@ ch %>%
             region = n_distinct(region, na.rm = T),
             household_size_tot = n_distinct(household_size_tot, na.rm = T),
             care_home_type = n_distinct(care_home_type, na.rm = T),
-            imd = n_distinct(imd, na.rm = T),
+            imd_quint = n_distinct(imd_quint, na.rm = T),
             rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
   ungroup() -> n_distinct_chars
 # Should be one distinct value for every household

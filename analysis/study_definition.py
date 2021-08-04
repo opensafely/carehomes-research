@@ -214,16 +214,37 @@ study = StudyDefinition(
         },
     ),
 
-    # # https://github.com/ebmdatalab/tpp-sql-notebook/issues/52
-    imd=patients.address_as_of(
-        "2020-02-01",
-        returning="index_of_multiple_deprivation",
-        round_to_nearest=100,
+    ## https://github.com/ebmdatalab/tpp-sql-notebook/issues/52
+    ## index of multiple deprivation, estimate of SES based on patient post code 
+    ## add code to categorise into quintiles as is typically done (code from Will's VE study)
+    imd=patients.categorised_as(
+        {
+            "0": "DEFAULT",
+            "1": """index_of_multiple_deprivation >=1 AND index_of_multiple_deprivation < 32844*1/5""",
+            "2": """index_of_multiple_deprivation >= 32844*1/5 AND index_of_multiple_deprivation < 32844*2/5""",
+            "3": """index_of_multiple_deprivation >= 32844*2/5 AND index_of_multiple_deprivation < 32844*3/5""",
+            "4": """index_of_multiple_deprivation >= 32844*3/5 AND index_of_multiple_deprivation < 32844*4/5""",
+            "5": """index_of_multiple_deprivation >= 32844*4/5 AND index_of_multiple_deprivation < 32844""",
+        },
+        index_of_multiple_deprivation=patients.address_as_of(
+            "2020-02-01",
+            returning="index_of_multiple_deprivation",
+            round_to_nearest=100,
+        ),
         return_expectations={
             "rate": "universal",
-            "category": {"ratios": {"100": 0.1, "200": 0.2, "300": 0.7}},
+            "category": {
+                "ratios": {
+                    "0": 0.05,
+                    "1": 0.19,
+                    "2": 0.19,
+                    "3": 0.19,
+                    "4": 0.19,
+                    "5": 0.19,
+                }
+            },
         },
-    ),    
+    ),     
     
     ## https://github.com/ebmdatalab/tpp-sql-notebook/issues/52
     ## index of multiple deprivation, estimate of SES based on patient post code 

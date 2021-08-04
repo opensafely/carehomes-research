@@ -89,14 +89,14 @@ input %>%
 input %>%
   # Count records per MSOA
   group_by(msoa) %>%
-  tally(name =  "tpp_pop") %>%
+  tally(name =  "tpp_pop_all") %>%
   ungroup() -> tpp_pop_all
 
 input %>%
   filter(household_id > 0) %>%
   # Count records per MSOA
   group_by(msoa) %>%
-  tally(name =  "tpp_pop_wHHID") %>%
+  tally(name =  "tpp_pop") %>%
   ungroup() -> tpp_pop_wHHID
 
 tpp_pop_all %>%
@@ -104,8 +104,8 @@ tpp_pop_all %>%
   # Merge MSOAs in OS with total population estimates
   left_join(msoa_pop) %>%
   mutate(msoa = as.factor(msoa),
+         tpp_cov_all = tpp_pop_all*100/msoa_pop,
          tpp_cov = tpp_pop*100/msoa_pop,
-         tpp_cov_wHHID = tpp_pop_wHHID*100/msoa_pop,
          cov_gt_100 = as.factor(ifelse(tpp_cov > 100, "Yes", "No"))) -> tpp_cov
 
 summary(tpp_cov)
@@ -119,7 +119,7 @@ write.csv(tpp_msoas, "./msoas_in_tpp.csv", row.names = FALSE)
 # Figure
 png("./total_vs_tpp_pop.png", height = 800, width = 1000)
 tpp_cov %>%
-  pivot_longer(c("tpp_cov","tpp_cov_wHHID")) %>%
+  pivot_longer(c("tpp_cov","tpp_cov_all")) %>%
   ggplot(aes(value)) +
   geom_histogram(bins = 30, fill = "steelblue") +
   facet_wrap(~name) +

@@ -34,7 +34,7 @@ options(datatable.old.fread.datetime.character = TRUE)
 #   - total population estimates per MSOA
 #   - population estimates by single year age
 # 
-# args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv", 600)
+# args <- c("./input.csv","./data/SAPE22DT15_mid_2019_msoa.csv", 0)
 args = commandArgs(trailingOnly = TRUE)
 
 ## TPP-registered patient records (from study definition)
@@ -89,7 +89,7 @@ input %>%
 input %>%
   # Count records per MSOA
   group_by(msoa) %>%
-  tally(name =  "tpp_pop_all") %>%
+  tally(name =  "tpp_pop") %>%
   ungroup() -> tpp_pop_all
 
 input %>%
@@ -104,9 +104,9 @@ tpp_pop_all %>%
   # Merge MSOAs in OS with total population estimates
   left_join(msoa_pop) %>%
   mutate(msoa = as.factor(msoa),
-         tpp_cov_all = tpp_pop_all*100/msoa_pop,
+         tpp_cov = tpp_pop*100/msoa_pop,
          tpp_cov_wHHID = tpp_pop_wHHID*100/msoa_pop,
-         cov_gt_100 = as.factor(ifelse(tpp_cov_all > 100, "Yes", "No"))) -> tpp_cov
+         cov_gt_100 = as.factor(ifelse(tpp_cov > 100, "Yes", "No"))) -> tpp_cov
 
 summary(tpp_cov)
 
@@ -119,7 +119,7 @@ write.csv(tpp_msoas, "./msoas_in_tpp.csv", row.names = FALSE)
 # Figure
 png("./total_vs_tpp_pop.png", height = 800, width = 1000)
 tpp_cov %>%
-  pivot_longer(c("tpp_cov_all","tpp_cov_wHHID")) %>%
+  pivot_longer(c("tpp_cov","tpp_cov_wHHID")) %>%
   ggplot(aes(value)) +
   geom_histogram(bins = 30, fill = "steelblue") +
   facet_wrap(~name) +
@@ -135,35 +135,26 @@ dev.off()
 
 # Filter MSOAs by TPP coverage
 exclude_msoa <- tpp_cov %>%
-  filter(tpp_cov_wHHID < msoa_cov_cutoff) %>%
+  filter(tpp_cov < msoa_cov_cutoff) %>%
   pull(msoa) %>%
   unique()
 
 print(paste0("MSOAs excluded with ",msoa_cov_cutoff,"% coverage cut off: n = ",length(exclude_msoa)))
 
 tpp_cov_incl <- tpp_cov %>%
-  filter(tpp_cov_wHHID >= msoa_cov_cutoff)
+  filter(tpp_cov >= msoa_cov_cutoff)
 
 print(paste0("MSOAs included with ",msoa_cov_cutoff,"% coverage cut off: n = ",nrow(tpp_cov_incl)))
 
-summary(tpp_cov_incl$tpp_cov_wHHID)
+summary(tpp_cov_incl$tpp_cov)
 
 png("./tpp_cov_filtered.png", height = 800, width = 800)
 tpp_cov_incl %>%
-  ggplot(aes(tpp_cov_wHHID)) +
+  ggplot(aes(tpp_cov)) +
   geom_histogram(bins = 30, fill = "steelblue") +
   labs(x = "TPP coverage per MSOA - filtered on 80% cutoff") +
   theme_minimal()
 dev.off() 
-
-# # Trying to find where the cov = 9% come from...
-# tpp_cov_incl %>%
-#   mutate(low_cov = (tpp_cov_wHHID < msoa_cov_cutoff)) %>%
-#   group_by(low_cov) %>%
-#   tally()
-# 
-# tpp_cov_incl %>%
-#   filter(tpp_cov_wHHID < msoa_cov_cutoff)
 
 saveRDS(tpp_cov_incl, file = "./tpp_coverage_included.rds")
 saveRDS(tpp_cov, file = "./tpp_coverage_all.rds")

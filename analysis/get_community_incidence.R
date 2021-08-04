@@ -42,19 +42,18 @@ case_eng %>%
 # Want a dataset of daily incidence of probable cases in the community, with
 # estimates of CH/non-CH population per MSOA
 
-# Count number of patients and unique MSOAs in TPP without a carehome flag
+# Count number of patients and included MSOAs in TPP without a carehome flag
 input %>%
-  filter(care_home_type == "U") %>% # & !institution
-  summarise(n = n(), msoa = n_distinct(msoa)) -> comm_tally
+  filter(care_home_type == "U") %>% 
+  summarise(n = n(), 
+            msoa = n_distinct(msoa)) -> comm_tally
 
 print(paste0("N = ",comm_tally$n," non-carehome residents across ",comm_tally$msoa," MSOAs"))
 
 input %>%
   # split out non-carehome residents who had probable diagnosis 
   filter(care_home_type == "U" & !is.na(primary_care_case_probable)) %>%
-  rename(date = primary_care_case_probable,
-         tpp_cov = tpp_cov_wHHID,
-         tpp_pop = tpp_pop_wHHID) %>%
+  rename(date = primary_care_case_probable) %>%
   # exclude any cases pre-2020 
   filter(date > lubridate::ymd("2020-01-01")) %>%
   # count probable diagnoses per day and per msoa

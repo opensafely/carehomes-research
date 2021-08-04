@@ -24,7 +24,7 @@ library(dtplyr)
 library(zoo)
 
 # write("Data setup log",file="data_setup_log.txt")
-sink("data_setup_log.txt")
+sink("data_setup_log.txt", type = "output")
 
 # Function: calculate mode value across residents in household
 getmode <- function(v) {
@@ -74,34 +74,15 @@ range(study_per)
 
 # ---------------------------------------------------------------------------- #
 
-# Check number of individuals in community and aged 65+ in care homes
-input %>%
-  group_by(care_home_type) %>%
-  tally()
-
-input %>%
-  group_by(care_home_type, ch_ge65) %>%
-  tally()
-
-# Split out carehome residents 
-input %>%
-  filter(ch_res) -> ch
-
-print("Summary: all care home residents")
-summary(ch)
-
-# ---------------------------------------------------------------------------- #
-
 #-----------------------------#
-#  Care home characteristics  #
+#  Household characteristics  #
 #-----------------------------#
 
-# Summarise care home resident characteristics
-# **will be replaced with CQC vars when codelists available**
+# Summarise resident characteristics over all households
 # NOTE: multiple events in same HH may have different sizes in dummy data
 #       same HH may have both rural/urban and multiple IMD values in dummy data
 
-ch_chars <- ch %>%
+hh_chars <- input %>%
   group_by(household_id) %>%
   summarise(percent_tpp = getmode(percent_tpp),
             mixed_household = getmode(mixed_household),
@@ -109,29 +90,43 @@ ch_chars <- ch %>%
             region = getmode(region),
             msoa = getmode(msoa),
             n_resid = n(),                        # number of individuals registered in TPP under HHID
-            ch_size_orig = getmode(household_size),
-            ch_size = getmode(household_size_tot),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
-            ch_type = getmode(care_home_type),    # Care, nursing, other
+            hh_size_orig = getmode(household_size),
+            hh_size = getmode(household_size_tot),     # TPP-derived household size - discrepancies with n_resid and CQC number of beds?
+            hh_type = getmode(care_home_type),    # Care, nursing, other
             rural_urban8 = getmode(rural_urban),  # Rural/urban location classification - select mode value over all residents
             imd = getmode(imd),                   # In case missing for some indivs, take mode over HH residents
-            imd_quint = getmode(imd_quint),                   # In case missing for some indivs, take mode over HH residents
             hh_med_age = median(age),             # average age of registered residents
             hh_p_female = mean(sex == "F"),       # % registered residents female
             hh_p_dem = mean(dementia, na.rm = T), # % registered residents with dementia - implies whether care home is dementia-specific
             n_case = sum(case)) %>%        
   ungroup() %>%
-  mutate(hh_maj_dem = (hh_p_dem >= 0.5),
+  mutate(across(c("mixed_household","region","msoa","hh_type","rural_urban8","imd"),
+                as.factor),
+         hh_maj_dem = (hh_p_dem >= 0.5),
          rural_urban = as.factor(case_when(rural_urban8 %in% 1:4 ~ "urban",
                                            rural_urban8 %in% 5:8 ~ "rural")))
 
-print("Summary: All care home characteristics")
-summary(ch_chars)
+print("Summary: All household characteristics")
+summary(hh_chars)
 
-print(paste0("No. unique homes in selected MSOAs:", nrow(ch_chars)))
+# Identify those with majority care home flags as care homes and split off
 
-print("Correspondence between resident count and TPP household size:")
-summary(ch_chars$n_resid == ch_chars$ch_size_orig)
-summary(ch_chars$n_resid - ch_chars$ch_size_orig)
+print("Summary: Characteristics of households with majority care home flag")
+summary(filter(hh_chars, hh_type != "U"))
+
+print("No. unique homes in selected MSOAs")
+summary(hh_chars$hh_type)
+
+# Extract probable care homes
+ch_chars <- hh_chars %>%
+  filter(hh_type != "U")
+
+# Residents of those probable care homes
+ch <- input %>%
+  filter(household_id %in% ch_chars$household_id)
+
+print("Summary: Residents of care homes")
+summary(ch)
 
 # ---------------------------------------------------------------------------- #
 # Exclude care homes on TPP coverage
@@ -144,7 +139,7 @@ summary(ch_chars$n_resid - ch_chars$ch_size_orig)
 print(paste0("No. homes with residents under >1 system: ",
              sum(ch_chars$mixed_household == 1)))
 
-print("% TPP coverage - by household:")
+print("% TPP coverage - by care home:")
 summary(ch_chars$percent_tpp)
 summary(
   ch_chars %>%
@@ -175,6 +170,32 @@ ch <- ch %>%
   filter(household_id %in% incl)
 
 # ---------------------------------------------------------------------------- #
+# Exclude on care home size < 3
+
+print("No. homes with size < 3")
+summary(ch_chars$hh_size < 3)
+
+ch_chars %>%
+  filter(hh_size >= 3) %>%
+  summary()
+
+ch_chars %>%
+  filter(hh_size < 3) %>%
+  summary()
+
+ch %>%
+  mutate(sizelt3 = (household_size < 3)) %>%
+  group_by(sizelt3) %>%
+  summarise(n = n(),
+            n_hh = n_distinct(household_id),
+            age = mean(age, na.rm = T),
+            age_sd = sd(age, na.rm = T),
+            p_fem = mean(sex == "F"), 
+            p_dem = mean(dementia == 1),
+            p_nurse = mean(care_home_type == "N"),
+            p_case = mean(case))
+
+# ---------------------------------------------------------------------------- #
 # Check uniqueness of characteristics per household
 
 print("Uniqueness of household characteristics over residents (included homes):")
@@ -184,9 +205,10 @@ ch %>%
             region = n_distinct(region, na.rm = T),
             household_size_tot = n_distinct(household_size_tot, na.rm = T),
             care_home_type = n_distinct(care_home_type, na.rm = T),
-            imd_quint = n_distinct(imd_quint, na.rm = T),
+            imd = n_distinct(imd, na.rm = T),
             rural_urban = n_distinct(rural_urban, na.rm = T)) %>%
   ungroup() -> n_distinct_chars
+
 # Should be one distinct value for every household
 summary(n_distinct_chars)
 
@@ -241,7 +263,7 @@ ch_wevent <- ch_chars %>%
   filter(!first_event_pre_per) %>%
   mutate(date = first_event) %>%
   select(-first_primary_care_case_probable:-first_ons_covid_death_date,
-         -ch_size_orig, -rural_urban8, -first_event_pre_per, -first_event_post_per) 
+         -hh_size_orig, -rural_urban8, -first_event_pre_per, -first_event_post_per) 
 
 print("Summary: First events")
 summary(ch_wevent)
@@ -266,20 +288,18 @@ ch_wevent %>%
 vars <- names(select(ch_wevent, -date))
 ch_wevent <- as.data.table(ch_wevent)
 
-# Replicate per region (by vars are all values I want to copy down per date):
+# Replicate per region (by vars are all values to copy down per date):
 all_dates <- ch_wevent[,.(date = study_per),by = vars]
 
 # Merge and fill count with 0:
 setkey(ch_wevent, 
-       exclude, household_id, percent_tpp, region, msoa, n_resid, ch_size, ch_type, 
-       rural_urban, imd, imd_quint, 
-       hh_med_age, hh_p_female, hh_p_dem, hh_maj_dem, 
+       exclude, household_id, percent_tpp, region, msoa, n_resid, hh_size, hh_type, 
+       rural_urban, imd, hh_med_age, hh_p_female, hh_p_dem, hh_maj_dem, 
        n_case, first_event, first_event_which, ever_affected, 
        date)
 setkey(all_dates, 
-       exclude, household_id, percent_tpp, region, msoa, n_resid, ch_size, ch_type, 
-       rural_urban, imd, imd_quint, 
-       hh_med_age, hh_p_female, hh_p_dem, hh_maj_dem, 
+       exclude, household_id, percent_tpp, region, msoa, n_resid, hh_size, hh_type, 
+       rural_urban, imd, hh_med_age, hh_p_female, hh_p_dem, hh_maj_dem, 
        n_case, first_event, first_event_which, ever_affected, 
        date)
 

@@ -45,7 +45,7 @@ na_replace_dates <- function(x, min = '2020-01-01', max = '2020-12-07') {
 # * tpp_coverage_included.rds
 #   - Estimated coverage of TPP per MSOA, including only MSOAs with coverage >=80%
 
-# args <- c("input.csv","tpp_coverage_included.rds", 600)
+# args <- c("input.csv","tpp_coverage_included.rds", 0)
 args = commandArgs(trailingOnly = TRUE)
 
 input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
@@ -54,7 +54,7 @@ input_raw <- fread(args[1], data.table = FALSE, na.strings = "") %>%
   # check for mixed HH/perc TPP agreement
   mutate(perc_tpp_lt100 = (percent_tpp < 100))
 
-# Load TPP coverage for included MSOAs
+# Load TPP coverage
 tpp_cov_incl <- readRDS(args[2])
 
 # MSOA TPP coverage cut off
@@ -80,23 +80,13 @@ summary(tpp_cov_incl)
 print("Total Patients")
 nrow(input_raw)
 
-# Drop individuals with missing household_ID
-print(paste0("Dropping patients with missing household_id: n = ", 
-             sum(input_raw$household_id == 0)))
-
-input_wHH <- filter(input_raw, household_id != 0)
-
-print(paste0("Records with non-missing household ID: N = ", 
-             nrow(input_wHH)))
-
 # Summarise households/patients with missing MSOA/type
-
 
 print("Patients with missing HH MSOA:")
 sum(is.na(input_raw$msoa))
 
 print("HHs with missing MSOA: n = ")
-input_wHH %>%
+input_raw %>%
   filter(is.na(msoa)) %>%
   pull(household_id) %>%
   n_distinct()
@@ -105,13 +95,13 @@ print("Patients with missing HH type:")
 sum(is.na(input_raw$care_home_type))
 
 print("HHs with missing type: n = ")
-input_wHH %>%
+input_raw %>%
   filter(is.na(care_home_type)) %>%
   pull(household_id) %>%
   n_distinct()
 
 print("COVID cases with missing MSOA or HH type: n = ")
-input_wHH %>%
+input_raw %>%
   filter(is.na(msoa) | is.na(care_home_type)) %>%
   rowwise() %>%
   filter(any(!is.na(c_across(all_of(event_dates))))) %>%
@@ -120,28 +110,34 @@ input_wHH %>%
 
 
 # Drop individuals with missing MSOA or care home type
-input_nomiss <- input_wHH %>%
+input_nomiss <- input_raw %>%
   filter(!is.na(msoa) & !is.na(care_home_type)) 
 
-print(paste0("Records with non-missing MSOA, household ID and household type: N = ", 
+print(paste0("Records with non-missing MSOA and household type: N = ", 
              nrow(input_nomiss)))
 print(paste0("Records attributed to ", 
              n_distinct(input_nomiss$msoa), 
              " MSOAs"))
 
-# ---------------------------------------------------------------------------- #
+# Redefine missing household_id as NA
+input_nomiss$household_id <- na_if(input_nomiss$household_id, 0)
 
+print("Patients with missing household_id") 
+summary(is.na(input_nomiss$household_id))
+
+# # ---------------------------------------------------------------------------- #
+# 
 #------------------------------------------#
-#      EXCLUDE ON MSOA TPP COVERAGE        #
+#       FILTER ON MSOA TPP COVERAGE        #
 #------------------------------------------#
 
 # Join with MSOA coverage data
 input_wcov <- input_nomiss %>%
-  left_join(tpp_cov_incl, by = "msoa") 
+  left_join(tpp_cov_incl, by = "msoa")
 
 # Identify MSOAs with missing value when merged with included MSOAs in tpp_cov
 exclude <- input_wcov %>%
-  filter(is.na(tpp_cov_wHHID)) 
+  filter(is.na(tpp_cov))
 
 print(paste0("Individuals excluded with MSOA ",
              msoa_cov_cutoff,
@@ -158,7 +154,7 @@ input_wcov <- input_wcov %>%
 
 # Should now have no records with coverage < cutoff
 print("Summary: Remaining MSOA coverage:")
-summary(input_wcov$tpp_cov_wHHID)
+summary(input_wcov$tpp_cov)
 
 # ---------------------------------------------------------------------------- #
 

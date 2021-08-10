@@ -14,7 +14,7 @@ This study is currently paused due to unresolvable issues with the grouping of i
 
 The planned analysis required aggregation of the available patient-level EHR data into common households, according to a household identifier defined from the grouping of patients under the same address as of February 2020. However, discrepancies arise due to mismatching of patient addresses between linked datasets and larger households (for example care homes) are more vulnerable to such discrepancies. Moreover, the data accessible within OpenSAFELY reflects only one primary care software provider (TPP) and it is not uncommon for larger households to have residents split between different practices and hence providers. 
 
-These are unavoidable limitations inherent to the imperfect linkage and inconsistencies between the patients' health and address data, and means that we cannot be confident of the total size of the household, whether or not a household is definitely a care home, whether other household characteristics can be identified correctly, or whether all residents of the household are being properly captured.  
+These are unavoidable limitations inherent to the imperfect linkage and inconsistencies between the patients' health and address data. As a result, we cannot be confident of the total size of the household, whether or not a household is definitely a care home, whether other household characteristics can be identified correctly, or whether all residents of the household are being properly captured.  
 
 
 * The original study protocol is [here](https://docs.google.com/document/d/1zcOoSIO3yKCTIF9ImmoHuS_S8h9iUUuBbmAB5gzP2hE/edit?usp=sharing)

@@ -19,7 +19,6 @@ These are unavoidable limitations inherent to the imperfect linkage and inconsis
 
 * The original study protocol is [here](https://docs.google.com/document/d/1zcOoSIO3yKCTIF9ImmoHuS_S8h9iUUuBbmAB5gzP2hE/edit?usp=sharing)
 * An investigation into the household identifier and data disrepancies is [here](https://docs.google.com/document/d/1zHiJULgnrbOUTXU67Lw45Yv22hC5e6Knx5FQWlBgMPc/edit?usp=sharing)
-* Raw model outputs, including charts, crosstabs, etc, are in `released_analysis_results/`
 * If you are interested in how we defined our variables, take a look at the [study definition](analysis/study_definition.py); this is written in `python`, but non-programmers should be able to understand what is going on there
 * If you are interested in how we defined our code lists, look in the [codelists folder](./codelists/).
 * Developers and epidemiologists interested in the code should review

@@ -10,7 +10,7 @@ We defined introduction as the first COVID-19 event (clinical diagnosis, positiv
 A landmarking analysis was then planned to analyse the 14-day risk of a first COVID-19 event in relation to time-varying local incidence. Other characteristics of the home which were considered as potential predictors were overall size, service provided (residential or nursing), proportion of residents with a dementia diagnosis, and deprivation and rural/urban index of the postcode.
 
 ## Update August 2021
-This study is currently paused due to unresolvable issues with the grouping of individuals into households. 
+This study is now retired due to unresolvable issues with the grouping of individuals into households. 
 
 The planned analysis required aggregation of the available patient-level EHR data into common households, according to a household identifier defined from the grouping of patients under the same address as of February 2020. However, discrepancies arise due to mismatching of patient addresses between linked datasets and larger households (for example care homes) are more vulnerable to such discrepancies. Moreover, the data accessible within OpenSAFELY reflects only one primary care software provider (TPP) and it is not uncommon for larger households to have residents split between different practices and hence providers. 
 

@@ -4,13 +4,15 @@ Social care homes form insular communities with low levels of mixing with the ge
 
 During an epidemic, whether the risk of introduction to care homes depends specifically on local disease burden has implications for the targeting of control efforts. However, it may be that the local burden adds little information above the national epidemic picture in terms of explaining risk to any particular care home - a relationship observed between local incidence and care home introduction may simply reflect a broader, background risk from the national epidemic. We therefore set out to evaluate the associations between national and local levels of COVID-19 incidence and the risk of first introduction to care homes, throughout the first and second epidemic waves in England. 
 
+The study is also described here https://www.opensafely.org/approved-projects/#project-82.
+
 ## Methods
 We defined introduction as the first COVID-19 event (clinical diagnosis, positive test result, admission for COVID-19 or COVID-19-related death) among residents of each care home. Local incidence was defined as incidence of probable COVID-19 diagnoses via primary care in the same Middle Super Output Area (MSOA) as the care home. 
 
 A landmarking analysis was then planned to analyse the 14-day risk of a first COVID-19 event in relation to time-varying local incidence. Other characteristics of the home which were considered as potential predictors were overall size, service provided (residential or nursing), proportion of residents with a dementia diagnosis, and deprivation and rural/urban index of the postcode.
 
 ## Update August 2021
-This study is now retired due to unresolvable issues with the grouping of individuals into households. 
+This study is now retired due to unresolvable issues with the grouping of individuals into households.
 
 The planned analysis required aggregation of the available patient-level EHR data into common households, according to a household identifier defined from the grouping of patients under the same address as of February 2020. However, discrepancies arise due to mismatching of patient addresses between linked datasets and larger households (for example care homes) are more vulnerable to such discrepancies. Moreover, the data accessible within OpenSAFELY reflects only one primary care software provider (TPP) and it is not uncommon for larger households to have residents split between different practices and hence providers. 
 
